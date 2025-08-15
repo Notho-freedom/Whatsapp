@@ -1,0 +1,67 @@
+<html lang="en">
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1" name="viewport"/>
+  <title>
+   WhatsApp Clone - Narrower Sidebar
+  </title>
+  <script src="https://cdn.tailwindcss.com">
+  </script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Segoe+UI&amp;display=swap" rel="stylesheet"/>
+  <style>
+   body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    }
+  </style>
+ </head>
+ <body class="bg-[#121212] text-white select-none h-screen flex">
+  <!-- Sidebar -->
+  <aside class="flex flex-col bg-[#1e1e1e] w-14 min-w-[56px] border-r border-gray-700 py-4">
+   <!-- Toggle button top -->
+   <button aria-label="Toggle sidebar" class="mb-4 flex items-center justify-center w-7 h-7 rounded-full hover:bg-[#2a2a2a] self-center">
+    <i class="fas fa-bars text-gray-400 text-sm"></i>
+   </button>
+   <!-- Top icons vertical -->
+   <nav class="flex flex-col items-center space-y-3">
+    <button aria-label="Chats" class="relative flex items-center justify-center w-7 h-7 rounded-full hover:bg-[#2a2a2a]">
+     <i class="fas fa-comment-alt text-[#00a884] text-sm"></i>
+     <span class="absolute -top-1 -right-1 bg-[#00a884] text-[8px] font-semibold rounded-full w-3.5 h-3.5 flex items-center justify-center">
+      2
+     </span>
+    </button>
+    <button aria-label="Calls" class="relative flex items-center justify-center w-7 h-7 rounded-full hover:bg-[#2a2a2a]">
+     <i class="fas fa-phone text-gray-400 text-sm"></i>
+     <span class="absolute -top-1 -right-1 bg-[#f87171] text-[8px] font-semibold rounded-full w-3.5 h-3.5 flex items-center justify-center">
+      1
+     </span>
+    </button>
+    <button aria-label="Status" class="flex items-center justify-center w-7 h-7 rounded-full hover:bg-[#2a2a2a]">
+     <i class="fas fa-circle-notch text-gray-400 text-sm"></i>
+    </button>
+   </nav>
+   <!-- Bottom icons vertical -->
+   <nav class="flex flex-col items-center space-y-3 mt-auto">
+    <button aria-label="Star" class="relative flex items-center justify-center w-7 h-7 rounded-full hover:bg-[#2a2a2a]">
+     <i class="fas fa-star text-gray-400 text-sm"></i>
+     <span class="absolute -top-1 -right-1 bg-[#00a884] text-[8px] font-semibold rounded-full w-3.5 h-3.5 flex items-center justify-center">
+      1
+     </span>
+    </button>
+    <button aria-label="Archive" class="flex items-center justify-center w-7 h-7 rounded-full hover:bg-[#2a2a2a]">
+     <svg aria-hidden="true" class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M3 3h18v4H3V3z"></path>
+      <path d="M21 7l-1 13a2 2 0 01-2 2H6a2 2 0 01-2-2L3 7"></path>
+      <path d="M10 11h4"></path>
+     </svg>
+    </button>
+    <button aria-label="Settings" class="flex items-center justify-center w-7 h-7 rounded-full hover:bg-[#2a2a2a]">
+     <i class="fas fa-cog text-gray-400 text-sm"></i>
+    </button>
+    <button aria-label="Profile" class="flex items-center justify-center w-7 h-7 rounded-full hover:bg-[#2a2a2a]">
+     <i class="fas fa-user-circle text-gray-400 text-sm"></i>
+    </button>
+   </nav>
+  </aside>
+ </body>
+</html>

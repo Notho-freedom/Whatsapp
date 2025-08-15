@@ -1,0 +1,384 @@
+<html lang="en">
+ <head>
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1" name="viewport"/>
+  <title>
+   WhatsApp Clone - Smaller Header Icons
+  </title>
+  <script src="https://cdn.tailwindcss.com">
+  </script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Segoe+UI&amp;display=swap" rel="stylesheet"/>
+  <style>
+   body {
+     font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+     background-color: #121212;
+     margin: 0;
+     height: 100vh;
+     display: flex;
+     justify-content: center;
+     align-items: start;
+     padding-top: 0;
+   }
+   /* Scrollbar for chat list */
+   #chat-list {
+     scrollbar-width: thin;
+     scrollbar-color: #9F9F9F transparent;
+     overflow-y: auto;
+   }
+   #chat-list::-webkit-scrollbar {
+     width: 4px;
+     transition: width 0.3s ease;
+   }
+   #chat-list:hover::-webkit-scrollbar {
+     width: 8px;
+   }
+   #chat-list::-webkit-scrollbar-thumb {
+     background-color: #9F9F9F;
+     border-radius: 3px;
+   }
+   /* Container for time aligned with name */
+   .header-row {
+     display: flex;
+     justify-content: space-between;
+     align-items: center;
+   }
+   .chat-time {
+     white-space: nowrap;
+     font-size: 0.65rem; /* smaller than text-xs */
+     color: #9ca3af; /* Tailwind gray-400 */
+     flex-shrink: 0;
+     line-height: 1;
+   }
+   /* Container for message and notification dot aligned horizontally */
+   .message-row {
+     display: flex;
+     justify-content: space-between;
+     align-items: center;
+     margin-top: 2px;
+   }
+   .message-text {
+     color: #9ca3af;
+     font-size: 0.75rem;
+     overflow: hidden;
+     text-overflow: ellipsis;
+     white-space: nowrap;
+     max-width: 180px;
+   }
+   .notif-dot {
+     width: 18px;
+     height: 18px;
+     background-color: #00a884;
+     border-radius: 9999px;
+     font-size: 0.65rem;
+     font-weight: 600;
+     color: #121212;
+     display: flex;
+     align-items: center;
+     justify-content: center;
+     padding: 0 6px;
+     margin-left: 6px;
+     flex-shrink: 0;
+   }
+   /* Remove chat item borders */
+   #chat-list > button {
+     border-bottom: none !important;
+     padding-bottom: 0.75rem;
+     margin-bottom: 0.75rem;
+   }
+   /* Background colors */
+   #chat-list {
+     background-color: #2C2C2C;
+     height: 100%;
+     padding: 0.75rem 0;
+   }
+   #chat-list > button[aria-current="true"] {
+     background-color: #454545;
+   }
+   /* Search input background */
+   .search-input {
+     background-color: #3D3D3D;
+     border-bottom: 1px solid rgba(255 255 255 / 0.15);
+     backdrop-filter: saturate(180%) blur(20px);
+     border-radius: 0.375rem;
+   }
+   /* Container for entire chat list component */
+   .chat-list-container {
+     width: 320px;
+     height: 100vh;
+     background-color: #2C2C2C;
+     display: flex;
+     flex-direction: column;
+   }
+   /* Smaller header icons */
+   .header-icons {
+     font-size: 0.85rem; /* smaller than text-lg */
+   }
+  </style>
+ </head>
+ <body>
+  <div class="chat-list-container">
+   <!-- Chats header -->
+   <header class="flex items-center justify-between px-4 py-3">
+    <h2 class="font-extrabold text-lg text-white">
+     Chats
+    </h2>
+    <div class="flex space-x-3 text-gray-400 header-icons">
+     <button aria-label="New chat" class="hover:text-white cursor-pointer">
+      <i class="fas fa-edit">
+      </i>
+     </button>
+     <button aria-label="Filter chats" class="hover:text-white cursor-pointer">
+      <i class="fas fa-filter">
+      </i>
+     </button>
+    </div>
+   </header>
+   <!-- Search input -->
+   <div class="px-4 py-3">
+    <div class="relative">
+     <input class="search-input w-full text-gray-300 placeholder-gray-400 text-sm py-2 pl-10 pr-3 focus:outline-none focus:ring-1 focus:ring-[#00a884]" placeholder="Search or start a new chat" type="text"/>
+     <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
+     </i>
+    </div>
+   </div>
+   <!-- Chat list -->
+   <div aria-label="Chat list" class="flex-1" id="chat-list" role="list" tabindex="0">
+    <!-- Chat item: Frelar Corp. -->
+    <button class="flex items-center gap-3 px-4 py-3 w-full hover:bg-[#3a3a3a] rounded-md" role="listitem" type="button">
+     <img alt="Frelar Corp. logo black and green abstract design in a circle" class="w-10 h-10 rounded-full object-cover" src="https://placehold.co/40x40/png?text=Frelar+Corp+Logo+Black+and+Green+Abstract+Design"/>
+     <div class="flex-1 text-left flex flex-col">
+      <div class="header-row">
+       <p class="text-sm font-bold text-white">
+        Frelar Corp.
+       </p>
+       <span class="chat-time">
+        1:05 PM
+       </span>
+      </div>
+      <div class="message-row">
+       <p class="message-text">
+        Wilfrid: https://frelar-backend-producti...
+       </p>
+      </div>
+     </div>
+    </button>
+    <!-- Chat item: Inès (selected) -->
+    <button aria-current="true" class="flex items-center gap-3 px-4 py-3 w-full rounded-md" role="listitem" type="button">
+     <img alt="Inès child smiling wearing a red shirt in a circle" class="w-10 h-10 rounded-full object-cover" src="https://placehold.co/40x40/png?text=Ines+Child+Smiling+Red+Shirt"/>
+     <div class="flex-1 text-left flex flex-col">
+      <div class="header-row">
+       <p class="text-sm font-semibold text-white">
+        Inès
+       </p>
+       <span class="chat-time">
+        12:17 PM
+       </span>
+      </div>
+      <div class="message-row">
+       <p class="message-text">
+        <i class="fas fa-microphone">
+        </i>
+        2:25
+       </p>
+      </div>
+     </div>
+    </button>
+    <!-- Chat item: Dora -->
+    <button class="flex items-center gap-3 px-4 py-3 w-full hover:bg-[#3a3a3a] rounded-md" role="listitem" type="button">
+     <img alt="Dora profile picture of lake and mountains landscape in a circle" class="w-10 h-10 rounded-full object-cover" src="https://placehold.co/40x40/png?text=Lake+and+Mountains+Landscape"/>
+     <div class="flex-1 text-left flex flex-col">
+      <div class="header-row">
+       <p class="text-sm font-bold text-white">
+        Dora
+       </p>
+       <span class="chat-time">
+        9:32 AM
+       </span>
+      </div>
+      <div class="message-row">
+       <p class="message-text">
+        <i class="fas fa-phone">
+        </i>
+        Voice call · Accepted on another dev...
+       </p>
+      </div>
+     </div>
+    </button>
+    <!-- Chat item: Multicultural Group -->
+    <button class="flex items-center gap-3 px-4 py-3 w-full hover:bg-[#3a3a3a] rounded-md" role="listitem" type="button">
+     <img alt="Multicultural Group logo circle brown and white pattern" class="w-10 h-10 rounded-full object-cover" src="https://placehold.co/40x40/png?text=Multicultural+Group+Logo+Circle+Brown+and+White"/>
+     <div class="flex-1 text-left flex flex-col">
+      <div class="header-row">
+       <p class="text-sm font-bold text-white">
+        Multicultural Group
+       </p>
+       <span class="chat-time">
+        7:03 AM
+       </span>
+      </div>
+      <div class="message-row">
+       <p class="message-text">
+        ~Mbarga Gabriel:
+        <i class="fas fa-video">
+        </i>
+        https://vm.ti...
+       </p>
+       <div class="notif-dot">
+        14
+       </div>
+      </div>
+     </div>
+    </button>
+    <!-- Chat item: Peter -->
+    <button class="flex items-center gap-3 px-4 py-3 w-full hover:bg-[#3a3a3a] rounded-md" role="listitem" type="button">
+     <img alt="Peter profile picture white circle with green text logo" class="w-10 h-10 rounded-full object-cover" src="https://placehold.co/40x40/png?text=Peter+Logo+Circle+White+Green"/>
+     <div class="flex-1 text-left flex flex-col">
+      <div class="header-row">
+       <p class="text-sm font-bold text-white">
+        Peter
+       </p>
+       <span class="chat-time">
+        Yesterday
+       </span>
+      </div>
+      <div class="message-row">
+       <p class="message-text">
+        You reacted 👍 to "Je vais regarder cal...
+       </p>
+      </div>
+     </div>
+    </button>
+    <!-- Chat item: Peter Faison -->
+    <button class="flex items-center gap-3 px-4 py-3 w-full hover:bg-[#3a3a3a] rounded-md" role="listitem" type="button">
+     <img alt="Peter Faison profile picture bookshelf background in a circle" class="w-10 h-10 rounded-full object-cover" src="https://placehold.co/40x40/png?text=Peter+Faison+Bookshelf+Background"/>
+     <div class="flex-1 text-left flex flex-col">
+      <div class="header-row">
+       <p class="text-sm font-bold text-white">
+        Peter Faison
+       </p>
+       <span class="chat-time">
+        Yesterday
+       </span>
+      </div>
+      <div class="message-row">
+       <p class="message-text">
+        <i class="fas fa-check-double">
+        </i>
+        <i class="fas fa-microphone">
+        </i>
+        0:21
+       </p>
+      </div>
+     </div>
+    </button>
+    <!-- Chat item: (girl with pink heart) -->
+    <button class="flex items-center gap-3 px-4 py-3 w-full hover:bg-[#3a3a3a] rounded-md" role="listitem" type="button">
+     <img alt="Girl smiling with pink heart icon in a circle" class="w-10 h-10 rounded-full object-cover" src="https://placehold.co/40x40/png?text=Girl+Smiling+Pink+Heart+Icon"/>
+     <div class="flex-1 text-left flex flex-col">
+      <div class="header-row">
+       <p class="text-xs text-pink-400 font-bold">
+        💗
+       </p>
+       <span class="chat-time">
+        Yesterday
+       </span>
+      </div>
+      <div class="message-row">
+       <p class="message-text">
+        <i class="fas fa-phone">
+        </i>
+        Voice call
+       </p>
+      </div>
+     </div>
+    </button>
+    <!-- Chat item: Kevine CY -->
+    <button class="flex items-center gap-3 px-4 py-3 w-full hover:bg-[#3a3a3a] rounded-md" role="listitem" type="button">
+     <img alt="Kevine CY profile picture dark background with green circle border" class="w-10 h-10 rounded-full object-cover border-2 border-[#00a884]" src="https://placehold.co/40x40/png?text=Kevine+CY+Profile+Dark+Background"/>
+     <div class="flex-1 text-left flex flex-col">
+      <div class="header-row">
+       <p class="text-sm font-bold text-white">
+        Kevine CY
+       </p>
+       <span class="chat-time">
+        Yesterday
+       </span>
+      </div>
+      <div class="message-row">
+       <p class="message-text">
+        Ok
+       </p>
+      </div>
+     </div>
+    </button>
+    <!-- Chat item: Destivo -->
+    <button class="flex items-center gap-3 px-4 py-3 w-full hover:bg-[#3a3a3a] rounded-md" role="listitem" type="button">
+     <div class="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center text-gray-400">
+      <i class="fas fa-user">
+      </i>
+     </div>
+     <div class="flex-1 text-left flex flex-col">
+      <div class="header-row">
+       <p class="text-sm font-bold text-gray-400">
+        Destivo
+       </p>
+       <span class="chat-time">
+        8/12/2025
+       </span>
+      </div>
+      <div class="message-row">
+       <p class="message-text">
+        <i class="fas fa-check-double">
+        </i>
+        <i class="fas fa-microphone">
+        </i>
+        0:17
+       </p>
+      </div>
+     </div>
+    </button>
+    <!-- Chat item: Franka Cy -->
+    <button class="flex items-center gap-3 px-4 py-3 w-full hover:bg-[#3a3a3a] rounded-md" role="listitem" type="button">
+     <img alt="Franka Cy profile picture brown nuts in a circle" class="w-10 h-10 rounded-full object-cover" src="https://placehold.co/40x40/png?text=Franka+Cy+Profile+Brown+Nuts"/>
+     <div class="flex-1 text-left flex flex-col">
+      <div class="header-row">
+       <p class="text-sm font-bold text-white">
+        Franka Cy
+       </p>
+       <span class="chat-time">
+        8/12/2025
+       </span>
+      </div>
+      <div class="message-row">
+       <p class="message-text">
+        <i class="fas fa-phone">
+        </i>
+        Voice call · Accepted on another dev...
+       </p>
+      </div>
+     </div>
+    </button>
+    <!-- Chat item: Mr Omer -->
+    <button class="flex items-center gap-3 px-4 py-3 w-full hover:bg-[#3a3a3a] rounded-md" role="listitem" type="button">
+     <img alt="Mr Omer profile picture black and white in a circle" class="w-10 h-10 rounded-full object-cover" src="https://placehold.co/40x40/png?text=Mr+Omer+Profile+Black+and+White"/>
+     <div class="flex-1 text-left flex flex-col">
+      <div class="header-row">
+       <p class="text-sm font-bold text-white">
+        Mr Omer
+       </p>
+       <span class="chat-time">
+        8/12/2025
+       </span>
+      </div>
+      <div class="message-row">
+       <p class="message-text">
+        Boby ça va faire bientôt 1 an que tu tra...
+       </p>
+      </div>
+     </div>
+    </button>
+   </div>
+  </div>
+ </body>
+</html>
