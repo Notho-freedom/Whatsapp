@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { LucideEdit, Pin, BellOff, Star, Search } from 'lucide-react';
+import { LucideEdit, Pin, BellOff, Star, Search, Mic, Video, Image, FileText, Link, Music, MapPinMinus, SmileIcon } from 'lucide-react';
 import { useAppContext } from '@/context/AppContext';
 import Lenis from '@studio-freight/lenis';
 
@@ -46,6 +46,32 @@ export default function ChatList({ onChatSelect, selectedChatId }) {
 
   // Priorité : pinned > non pinned
   const sortedUsers = [...filteredUsers].sort((a, b) => b.isPinned - a.isPinned);
+
+  const MessageIcon = ({ type }) => {
+    const iconProps = { size: 14, className: "text-gray-400 mr-1" };
+    
+    switch(type) {
+      case 'voice':
+        return <Mic {...iconProps} />;
+      case 'video':
+        return <Video {...iconProps} />;
+      case 'image':
+        return <Image {...iconProps} />;
+      case 'document':
+        return <FileText {...iconProps} />;
+      case 'link':
+        return <Link {...iconProps} />;
+      case 'audio':
+        return <Music {...iconProps} />;
+      case 'location':
+        return <MapPinMinus {...iconProps} />;
+      case 'sticker':
+        return <SmileIcon {...iconProps} />;
+      default:
+        return null;
+    }
+  };
+
 
   return (
     <div className="w-1/3 rounded-tl-xl ml-12 bg-[#2C2C2C] border-r border-neutral-800 flex flex-col pl-1.5">
@@ -132,11 +158,17 @@ export default function ChatList({ onChatSelect, selectedChatId }) {
                   </div>
                   <div className="flex items-center mt-1">
                   {/* Texte (occupe tout l'espace restant) */}
-                  <p
-                    className={`flex-1 text-sm truncate text-gray-300`}
-                  >
-                    {chat.isTyping ? <span className="text-[#1DAA61]">{chat.name} is typing...</span> : chat.lastMessage}
+                  <p className={`flex items-center flex-1 text-sm truncate text-gray-300`}>
+                    {chat.isTyping ? (
+                      <span className="text-[#1DAA61]">{chat.name} is typing...</span>
+                    ) : (
+                      <>
+                        <MessageIcon type={chat.lastMessage.type} />
+                        <span>{chat.lastMessage.text}</span>
+                      </>
+                    )}
                   </p>
+
 
                   {/* Icônes + badge alignés à droite */}
                   <div className="flex items-center gap-1 ml-2 shrink-0">
