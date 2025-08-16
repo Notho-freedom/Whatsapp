@@ -1,18 +1,21 @@
+import { FaWhatsapp } from 'react-icons/fa';
 import Message from './Message';
 
 export default function ChatBody({ selectedChat, messages = [] }) {
   if (!selectedChat) {
     return (
       <section className="flex-1 bg-whatsapp-chat-bg flex items-center justify-center">
-        <div className="text-center text-gray-400">
-          <div className="w-16 h-16 bg-whatsapp-dark-700 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span className="text-2xl">💬</span>
+        <div className="text-center">
+          <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+            <FaWhatsapp size={100} className="text-neutral-600" />
           </div>
-          <h3 className="text-lg font-semibold mb-2 font-segoe">
-            WhatsApp Web
+          <h3 className="text-lg text-white mb-2 font-segoe">
+            WhatsApp for Windows
           </h3>
-          <p className="text-sm max-w-md">
-            Envoyez et recevez des messages sans avoir à connecter votre téléphone.
+          <p className="text-sm max-w-md text-neutral-400">
+            Send and receive messages without keeping your phone online.
+            <br />
+            Use WhatsApp on up to 4 linked devices and 1 phone at the same time.
           </p>
         </div>
       </section>

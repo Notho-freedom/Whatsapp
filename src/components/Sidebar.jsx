@@ -27,7 +27,12 @@ export default function Sidebar() {
         } transition-colors h-9 ${isActive(tab) ? 'bg-whatsapp-dark-700/50' : ' hover:bg-whatsapp-dark-700/50'}`}
         onClick={() => handleTabClick(tab)}
       >
-        <Icon size={17} className={`${isSidebarOpen ? 'ml-1' : ''} text-white`} />
+        {tab === 'status' ? (
+          <svg width="18" height="18" viewBox="0 0 24 24" className={`${isSidebarOpen ? 'ml-1' : ''} text-white rotate-[38deg]`}>
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none" strokeDasharray="18 3"/>
+                <circle cx="12" cy="12" r="4" stroke="white" strokeWidth="2" fill="none"/>
+          </svg>) 
+    : <Icon size={17} className={`${isSidebarOpen ? 'ml-1' : ''} text-white`} />}
         {isSidebarOpen ? (
           <>
             <span className="ml-3 text-white text-sm">{label}</span>
@@ -41,7 +46,7 @@ export default function Sidebar() {
           </>
         ) : (
           badgeCount && (
-            <span className={`absolute ${badgeColor} text-[70%] font-semibold rounded-full  ${status ? 'top-[8px] right-[4px] w-1.5 h-1.5' : ' top-[2px] right-[2px] w-3.5 h-3.5 p-2'} flex items-center justify-center ${
+            <span className={`absolute ${badgeColor} text-[70%] font-semibold rounded-full  ${status ? 'top-[5px] right-[6px] w-1.5 h-1.5' : ' top-[2px] right-[2px] w-3.5 h-3.5 p-2'} flex items-center justify-center ${
               badgeColor === 'bg-[#FF99A4]' ? 'text-black' : 'text-whatsapp-dark-950'
             }`}>
               {!status && badgeCount}
@@ -69,7 +74,7 @@ export default function Sidebar() {
           {/* Icônes du haut */}
           <nav className="flex flex-col px-1 space-y-1">
             <SidebarButton tab="chats" icon={MessageCircle} label="Chats" badgeCount={2} />
-            <SidebarButton tab="calls" icon={Phone} label="Calls" badgeCount={1} badgeColor="bg-[#FF99A4]" />
+            <SidebarButton tab="calls" icon={Phone} label="Calls" badgeColor="bg-[#FF99A4]" />
             <SidebarButton tab="status" icon={CirclePlayIcon} label="Status" status={true} badgeCount={1}/>
           </nav>
           
@@ -116,7 +121,7 @@ export default function Sidebar() {
 
               <nav className="flex flex-col px-1 space-y-1">
                 <SidebarButton tab="chats" icon={MessageCircle} label="Chats" badgeCount={2} />
-                <SidebarButton tab="calls" icon={Phone} label="Calls" badgeCount={1} badgeColor="bg-[#FF99A4]" />
+                <SidebarButton tab="calls" icon={Phone} label="Calls" badgeColor="bg-[#FF99A4]" />
                 <SidebarButton tab="status" icon={CircleCheckBigIcon} label="Status" status={true} badgeCount={1} />
               </nav>
 
