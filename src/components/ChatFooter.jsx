@@ -39,16 +39,16 @@ export default function ChatFooter({ selectedChat, onSendMessage }) {
   }
 
   return (
-    <footer className="flex items-center gap-5 px-4 py-2 border-t border-whatsapp-dark-950 bg-whatsapp-dark-800">
+    <footer className="flex items-center justify-between px-2 py-1 border-t bg-[#2C2C2C] border-neutral-800">
       <button 
         aria-label="Emoji picker" 
-        className="text-gray-400 hover:text-white transition-colors"
+        className="hover:bg-neutral-700/50 p-[9px] mb-[5.4px] transition-colors rounded-md"
       >
         <Smile size={19} />
       </button>
       <button 
         aria-label="Attach file" 
-        className="text-gray-400 hover:text-white transition-colors"
+        className="hover:bg-neutral-700/50 p-[9px] mb-[5.4px] rounded-md transition-colors"
       >
         <Paperclip size={19} className="rotate-180" />
       </button>
@@ -57,7 +57,7 @@ export default function ChatFooter({ selectedChat, onSendMessage }) {
           rows={1}
           autoFocus
           aria-label="Type a message"
-          className="w-full bg-transparent rounded-full py-2 px-4 text-sm text-white placeholder-gray-400 focus:outline-none font-segoe resize-none"
+          className="w-full bg-transparent py-2 px-4 text-sm text-white placeholder-gray-400 focus:outline-none font-segoe resize-none hover:bg-neutral-700"
           placeholder="Type a message"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
@@ -66,11 +66,7 @@ export default function ChatFooter({ selectedChat, onSendMessage }) {
       </form>
       <button 
         aria-label={message.trim() ? "Send message" : "Voice message"}
-        className={`transition-colors ${
-          message.trim() 
-            ? 'hover:text-white' 
-            : 'text-gray-400 hover:text-white'
-        }`}
+        className={`transition-colors p-[9px] mb-[5.4px] rounded-md hover:bg-neutral-700/50`}
         onClick={message.trim() ? handleSubmit : () => {}}
       >
         {message.trim() ? <Send size={19} className="rotate-[45deg]" /> : <Mic size={19} />}
