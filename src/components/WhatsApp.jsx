@@ -5,7 +5,7 @@ import Titlebar from './Titlebar';
 import Sidebar from './Sidebar';
 import ChatList from './ChatList';
 import ChatHeader from './ChatHeader';
-import ChatBody from './ChatBody';
+import ChatBody from './chatBody/ChatBody';
 import ChatFooter from './ChatFooter';
 import { useAppContext } from '@/context/AppContext';
 
