@@ -181,16 +181,71 @@ function getRandomStatus() {
 
 function getRandomLastMessage() {
   const messages = [
-    'reacted to your status',
-    '~Beguel: Hey, how are you? long message to test the chat list',
-    'Thank you very much!',
-    'Perfect, see you tomorrow',
-    'long message to test the chat list',
-    'I agree',
-    'Noted',
-    'Great idea!',
-    'See you soon!',
-    'No problem'
+    { 
+      text: 'reacted to your status', 
+      type: 'reaction',
+      icon: '👍' // Thumbs up emoji as reaction example
+    },
+    { 
+      text: '~Beguel: Hey, how are you? long message to test the chat list', 
+      type: 'text' 
+    },
+    { 
+      text: 'Thank you very much!', 
+      type: 'text' 
+    },
+    { 
+      text: 'Perfect, see you tomorrow', 
+      type: 'text' 
+    },
+    { 
+      text: 'Voice message', 
+      type: 'voice',
+      duration: '0:23' // Example duration for voice messages
+    },
+    { 
+      text: 'Video message', 
+      type: 'video',
+      duration: '1:45' // Example duration for videos
+    },
+    { 
+      text: 'Photo', 
+      type: 'image' 
+    },
+    { 
+      text: 'Document.pdf', 
+      type: 'document',
+      size: '2.4 MB' // Example file size
+    },
+    { 
+      text: 'https://example.com', 
+      type: 'link' 
+    },
+    { 
+      text: 'Great idea!', 
+      type: 'text' 
+    },
+    { 
+      text: 'See you soon!', 
+      type: 'text' 
+    },
+    { 
+      text: 'No problem', 
+      type: 'text' 
+    },
+    { 
+      text: 'Audio file', 
+      type: 'audio',
+      duration: '3:12'
+    },
+    { 
+      text: 'Location shared', 
+      type: 'location' 
+    },
+    { 
+      text: 'Sticker', 
+      type: 'sticker' 
+    }
   ];
   return messages[Math.floor(Math.random() * messages.length)];
 }
