@@ -21,7 +21,7 @@ export default function ChatList({ onChatSelect, selectedChatId }) {
   };
 
   return (
-    <div className="w-2/5 bg-whatsapp-dark-800 border-r border-gray-700 flex flex-col">
+    <div className="w-1/3 bg-[#2C2C2C] border-r border-neutral-800 flex flex-col rounded-l-md">
       {/* Header */}
       <div className="p-4 border-b border-gray-700">
         <div className="flex items-center justify-between mb-4">
@@ -45,20 +45,14 @@ export default function ChatList({ onChatSelect, selectedChatId }) {
         </div>
 
         {/* Search */}
-        <div className="relative">
-          <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            placeholder="Rechercher ou démarrer une nouvelle conversation"
-            value={searchQuery}
-            onChange={handleSearchChange}
-            className="w-full pl-10 pr-4 py-2 bg-whatsapp-dark-700 text-white placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-whatsapp-primary"
-          />
-        </div>
+          <div className="relative">
+          <input className="w-full max-h-8 bg-[#3D3D3D] text-white placeholder-gray-300 placeholder:text-sm py-2 pl-8 pr-3 rounded-[0.30rem] border-b border-white/50 backdrop-blur-lg focus:outline-none focus:ring-none focus:border-b-2 focus:border-[#1DAA61] focus:bg-[#202020]" placeholder="Search or start a new chat" type="text"/>
+          <i className="fas fa-search absolute left-3 top-1/2 -translate-y-1/3 text-gray-400 text-xs rotate-90 weigth-thin"></i>
+          </div>
       </div>
 
       {/* Chat List */}
-      <div className="flex-1 p-1 overflow-y-auto h-50 scrollbar-thin scrollbar-thumb-whatsapp-dark-700 scrollbar-track-whatsapp-dark-800">
+      <div className="flex-1 overflow-y-auto p-1 scrollbar-thin scrollbar-thumb-whatsapp-dark-700 scrollbar-track-whatsapp-dark-800">
         {filteredUsers.length === 0 ? (
           <div className="p-4 text-center text-gray-400">
             <p>Aucune conversation trouvée</p>

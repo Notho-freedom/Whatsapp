@@ -22,7 +22,7 @@ export default function ChatHeader({ selectedChat }) {
   }
 
   return (
-    <header className="flex items-center justify-between px-4 py-3 bg-whatsapp-dark-800 w-full border-b border-whatsapp-dark-900">
+    <header className="flex items-center justify-between px-4 py-3 bg-whatsapp-dark-800 w-full border-b border-whatsapp-dark-950">
       <div className="flex items-center gap-3">
         <img 
           alt={`${selectedChat.name} profile picture`} 
