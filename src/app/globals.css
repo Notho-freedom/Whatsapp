@@ -2,6 +2,211 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Styles personnalisés pour WhatsApp */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Animation pour les bulles de message */
+@keyframes messageSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message-bubble {
+  animation: messageSlideIn 0.3s ease-out;
+}
+
+/* Styles pour les scrollbars personnalisées */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Styles pour les médias */
+.media-grid {
+  display: grid;
+  gap: 1px;
+}
+
+.media-grid.grid-cols-1 {
+  grid-template-columns: 1fr;
+}
+
+.media-grid.grid-cols-2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.media-grid.grid-cols-3 {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+/* Styles pour les réactions */
+.reaction-bubble {
+  background: rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Styles pour les liens de preview */
+.link-preview {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  transition: all 0.2s ease;
+}
+
+.link-preview:hover {
+  border-color: rgba(255, 255, 255, 0.4);
+  transform: translateY(-1px);
+}
+
+/* Styles pour les messages système */
+.system-message {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Styles pour les avatars */
+.avatar {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* Styles pour les bulles de message */
+.message-bubble {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+.message-bubble:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Styles pour les checkmarks multiples */
+.checkmarks-container {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+}
+
+/* Styles pour les médias avec overlay */
+.media-overlay {
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.8) 100%);
+  backdrop-filter: blur(4px);
+}
+
+/* Styles pour les liens de preview compacts */
+.link-preview-compact {
+  max-width: 320px;
+  margin: 0.25rem 0;
+}
+
+/* Styles pour les réponses */
+.reply-container {
+  border-left: 4px solid #25D366;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.reply-container:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* Styles pour les actions au hover */
+.message-actions {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.message-bubble:hover .message-actions {
+  opacity: 1;
+}
+
+/* Styles pour les timestamps */
+.timestamp {
+  font-size: 9px;
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
+}
+
+/* Styles pour les noms d'expéditeur */
+.sender-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: #25D366;
+  margin-bottom: 2px;
+}
+
+/* Responsive design pour les petites tailles d'écran */
+@media (max-width: 640px) {
+  .message-bubble {
+    font-size: 0.875rem;
+  }
+  
+  .timestamp {
+    font-size: 8px;
+  }
+  
+  .avatar {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+}
+
+/* Optimisations pour les écrans moyens */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .message-bubble {
+    font-size: 0.9rem;
+  }
+  
+  .timestamp {
+    font-size: 9px;
+  }
+}
+
+/* Optimisations pour les grands écrans */
+@media (min-width: 1025px) {
+  .message-bubble {
+    font-size: 0.875rem;
+  }
+  
+  .timestamp {
+    font-size: 10px;
+  }
+}
+
 :root {
   --foreground-rgb: 255, 255, 255;
   --background-start-rgb: 18, 18, 18;

@@ -94,7 +94,7 @@ export default function ChatList({ onChatSelect, selectedChatId }) {
 
 
   return (
-    <div className="w-1/3 rounded-tl-xl ml-12 bg-[#2C2C2C] border-r border-neutral-800 flex flex-col pl-1.5">
+    <div className="w-1/3 lg:w-1/4 xl:w-1/5 rounded-tl-xl ml-12 bg-[#2C2C2C] border-r border-neutral-800 flex flex-col pl-1.5">
       {/* Header */}
       <div className="pl-4 pt-4 pr-2 mb-4">
         <div className="flex items-center justify-between mb-4">
