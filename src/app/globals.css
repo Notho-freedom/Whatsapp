@@ -7,27 +7,35 @@
   --background-start-rgb: 18, 18, 18;
   --background-end-rgb: 18, 18, 18;
   
-  /* Couleurs WhatsApp Desktop exactes */
+  /* Couleurs WhatsApp Desktop exactes d'après les captures */
   --wa-background-default: #0a0e11;
-  --wa-background-deeper: #0b141a;
+  --wa-background-deeper: #0b0e11;
   --wa-panel-header: #202c33;
   --wa-drawer-background: #111b21;
   --wa-background-stripe: #005242;
   --wa-chat-bubble-self: #005c4b;
-  --wa-chat-bubble-others: #202c33;
+  --wa-chat-bubble-others: #1f2c33;
   --wa-primary-strong: #e9edef;
   --wa-primary: #d1d7db;
   --wa-secondary: #8696a0;
   --wa-secondary-lighter: #667781;
-  --wa-system-message: #182229;
+  --wa-system-message-bg: #1f2c34;
+  --wa-system-message-text: #8696a0;
   --wa-highlight: #00a884;
   --wa-icon: #aebac1;
-  --wa-bubble-meta: #ffffff99;
+  --wa-bubble-meta: #8b9a9f;
   --wa-outgoing-background: #005c4b;
-  --wa-incoming-background: #202c33;
-  --wa-conversation-panel-background: #0b141a;
+  --wa-incoming-background: #1f2c33;
+  --wa-conversation-panel-background: #0a1014;
   --wa-border-default: #222d34;
   --wa-border-strong: #2a373f;
+  --wa-message-hover: rgba(255, 255, 255, 0.06);
+  --wa-reaction-bg: #1f2c34;
+  --wa-reaction-hover: #2a373f;
+  --wa-audio-waveform: #3b4a54;
+  --wa-audio-played: #00a884;
+  --wa-context-menu-bg: #233138;
+  --wa-context-menu-hover: #182229;
 }
 
 /* Empêcher les défilements globaux */
@@ -103,11 +111,12 @@ body {
 /* WhatsApp message bubble styles */
 @layer components {
   .wa-message-bubble {
-    @apply relative px-[9px] pt-[6px] pb-[8px] rounded-lg shadow-sm;
+    @apply relative px-[9px] pt-[6px] pb-[8px] rounded-[7.5px] shadow-sm;
     max-width: 65%;
     word-wrap: break-word;
     line-height: 19px;
     font-size: 14.2px;
+    min-width: 60px;
   }
   
   .wa-message-bubble-self {
@@ -126,13 +135,16 @@ body {
     white-space: pre-wrap;
     margin: 0;
     padding: 0;
+    word-break: break-word;
   }
   
   .wa-message-meta {
-    @apply flex items-center justify-end gap-1 mt-[3px] -mb-[5px] float-right ml-[4px];
+    @apply inline-flex items-center gap-[3px] -mb-[5px] float-right pl-[4px] relative;
     font-size: 11px;
     color: var(--wa-bubble-meta);
     height: 15px;
+    bottom: -2px;
+    right: 0;
   }
   
   .wa-message-time {
@@ -147,28 +159,28 @@ body {
   }
   
   .wa-system-message {
-    @apply text-center py-[5px] px-[12px] mx-auto rounded-md;
-    background-color: var(--wa-system-message);
-    color: var(--wa-secondary);
+    @apply text-center py-[5px] px-[12px] mx-auto rounded-[7.5px];
+    background-color: var(--wa-system-message-bg);
+    color: var(--wa-system-message-text);
     font-size: 12.5px;
     max-width: 85%;
     box-shadow: 0 1px 0.5px rgba(0, 0, 0, 0.13);
   }
   
   .wa-date-divider {
-    @apply flex items-center justify-center my-[12px];
+    @apply flex items-center justify-center my-[16px];
   }
   
   .wa-date-divider-text {
-    @apply px-[12px] py-[5px] rounded-md;
-    background-color: var(--wa-system-message);
-    color: var(--wa-secondary);
+    @apply px-[12px] py-[5px] rounded-[7.5px];
+    background-color: var(--wa-system-message-bg);
+    color: var(--wa-system-message-text);
     font-size: 12.5px;
     box-shadow: 0 1px 0.5px rgba(0, 0, 0, 0.13);
   }
   
   .wa-message-container {
-    @apply relative mb-[12px];
+    @apply relative;
   }
   
   .wa-message-tail {
@@ -182,12 +194,12 @@ body {
   
   .wa-message-tail-others {
     @apply -left-[8px] scale-x-[-1];
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 13' width='8' height='13'%3E%3Cpath opacity='.13' d='M5.188 1H0v11.193l6.467-8.625C7.526 2.156 6.958 1 5.188 1z'/%3E%3Cpath fill='%23202c33' d='M5.188 0H0v11.193l6.467-8.625C7.526 1.156 6.958 0 5.188 0z'/%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 13' width='8' height='13'%3E%3Cpath opacity='.13' d='M5.188 1H0v11.193l6.467-8.625C7.526 2.156 6.958 1 5.188 1z'/%3E%3Cpath fill='%231f2c33' d='M5.188 0H0v11.193l6.467-8.625C7.526 1.156 6.958 0 5.188 0z'/%3E%3C/svg%3E");
   }
   
   .wa-chat-background {
     background-color: var(--wa-conversation-panel-background);
-    background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgBAMAAAAQtmoLAAAAFVBMVEUAAAARFRkRFRkRFRkRFRkRFRkRFRl+8cx7AAAABnRSTlMApZnxTgCCjTOAAAABP0lEQVRo3u3XMUoDQRiGYTfBYq1gNYKFhZVgIdjmBCJewMrKwtOEQE4gwpzAG4iVlYjvsO7g7s4/szP/ZBfyPQe877DDt7PZAQAAAAAAAAAgO+Uxr4zP6rWMNt5lNTkpF2M2qhdGa09rYzW+oR7XaONBRhuPMtq4F35faOPGaHhSa+Oooqa0Mb5L6rSxXkppY5TR2tilatXGuKyosTE+S+q0sZnSxjijjW36zNgM13pza3SVaWPcVNTYNKyky0bD3rj2Xvubt4Y+1PUWaG3cb2ljPCTirbFbtYaNR0kbtxna2KwFNq4lbaw3tLGZCmysO23c51yMu9DGYidmZDPQ2NgJNPafvzUeOm2Mq5z/MG+B1sZ5oLHxEahtfHba2G1pY/zpTGNjL5QyBgAAAAAAAADAP/kBepVOwCEfXfQAAAAASUVORK5CYII=");
+    background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgBAMAAAAQtmoLAAAAFVBMVEUAAAAQFBgQFBgQFBgQFBgQFBgQFBhOpVyuAAAABnRSTlMApZj0UACFtsL0AAABP0lEQVRo3u3XMUoDQRiGYTfBYq1gNYKFhZVgIdjmBCJewMrKwtOEQE4gwpzAG4iVlYjvsO7g7s4/szP/ZBfyPQe877DDt7PZAQAAAAAAAAAgO+Uxr4zP6rWMNt5lNTkpF2M2qhdGa09rYzW+oR7XaONBRhuPMtq4F35faOPGaHhSa+Oooqa0Mb5L6rSxXkppY5TR2tilatXGuKyosTE+S+q0sZnSxjijjW36zNgM13pza3SVaWPcVNTYNKyky0bD3rj2Xvubt4Y+1PUWaG3cb2ljPCTirbFbtYaNR0kbtxna2KwFNq4lbaw3tLGZCmysO23c51yMu9DGYidmZDPQ2NgJNPafvzUeOm2Mq5z/MG+B1sZ5oLHxEahtfHba2G1pY/zpTGNjL5QyBgAAAAAAAADAP/kBepVOwCEfXfQAAAAASUVORK5CYII=");
     background-attachment: fixed;
     background-repeat: repeat;
     opacity: 0.06;

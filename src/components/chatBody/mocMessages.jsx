@@ -1,224 +1,209 @@
 const mocMessages = [
-  // Message système de chiffrement
+  // Date divider
   {
-    id: 'sys1',
+    id: 'date1',
     type: 'system',
-    systemType: 'encryption',
-    text: 'Messages and calls are end-to-end encrypted. No one outside of this chat, not even WhatsApp, can read or listen to them.',
-    date: 'YESTERDAY',
+    systemType: 'date',
+    text: '8/11/2025',
+    date: '8/11/2025',
   },
 
-  // Texte simple
+  // Messages du premier jour
   {
     id: 'm1',
-    sender: 'Alice',
-    senderName: 'Alice',
-    text: 'Hey! How are you doing? 😊',
-    time: '2:02 PM',
-    date: 'YESTERDAY',
+    sender: 'other',
+    senderName: 'Contact',
+    text: 'Merci bb Bonne nuit',
+    time: '12:42 AM',
+    date: '8/11/2025',
   },
   {
     id: 'm2',
-    sender: 'me',
-    text: "I'm good, thanks! Just working on some React projects. How about you?",
-    time: '2:03 PM',
-    read: true,
-    date: 'YESTERDAY',
+    sender: 'other',
+    senderName: 'Contact',
+    text: 'Bisous 😘',
+    time: '12:42 AM',
+    date: '8/11/2025',
   },
-
-  // Message système d'appel manqué
-  {
-    id: 'sys2',
-    type: 'system',
-    systemType: 'call',
-    text: 'Missed voice call at 2:15 PM',
-    date: 'YESTERDAY',
-  },
-
-  // Reply texte
   {
     id: 'm3',
-    sender: 'Alice',
-    senderName: 'Alice',
-    text: 'Nice! What kind of project are you building?',
-    time: '2:04 PM',
-    date: 'YESTERDAY',
+    sender: 'me',
+    text: "Je t'aime fort.",
+    time: '12:41 AM',
+    read: true,
+    date: '8/11/2025',
   },
   {
     id: 'm4',
     sender: 'me',
-    text: "It's a WhatsApp clone with React and Tailwind CSS! Pretty exciting stuff 🚀",
-    time: '2:05 PM',
+    media: [
+      { type: 'image', url: 'https://picsum.photos/seed/heart/400/400' }
+    ],
+    time: '12:42 AM',
     read: true,
-    replyTo: {
-      sender: 'Alice',
-      senderName: 'Alice',
-      text: 'Nice! What kind of project are you building?',
-    },
-    date: 'YESTERDAY',
+    date: '8/11/2025',
   },
 
-  // Media unique (image)
+  // Appel manqué
+  {
+    id: 'call1',
+    type: 'system',
+    systemType: 'call',
+    callStatus: 'missed',
+    text: 'Missed voice call',
+    subtitle: 'Click to call back',
+    time: '11:04 AM',
+    date: '8/11/2025',
+  },
+
+  // Appel accepté
+  {
+    id: 'call2',
+    type: 'system',
+    systemType: 'call',
+    callStatus: 'incoming',
+    text: 'Voice call',
+    subtitle: 'Accepted on another device',
+    time: '11:05 AM',
+    date: '8/11/2025',
+  },
+
+  // Messages avec réactions
   {
     id: 'm5',
-    sender: 'Alice',
-    senderName: 'Alice',
-    media: [
-      { type: 'image', url: 'https://picsum.photos/seed/whatsapp1/400/300' }
-    ],
-    text: 'Check out this cool design I found!',
-    time: '2:06 PM',
-    date: 'YESTERDAY',
+    sender: 'other',
+    senderName: 'Contact',
+    text: 'Comment vas-tu ?',
+    time: '10:32 AM',
+    reactions: ['👍', '❤️', '😊', '😮', '😢', '🙏'],
+    date: '8/11/2025',
   },
 
-  // Multiple messages from same sender
+  // Réponse
   {
     id: 'm6',
     sender: 'me',
-    text: 'Wow, that looks amazing!',
-    time: '2:07 PM',
+    text: 'Je suis à la maison',
+    time: '7:09 PM',
     read: true,
-    date: 'YESTERDAY',
+    date: '8/11/2025',
   },
   {
     id: 'm7',
-    sender: 'me',
-    text: 'I might use something similar for my project',
-    time: '2:07 PM',
-    read: true,
-    date: 'YESTERDAY',
+    sender: 'other',
+    senderName: 'Contact',
+    text: 'Bonsoir bb',
+    time: '1:26 PM',
+    date: '8/11/2025',
   },
 
-  // Date divider - TODAY
+  // Nouveau jour
+  {
+    id: 'date2',
+    type: 'system',
+    systemType: 'date',
+    text: '7/30/2025',
+    date: '7/30/2025',
+  },
+
+  // Message audio avec réponse
   {
     id: 'm8',
-    sender: 'Alice',
-    senderName: 'Alice',
-    text: 'Good morning! How did the project go?',
-    time: '9:30 AM',
-    date: 'TODAY',
+    sender: 'other',
+    senderName: 'Wilfrid',
+    media: [
+      { type: 'audio', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', duration: '0:56' }
+    ],
+    time: '9:19 PM',
+    date: '7/30/2025',
   },
-
-  // Media groupé (multiple images)
   {
     id: 'm9',
-    sender: 'me',
-    media: [
-      { type: 'image', url: 'https://picsum.photos/seed/whatsapp2/300/200' },
-      { type: 'image', url: 'https://picsum.photos/seed/whatsapp3/300/200' },
-      { type: 'image', url: 'https://picsum.photos/seed/whatsapp4/300/200' },
-    ],
-    text: 'Here are some screenshots of the progress!',
-    time: '9:35 AM',
-    read: true,
-    date: 'TODAY',
+    sender: 'other',
+    senderName: 'Wilfrid',
+    text: 'Yo',
+    time: '9:19 PM',
+    date: '7/30/2025',
   },
-
-  // Video message
   {
     id: 'm10',
-    sender: 'Alice',
-    senderName: 'Alice',
-    media: [
-      { type: 'video', url: 'https://www.w3schools.com/html/mov_bbb.mp4' }
-    ],
-    time: '9:40 AM',
-    date: 'TODAY',
+    sender: 'other',
+    senderName: 'Wilfrid',
+    text: 'Je suis entrain de back ,',
+    time: '9:19 PM',
+    date: '7/30/2025',
   },
-
-  // Audio message
   {
     id: 'm11',
-    sender: 'me',
-    media: [
-      { type: 'audio', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', duration: '0:15' }
-    ],
-    time: '9:42 AM',
-    read: false,
-    date: 'TODAY',
+    sender: 'other',
+    senderName: 'Wilfrid',
+    text: 'Je te fais signe au piol',
+    time: '9:19 PM',
+    date: '7/30/2025',
   },
 
-  // Preview link
+  // Réponse avec reply
   {
     id: 'm12',
-    sender: 'Alice',
-    senderName: 'Alice',
-    text: 'You should check out this article about React best practices:',
-    link: {
-      url: 'https://react.dev/',
-      title: 'React – The library for web and native user interfaces',
-      description: 'React is the library for web and native user interfaces. Build user interfaces out of individual pieces called components written in JavaScript.',
-      image: 'https://react.dev/images/og-home.png',
-      domain: 'react.dev',
+    sender: 'me',
+    text: "D'accord",
+    time: '9:20 PM',
+    read: true,
+    replyTo: {
+      sender: 'Wilfrid',
+      senderName: 'Wilfrid',
+      text: 'Je te fais signe au piol'
     },
-    time: '10:15 AM',
-    date: 'TODAY',
+    date: '7/30/2025',
   },
 
-  // Reply to media
+  // Messages avec images multiples
   {
     id: 'm13',
-    sender: 'me',
-    text: 'Thanks for sharing! This is really helpful 🙏',
-    time: '10:20 AM',
-    read: false,
-    replyTo: {
-      sender: 'Alice',
-      senderName: 'Alice',
-      media: [
-        { type: 'image', url: 'https://picsum.photos/seed/reply/150/150' }
-      ]
-    },
-    date: 'TODAY',
+    sender: 'other',
+    senderName: 'Wilfrid',
+    text: 'salut les gars',
+    time: '10:12 AM',
+    date: '7/30/2025',
   },
-
-  // Reactions
   {
     id: 'm14',
-    sender: 'Alice',
-    senderName: 'Alice',
-    text: "I'm glad you found it useful! Keep up the great work! 💪",
-    time: '10:25 AM',
-    reactions: ['👍', '❤️', '🔥'],
-    date: 'TODAY',
+    sender: 'other',
+    senderName: 'Wilfrid',
+    media: [
+      { type: 'image', url: 'https://picsum.photos/seed/screen1/300/200' },
+      { type: 'image', url: 'https://picsum.photos/seed/screen2/300/200' },
+      { type: 'image', url: 'https://picsum.photos/seed/screen3/300/200' },
+      { type: 'image', url: 'https://picsum.photos/seed/screen4/300/200' },
+      { type: 'image', url: 'https://picsum.photos/seed/screen5/300/200' },
+      { type: 'image', url: 'https://picsum.photos/seed/screen6/300/200' },
+    ],
+    time: '10:15 AM',
+    date: '7/30/2025',
   },
-
-  // Forwarded message
   {
     id: 'm15',
+    sender: 'other',
+    senderName: 'Wilfrid',
+    text: "hier quand je suis back j'ai seulement dormi, j'etais fatiguer",
+    time: '10:15 AM',
+    date: '7/30/2025',
+  },
+
+  // Messages récents
+  {
+    id: 'm16',
     sender: 'me',
-    text: 'BTW, I forwarded your design tips to my team',
-    time: '10:30 AM',
-    forwarded: true,
+    text: "Yo",
+    time: '9:17 PM',
     read: false,
     date: 'TODAY',
   },
-
-  // Starred / important
-  {
-    id: 'm16',
-    sender: 'Alice',
-    senderName: 'Alice',
-    text: 'Remember: Meeting tomorrow at 3 PM! 📅',
-    time: '10:35 AM',
-    starred: true,
-    date: 'TODAY',
-  },
-
-  // Long message to test wrapping
   {
     id: 'm17',
     sender: 'me',
-    text: `Perfect! I'll be there. 
-
-By the way, I've been thinking about implementing some new features like:
-• Voice messages with waveform visualization
-• Better image compression
-• Improved message search
-• Dark mode improvements
-
-What do you think?`,
-    time: '10:40 AM',
+    text: "Quelqu'un est disponible ?",
+    time: '9:17 PM',
     read: false,
     date: 'TODAY',
   },

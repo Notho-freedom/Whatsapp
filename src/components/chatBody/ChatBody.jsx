@@ -53,14 +53,20 @@ export default function ChatBody({ selectedChat, messages = {} }) {
       {/* Messages container */}
       <div 
         ref={scrollRef}
-        className="flex-1 overflow-y-auto overflow-x-hidden px-[9%] py-[20px] relative z-10"
-        style={{ scrollbarGutter: 'stable' }}
+        className="flex-1 overflow-y-auto overflow-x-hidden relative z-10"
+        style={{ 
+          paddingLeft: 'max(9%, 60px)',
+          paddingRight: 'max(9%, 60px)',
+          paddingTop: '20px',
+          paddingBottom: '20px',
+          scrollbarGutter: 'stable' 
+        }}
       >
         <div className="flex flex-col">
           {groupedMessages.map((group, groupIdx) => (
             <div key={groupIdx}>
               {/* Date divider */}
-              {group.date && (
+              {group.date && group.date !== 'TODAY' && (
                 <div className="wa-date-divider">
                   <span className="wa-date-divider-text">{group.date}</span>
                 </div>
@@ -68,8 +74,12 @@ export default function ChatBody({ selectedChat, messages = {} }) {
               
               {/* Messages */}
               {group.messages.map((msg, idx) => {
-                const isFirstInGroup = idx === 0 || group.messages[idx - 1]?.sender !== msg.sender;
-                const isLastInGroup = idx === group.messages.length - 1 || group.messages[idx + 1]?.sender !== msg.sender;
+                const isFirstInGroup = idx === 0 || 
+                  group.messages[idx - 1]?.sender !== msg.sender ||
+                  group.messages[idx - 1]?.type === 'system';
+                const isLastInGroup = idx === group.messages.length - 1 || 
+                  group.messages[idx + 1]?.sender !== msg.sender ||
+                  group.messages[idx + 1]?.type === 'system';
                 
                 if (msg.type === 'system') {
                   return <SystemMessage key={msg.id} message={msg} />;
