@@ -124,10 +124,11 @@ export function AppProvider({ children }) {
           throw new Error('Erreur lors du chargement des utilisateurs');
         }
 
+      
         // Transformer les données pour correspondre à notre structure
         const transformedUsers = data.results.map((user, index) => ({
           id: user.login.uuid,
-          name: `${user.name.first} ${user.name.last}`,
+          name: Math.random() > 0.95 ? '+'+user.phone : `${user.name.first} ${user.name.last}`,
           avatar: user.picture.medium,
           status: getRandomStatus(),
           lastMessage: getRandomLastMessage(),
@@ -136,12 +137,12 @@ export function AppProvider({ children }) {
           online: Math.random() > 0.7,
           phone: user.phone,
           email: user.email,
-          isMuted: Math.random() > 0.5,
-          isPinned: Math.random() > 0.5,
+          isMuted: Math.random() > 0.7,
+          isPinned: Math.random() > 0.9,
           isArchived: Math.random() > 0.5,
           isStarred: Math.random() > 0.5,
           isUnread: Math.random() > 0.5,
-          isTyping: Math.random() > 0.5,
+          isTyping: Math.random() > 0.8,
           isRead: Math.random() > 0.5,
         }));
 
@@ -165,34 +166,34 @@ export function AppProvider({ children }) {
     fetchUsers();
   }, []);
 
-  // Fonctions utilitaires
-  function getRandomStatus() {
-    const statuses = [
-      'En ligne',
-      'Dernière connexion il y a 2 minutes',
-      'Dernière connexion il y a 1 heure',
-      'Dernière connexion aujourd\'hui à 14:30',
-      'Dernière connexion hier à 18:45',
-      'Dernière connexion il y a 2 jours'
-    ];
-    return statuses[Math.floor(Math.random() * statuses.length)];
-  }
+// Utility functions
+function getRandomStatus() {
+  const statuses = [
+    'Online',
+    'Last seen 2 minutes ago',
+    'Last seen 1 hour ago',
+    'Last seen today at 2:30 PM',
+    'Last seen yesterday at 6:45 PM',
+    'Last seen 2 days ago'
+  ];
+  return statuses[Math.floor(Math.random() * statuses.length)];
+}
 
-  function getRandomLastMessage() {
-    const messages = [
-      'reacted to your status',
-      '~Beguel: Hey, how are you? long message to test the chat list',
-      'Merci beaucoup !',
-      'Parfait, on se voit demain',
-      'long message to test the chat list',
-      'Je suis d\'accord',
-      'C\'est noté',
-      'Super idée !',
-      'À bientôt !',
-      'Pas de problème'
-    ];
-    return messages[Math.floor(Math.random() * messages.length)];
-  }
+function getRandomLastMessage() {
+  const messages = [
+    'reacted to your status',
+    '~Beguel: Hey, how are you? long message to test the chat list',
+    'Thank you very much!',
+    'Perfect, see you tomorrow',
+    'long message to test the chat list',
+    'I agree',
+    'Noted',
+    'Great idea!',
+    'See you soon!',
+    'No problem'
+  ];
+  return messages[Math.floor(Math.random() * messages.length)];
+}
 
   function getRandomTime() {
     const now = new Date();

@@ -39,23 +39,25 @@ export default function ChatFooter({ selectedChat, onSendMessage }) {
   }
 
   return (
-    <footer className="flex items-center gap-3 px-4 py-2 border-t border-whatsapp-dark-950 bg-whatsapp-dark-800">
+    <footer className="flex items-center gap-5 px-4 py-2 border-t border-whatsapp-dark-950 bg-whatsapp-dark-800">
       <button 
         aria-label="Emoji picker" 
         className="text-gray-400 hover:text-white transition-colors"
       >
-        <Smile size={20} />
+        <Smile size={19} />
       </button>
       <button 
         aria-label="Attach file" 
         className="text-gray-400 hover:text-white transition-colors"
       >
-        <Paperclip size={20} />
+        <Paperclip size={19} className="rotate-180" />
       </button>
       <form onSubmit={handleSubmit} className="flex-1">
-        <input 
+        <textarea
+          rows={1}
+          autoFocus
           aria-label="Type a message"
-          className="w-full bg-transparent rounded-full py-2 px-4 text-sm text-white placeholder-gray-400 focus:outline-none font-segoe"
+          className="w-full bg-transparent rounded-full py-2 px-4 text-sm text-white placeholder-gray-400 focus:outline-none font-segoe resize-none"
           placeholder="Type a message"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
@@ -66,12 +68,12 @@ export default function ChatFooter({ selectedChat, onSendMessage }) {
         aria-label={message.trim() ? "Send message" : "Voice message"}
         className={`transition-colors ${
           message.trim() 
-            ? 'text-whatsapp-primary hover:text-white' 
+            ? 'hover:text-white' 
             : 'text-gray-400 hover:text-white'
         }`}
         onClick={message.trim() ? handleSubmit : () => {}}
       >
-        {message.trim() ? <Send size={20} /> : <Mic size={20} />}
+        {message.trim() ? <Send size={19} className="rotate-[45deg]" /> : <Mic size={19} />}
       </button>
     </footer>
   );
