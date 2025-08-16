@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, MoreVertical, Filter } from 'lucide-react';
+import { Search, MoreVertical, Filter, Minus, LucideEdit } from 'lucide-react';
 import { useAppContext } from '@/context/AppContext';
 
 export default function ChatList({ onChatSelect, selectedChatId }) {
@@ -21,25 +21,37 @@ export default function ChatList({ onChatSelect, selectedChatId }) {
   };
 
   return (
-    <div className="w-1/3 bg-[#2C2C2C] border-r border-neutral-800 flex flex-col rounded-l-md">
+    <div className="w-1/3 rounded-l-xl ml-12 bg-[#2C2C2C] border-r border-neutral-800 flex flex-col pl-1.5">
       {/* Header */}
-      <div className="p-4 border-b border-gray-700">
+      <div className="pl-4 pt-4 pr-2">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-white font-semibold text-lg font-segoe">
+          <h2 className="text-white font-semibold text-xl font-segoe">
             Chats
           </h2>
           <div className="flex items-center gap-2">
             <button
-              aria-label="Filter"
-              className="p-2 rounded-md hover:bg-whatsapp-dark-700 transition-colors"
-            >
-              <Filter size={16} className="text-gray-400" />
-            </button>
-            <button
               aria-label="More options"
               className="p-2 rounded-md hover:bg-whatsapp-dark-700 transition-colors"
             >
-              <MoreVertical size={16} className="text-gray-400" />
+              <LucideEdit size={16} className="text-gray-200" />
+            </button>
+            <button
+              aria-label="Filter"
+              className="p-2 rounded-md hover:bg-whatsapp-dark-700 transition-colors"
+            >
+              <svg 
+                width="18" 
+                height="18" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                className="text-gray-200"
+              >
+                {/* Trois traits descendants */}
+                <path d="M4 7H20" strokeWidth="2" strokeLinecap="round"/>
+                <path d="M6 12H18" strokeWidth="2" strokeLinecap="round"/>
+                <path d="M8 17H16" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
             </button>
           </div>
         </div>

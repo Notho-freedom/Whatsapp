@@ -1,6 +1,7 @@
-import { Menu, MessageCircle, Phone, CircleCheckBigIcon, Star, Archive, Settings } from 'lucide-react';
+import { Menu, MessageCircle, Phone, CircleCheckBigIcon, Star, Archive, Settings, CircleDivide, CircleDashedIcon, LucideMessageCircleDashed, CircleSlashed, CircleDashed, CircleDotDashed, CircleGauge, CircleOffIcon, MessageCircleReply, MessageCircleMore, MessageCircleWarningIcon, LucideMessageCircle, CirclePlayIcon } from 'lucide-react';
 import { useAppContext } from '@/context/AppContext';
 import { useState } from 'react';
+import { FaWhatsapp } from 'react-icons/fa';
 
 export default function Sidebar() {
   const { activeTab, setActiveTab } = useAppContext();
@@ -11,39 +12,39 @@ export default function Sidebar() {
 
   const isActive = (tab) => activeTab === tab;
   const ActiveIndicator = () => (
-    <div className="h-4 w-[3px] bg-[#1DAA61] rounded-lg absolute z-10" />
+    <div className="h-4 w-[3px] bg-[#1DAA61] rounded-lg absolute left-0" />
   );
 
-  const SidebarButton = ({ tab, icon: Icon, label, badgeCount, badgeColor = 'bg-[#1DAA61]' }) => (
-    <div className="flex items-center">
+  const SidebarButton = ({ tab, icon: Icon, label, badgeCount, badgeColor = 'bg-[#1DAA61]', status = false }) => (
+    <div className="flex items-center relative">
       {isActive(tab) && <ActiveIndicator />}
       <button
         aria-label={label}
         className={`relative flex items-center ${
           isSidebarOpen 
-            ? `w-full px-2 py-1.5 rounded` 
-            : 'w-[38px] h-9 justify-center rounded-[4px] hover:bg-whatsapp-dark-700'
-        } transition-colors  ${isActive(tab) ? 'bg-whatsapp-dark-700/50' : 'hover:bg-whatsapp-dark-700/50'}`}
+            ? 'w-full px-2 py-1.5 rounded hover:bg-whatsapp-dark-700/50' 
+            : 'w-[38px] justify-center rounded-[4px]'
+        } transition-colors h-9 ${isActive(tab) ? 'bg-whatsapp-dark-700/50' : ' hover:bg-whatsapp-dark-700/50'}`}
         onClick={() => handleTabClick(tab)}
       >
-        <Icon size={17} className="text-white" />
+        <Icon size={17} className={`${isSidebarOpen ? 'ml-1' : ''} text-white`} />
         {isSidebarOpen ? (
           <>
             <span className="ml-3 text-white text-sm">{label}</span>
             {badgeCount && (
-              <span className={`ml-auto ${badgeColor} text-[70%] font-semibold rounded-full w-4 h-4 flex items-center justify-center ${
+              <span className={`ml-auto ${badgeColor} text-[70%] font-semibold rounded-full ${status ? 'w-1.5 h-1.5' : 'w-4 h-4'} flex items-center justify-center ${
                 badgeColor === 'bg-[#FF99A4]' ? 'text-black' : 'text-whatsapp-dark-950'
               }`}>
-                {badgeCount}
+                {!status && badgeCount}
               </span>
             )}
           </>
         ) : (
           badgeCount && (
-            <span className={`absolute top-[2px] right-[2px] ${badgeColor} text-[70%] p-2 font-semibold rounded-full w-3.5 h-3.5 flex items-center justify-center ${
+            <span className={`absolute ${badgeColor} text-[70%] font-semibold rounded-full  ${status ? 'top-[8px] right-[4px] w-1.5 h-1.5' : ' top-[2px] right-[2px] w-3.5 h-3.5 p-2'} flex items-center justify-center ${
               badgeColor === 'bg-[#FF99A4]' ? 'text-black' : 'text-whatsapp-dark-950'
             }`}>
-              {badgeCount}
+              {!status && badgeCount}
             </span>
           )
         )}
@@ -52,52 +53,101 @@ export default function Sidebar() {
   );
 
   return (
-    <aside className={`flex flex-col ${isSidebarOpen ? ' bg-[#2C2C2C]/65 backdrop-blur-[30px] w-64 min-w-[256px] absolute z-40 h-full border-r border-neutral-700' : 'w-10 min-w-[50px] bg-[#202020]'} py-6 transition-all duration-100`}>
-      {/* Toggle button */}
-      <button
-        aria-label="Toggle sidebar"
-        onClick={toggleSidebar}
-        className={`flex items-center ${isSidebarOpen ? 'justify-start px-1 ml-1 w-auto' : 'justify-center self-center hover:bg-whatsapp-dark-700'} mb-4 transition-colors rounded-md w-7 h-7`}
-      >
-        <Menu size={30} className="text-white rounded-md justify-center p-1 self-center hover:bg-whatsapp-dark-700" />
-      </button>
-
-      {/* Top icons */}
-      <nav className={`flex flex-col ${isSidebarOpen ? 'px-2' : 'pl-[6px]'} space-y-1`}>
-        <SidebarButton tab="chats" icon={MessageCircle} label="Chats" badgeCount={2} />
-        <SidebarButton tab="calls" icon={Phone} label="Calls" badgeCount={1} badgeColor="bg-[#FF99A4]" />
-        <SidebarButton tab="status" icon={CircleCheckBigIcon} label="Status" />
-      </nav>
-
-      {/* Bottom icons */}
-      <nav className={`flex flex-col ${isSidebarOpen ? 'px-2 mb-2 mt-auto' : 'items-center mt-auto space-y-1'}`} >
-        <SidebarButton tab="star" icon={Star} label="Star" badgeCount={1} />
-        <SidebarButton tab="archive" icon={Archive} label="Archive" />
+    <>
+      {/* Version réduite toujours visible */}
+      <div className="fixed left-0 top-0 h-full w-8 min-w-[50px] bg-[#202020] z-30 flex flex-col">
         
-        {/* Divider */}
-        <div className={`${isSidebarOpen ? 'w-full' : 'w-[32px]'} border-t border-gray-700/100 my-1 justify-center`} />
-
-        <SidebarButton tab="settings" icon={Settings} label="Settings" />
-        
-        {/* Profile with custom avatar */}
-        <div className="flex items-center">
-          {isActive('profile') && <ActiveIndicator />}
+        <div className="py-6 flex flex-col flex-1 mt-7">
           <button
-            aria-label="Profile"
-            className={`relative flex items-center ${isSidebarOpen ? 'w-full px-2 py-1.5 rounded' : 'w-7 h-7 justify-center rounded-md'} hover:bg-whatsapp-dark-700 transition-colors ${
-              isActive('profile') ? 'bg-whatsapp-dark-700' : ''
-            }`}
-            onClick={() => handleTabClick('profile')}
+            aria-label="Toggle sidebar"
+            onClick={toggleSidebar}
+            className="flex items-center justify-center self-center mb-3 rounded-md w-10 h-10 hover:bg-whatsapp-dark-700 mx-auto"
           >
-            <div className="w-5 h-5 rounded-full bg-gray-400 flex items-center justify-center overflow-hidden">
-              <svg className="w-4 h-4 text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-              </svg>
-            </div>
-            {isSidebarOpen && <span className="ml-3 text-white text-sm">Profile</span>}
+            <Menu size={27} className="text-white p-1" />
           </button>
+          
+          {/* Icônes du haut */}
+          <nav className="flex flex-col px-1 space-y-1">
+            <SidebarButton tab="chats" icon={MessageCircle} label="Chats" badgeCount={2} />
+            <SidebarButton tab="calls" icon={Phone} label="Calls" badgeCount={1} badgeColor="bg-[#FF99A4]" />
+            <SidebarButton tab="status" icon={CirclePlayIcon} label="Status" status={true} badgeCount={1}/>
+          </nav>
+          
+          {/* Icônes du bas poussées vers le bas */}
+          <nav className="flex flex-col px-1 mt-auto space-y-[6.5px] -mb-4">
+            <SidebarButton tab="star" icon={Star} label="Star" />
+            <SidebarButton tab="archive" icon={Archive} label="Archive" badgeCount={1} />
+
+            <div className="w-[90%] self-center border-t border-neutral-700 my-1 px-0.5" />
+
+            <SidebarButton tab="settings" icon={Settings} label="Settings" />
+            <div className="flex items-center relative">
+                  {isActive('profile') && <ActiveIndicator />}
+                  <button
+                    aria-label="Profile"
+                    className="relative flex items-center w-full px-2 py-1.5 rounded hover:bg-whatsapp-dark-700/50"
+                    onClick={() => handleTabClick('profile')}
+                  >
+                    <div className="w-6 h-6 rounded-full bg-neutral-700/95 flex items-center justify-center overflow-hidden">
+                      <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  </button>
+            </div>
+          </nav>
         </div>
-      </nav>
-    </aside>
+      </div>
+
+      {/* Version étendue avec logo WhatsApp visible */}
+      {isSidebarOpen && (
+        <>
+          
+          {/* Panneau latéral */}
+          <div className="fixed rounded-r-lg left-0 top-0 h-full w-54 min-w-[235px] bg-[#2C2C2C]/80 backdrop-blur-[30px] z-50 border-r border-neutral-700 flex flex-col">
+            
+            <div className="py-6 flex flex-col flex-1 relative mt-7">
+              <button
+                aria-label="Toggle sidebar"
+                onClick={toggleSidebar}
+                className="flex items-center justify-start px-1 ml-1 mb-3 rounded-md w-10 h-10 hover:bg-whatsapp-dark-700/50">
+                <Menu size={27} className="text-white p-1" />
+              </button>
+
+              <nav className="flex flex-col px-1 space-y-1">
+                <SidebarButton tab="chats" icon={MessageCircle} label="Chats" badgeCount={2} />
+                <SidebarButton tab="calls" icon={Phone} label="Calls" badgeCount={1} badgeColor="bg-[#FF99A4]" />
+                <SidebarButton tab="status" icon={CircleCheckBigIcon} label="Status" status={true} badgeCount={1} />
+              </nav>
+
+              <nav className="flex flex-col px-1 mt-auto space-y-[6.5px] -mb-4">
+                <SidebarButton tab="star" icon={Star} label="Starred messages" />
+                <SidebarButton tab="archive" icon={Archive} label="Archived chats" badgeCount={1} />
+                
+                <div className="w-full border-t border-neutral-700 my-1 px-0.5" />
+
+                <SidebarButton tab="settings" icon={Settings} label="Settings" />
+                
+                <div className="flex items-center relative">
+                  {isActive('profile') && <ActiveIndicator />}
+                  <button
+                    aria-label="Profile"
+                    className="relative flex items-center w-full px-2 py-1.5 rounded hover:bg-whatsapp-dark-700/50"
+                    onClick={() => handleTabClick('profile')}
+                  >
+                    <div className="w-6 h-6 rounded-full bg-neutral-700/95 flex items-center justify-center overflow-hidden">
+                      <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                    <span className="ml-3 text-white text-sm">Profile</span>
+                  </button>
+                </div>
+              </nav>
+            </div>
+          </div>
+        </>
+      )}
+    </>
   );
 }
