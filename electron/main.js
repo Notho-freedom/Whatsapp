@@ -28,7 +28,9 @@ function createWindow() {
     icon: path.join(__dirname, '../public/favicon.ico'),
     titleBarStyle: 'default',
     show: false,
-    backgroundColor: '#121212'
+    backgroundColor: '#121212',
+    autoHideMenuBar: true,
+    frame: false,
   });
 
   // Charger l'application
@@ -44,6 +46,11 @@ function createWindow() {
     // En production, charger depuis les fichiers buildés
     mainWindow.loadFile(path.join(__dirname, '../out/index.html'));
   }
+  mainWindow.removeMenu();
+  mainWindow.setMenuBarVisibility(false);
+  mainWindow.setTitle('WhatsApp Clone');
+  mainWindow.setResizable(true);
+  mainWindow.setMovable(true);
 
   // Afficher la fenêtre quand elle est prête
   mainWindow.once('ready-to-show', () => {

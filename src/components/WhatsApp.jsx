@@ -68,12 +68,12 @@ export default function WhatsApp() {
   const currentMessages = selectedChat ? messages[selectedChat.id] || [] : [];
 
   return (
-    <div className="h-screen flex flex-col bg-whatsapp-dark-900 font-segoe">
+    <div className="h-screen w-screen flex flex-col bg-whatsapp-dark-900 font-segoe overflow-hidden rounded-md">
       {/* Titlebar */}
       <Titlebar />
 
       {/* Main Content */}
-      <div className="flex-1 flex">
+      <div className="flex-1 flex min-h-0">
         {/* Sidebar */}
         <Sidebar />
 

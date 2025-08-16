@@ -1,34 +1,40 @@
 import { Minus, Square, X } from 'lucide-react';
+import { FaWhatsapp } from 'react-icons/fa';
 
 export default function Titlebar() {
   return (
-    <header className="flex items-center justify-between bg-whatsapp-dark-900 px-3 h-10 text-xs text-white select-none">
-      <div className="flex items-center space-x-2 py-6">
-        <img 
-          alt="WhatsApp logo green circle with white phone icon" 
-          className="w-6 h-6" 
-          src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg"
-        />
-        <span className="font-normal font-segoe">
+    <header
+      className="flex items-center justify-between h-10 px-3 text-xs text-white select-none bg-[#202020]"
+      style={{ WebkitAppRegion: 'drag' }} // <- zone draggable par défaut
+    >
+      {/* Zone gauche : draggable */}
+      <div className="flex items-center px-0 py-6 space-x-3">
+        <FaWhatsapp className="w-6 h-6 text-green-500" />
+        <span className="tracking-wide text-white font-segoe">
           WhatsApp
         </span>
       </div>
-      <div className="flex items-center space-x-2 text-[10px] font-semibold">
-        <button 
-          aria-label="Minimize" 
-          className="w-4 h-4 flex items-center justify-center hover:bg-gray-600 rounded-sm transition-colors"
+
+      {/* Zone droite : pas draggable */}
+      <div
+        className="flex items-center space-x-2 text-[10px] font-semibold"
+        style={{ WebkitAppRegion: 'no-drag' }} // <- on exclut les boutons
+      >
+        <button
+          aria-label="Minimize"
+          className="flex items-center justify-center w-4 h-4 transition-colors rounded-sm hover:bg-gray-600"
         >
           <Minus size={12} />
         </button>
-        <button 
-          aria-label="Maximize" 
-          className="w-4 h-4 flex items-center justify-center hover:bg-gray-600 rounded-sm transition-colors"
+        <button
+          aria-label="Maximize"
+          className="flex items-center justify-center w-4 h-4 transition-colors rounded-sm hover:bg-gray-600"
         >
           <Square size={12} />
         </button>
-        <button 
-          aria-label="Close" 
-          className="w-4 h-4 flex items-center justify-center hover:bg-red-600 rounded-sm transition-colors"
+        <button
+          aria-label="Close"
+          className="flex items-center justify-center w-4 h-4 transition-colors rounded-sm hover:bg-red-600"
         >
           <X size={12} />
         </button>

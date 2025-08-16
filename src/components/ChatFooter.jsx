@@ -1,30 +1,19 @@
-'use client';
-
-import { useState, useEffect, useRef } from 'react';
-import { Send, Smile, Paperclip, Mic } from 'lucide-react';
+import { Smile, Paperclip, Mic, Send } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 export default function ChatFooter({ selectedChat, onSendMessage }) {
   const [message, setMessage] = useState('');
   const [isClient, setIsClient] = useState(false);
-  const textareaRef = useRef(null);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
-
-  if (!isClient) {
-    return null;
-  }
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (message.trim() && selectedChat) {
       onSendMessage(message);
       setMessage('');
-      // Focus sur le textarea après envoi
-      setTimeout(() => {
-        textareaRef.current?.focus();
-      }, 0);
     }
   };
 
@@ -35,82 +24,55 @@ export default function ChatFooter({ selectedChat, onSendMessage }) {
     }
   };
 
-  const handleTextareaChange = (e) => {
-    setMessage(e.target.value);
-    
-    // Auto-resize du textarea
-    const textarea = e.target;
-    textarea.style.height = 'auto';
-    textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
-  };
-
-  if (!selectedChat) {
+  if (!isClient) {
     return (
-      <div className="bg-whatsapp-dark-800 border-t border-gray-700 p-4">
-        <div className="text-center text-gray-400">
-          <p>Sélectionnez un chat pour commencer à discuter</p>
+      <footer className="flex items-center gap-3 px-4 py-2 border-t border-gray-700 bg-whatsapp-chat-header">
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-gray-400 text-sm">Chargement...</div>
         </div>
-      </div>
+      </footer>
     );
   }
 
+  if (!selectedChat) {
+    return null;
+  }
+
   return (
-    <div className="bg-whatsapp-dark-800 border-t border-gray-700 p-4">
-      <form onSubmit={handleSubmit} className="flex items-end gap-3">
-        {/* Bouton emoji */}
-        <button
-          type="button"
-          aria-label="Emoji"
-          className="p-2 rounded-full hover:bg-whatsapp-dark-700 transition-colors flex-shrink-0"
-        >
-          <Smile size={20} className="text-gray-400" />
-        </button>
-
-        {/* Bouton pièce jointe */}
-        <button
-          type="button"
-          aria-label="Pièce jointe"
-          className="p-2 rounded-full hover:bg-whatsapp-dark-700 transition-colors flex-shrink-0"
-        >
-          <Paperclip size={20} className="text-gray-400" />
-        </button>
-
-        {/* Zone de saisie */}
-        <div className="flex-1 relative">
-          <textarea
-            ref={textareaRef}
-            value={message}
-            onChange={handleTextareaChange}
-            onKeyPress={handleKeyPress}
-            placeholder="Tapez un message"
-            className="w-full bg-whatsapp-dark-700 text-white placeholder-gray-400 rounded-lg px-4 py-3 resize-none focus:outline-none focus:ring-2 focus:ring-whatsapp-primary min-h-[44px] max-h-[120px]"
-            rows={1}
-            style={{ 
-              fontFamily: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
-              lineHeight: '1.4'
-            }}
-          />
-        </div>
-
-        {/* Bouton d'envoi ou microphone */}
-        {message.trim() ? (
-          <button
-            type="submit"
-            aria-label="Envoyer"
-            className="p-2 rounded-full bg-whatsapp-primary hover:bg-whatsapp-primary-dark transition-colors flex-shrink-0"
-          >
-            <Send size={20} className="text-white" />
-          </button>
-        ) : (
-          <button
-            type="button"
-            aria-label="Microphone"
-            className="p-2 rounded-full hover:bg-whatsapp-dark-700 transition-colors flex-shrink-0"
-          >
-            <Mic size={20} className="text-gray-400" />
-          </button>
-        )}
+    <footer className="flex items-center gap-3 px-4 py-2 border-t border-whatsapp-dark-950 bg-whatsapp-dark-800">
+      <button 
+        aria-label="Emoji picker" 
+        className="text-gray-400 hover:text-white transition-colors"
+      >
+        <Smile size={20} />
+      </button>
+      <button 
+        aria-label="Attach file" 
+        className="text-gray-400 hover:text-white transition-colors"
+      >
+        <Paperclip size={20} />
+      </button>
+      <form onSubmit={handleSubmit} className="flex-1">
+        <input 
+          aria-label="Type a message"
+          className="w-full bg-transparent rounded-full py-2 px-4 text-sm text-white placeholder-gray-400 focus:outline-none font-segoe"
+          placeholder="Type a message"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          onKeyPress={handleKeyPress}
+        />
       </form>
-    </div>
+      <button 
+        aria-label={message.trim() ? "Send message" : "Voice message"}
+        className={`transition-colors ${
+          message.trim() 
+            ? 'text-whatsapp-primary hover:text-white' 
+            : 'text-gray-400 hover:text-white'
+        }`}
+        onClick={message.trim() ? handleSubmit : () => {}}
+      >
+        {message.trim() ? <Send size={20} /> : <Mic size={20} />}
+      </button>
+    </footer>
   );
 }
