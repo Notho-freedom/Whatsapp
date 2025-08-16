@@ -115,7 +115,7 @@ export default function Sidebar() {
               <button
                 aria-label="Toggle sidebar"
                 onClick={toggleSidebar}
-                className="flex items-center justify-start px-1 ml-1 mb-3 rounded-md w-10 h-10 hover:bg-whatsapp-dark-700/50">
+                className="flex items-center justify-center px-1 mb-3 rounded-md w-10 h-10 hover:bg-whatsapp-dark-700/50 ml-1">
                 <Menu size={27} className="text-white p-1" />
               </button>
 
