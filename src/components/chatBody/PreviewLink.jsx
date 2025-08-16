@@ -1,22 +1,39 @@
 export default function PreviewLink({ link }) {
-    if (!link) return null;
-  
-    return (
-      <a
-        href={link.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mt-1 block border rounded-md overflow-hidden hover:bg-gray-800 transition"
-      >
-        <div className="flex items-start">
-          {link.image && <img src={link.image} className="w-20 h-20 object-cover" />}
-          <div className="p-2">
-            <div className="text-xs text-gray-400">{link.domain}</div>
-            <div className="font-semibold">{link.title}</div>
-            {link.description && <div className="text-xs text-gray-300 truncate">{link.description}</div>}
+  if (!link) return null;
+
+  return (
+    <a
+      href={link.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block mt-[6px] mb-[3px] -mx-[9px] overflow-hidden cursor-pointer group"
+      style={{ borderRadius: '7.5px' }}
+    >
+      <div className="bg-[#0b141a] border border-[#ffffff0d]">
+        {link.image && (
+          <div className="relative h-[150px] overflow-hidden bg-[#0b141a]">
+            <img 
+              src={link.image} 
+              className="w-full h-full object-cover"
+              alt={link.title}
+            />
           </div>
+        )}
+        <div className="p-[10px]">
+          <div className="text-[11px] text-[#8696a0] mb-[2px] uppercase tracking-wider">
+            {link.domain}
+          </div>
+          <div className="text-[14px] text-[#e9edef] font-medium mb-[4px] line-clamp-2">
+            {link.title}
+          </div>
+          {link.description && (
+            <div className="text-[13px] text-[#8696a0] line-clamp-2">
+              {link.description}
+            </div>
+          )}
         </div>
-      </a>
-    );
-  }
+      </div>
+    </a>
+  );
+}
   
