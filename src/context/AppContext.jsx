@@ -182,7 +182,7 @@ function getRandomStatus() {
 function getRandomLastMessage() {
   const messages = [
     { 
-      text: 'reacted to your status', 
+      text: 'reacted 👍 to your status', 
       type: 'reaction',
       icon: '👍' // Thumbs up emoji as reaction example
     },
@@ -249,6 +249,31 @@ function getRandomLastMessage() {
   ];
   return messages[Math.floor(Math.random() * messages.length)];
 }
+
+// Détection automatique du type de message
+const getMessageType = (message) => {
+  if (!message) return 'text';
+
+  if (message.type) return message.type;
+
+  const text = message.text || '';
+
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+
+  if (message.file) {
+    const ext = message.file.name.split('.').pop().toLowerCase();
+    if (['mp3', 'wav', 'ogg'].includes(ext)) return 'audio';
+    if (['mp4', 'mov', 'webm'].includes(ext)) return 'video';
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return 'image';
+    return 'document';
+  }
+
+  if (text.match(urlRegex)) return 'link';
+  if (message.sticker) return 'sticker';
+  if (message.location) return 'location';
+
+  return 'text';
+};
 
   function getRandomTime() {
     const now = new Date();

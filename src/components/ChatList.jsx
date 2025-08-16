@@ -47,6 +47,7 @@ export default function ChatList({ onChatSelect, selectedChatId }) {
   // Priorité : pinned > non pinned
   const sortedUsers = [...filteredUsers].sort((a, b) => b.isPinned - a.isPinned);
 
+
   const MessageIcon = ({ type }) => {
     const iconProps = { size: 14, className: "text-gray-400 mr-1" };
     
@@ -70,6 +71,25 @@ export default function ChatList({ onChatSelect, selectedChatId }) {
       default:
         return null;
     }
+  };
+
+  const renderLastMessage = (chat) => {
+    if (chat.isTyping) {
+      return <span className="text-[#1DAA61] truncate w-[100%]">{chat.name} is typing...</span>;
+    }
+    
+    return (
+      <>
+        <MessageIcon type={chat.lastMessage.type} />
+        <span className="truncate">
+          {chat.lastMessage.type === 'voice' && `Voice message (${chat.lastMessage.duration || '0:23'})`}
+          {chat.lastMessage.type === 'video' && `Video (${chat.lastMessage.duration || '1:45'})`}
+          {chat.lastMessage.type === 'audio' && `Audio (${chat.lastMessage.duration || '3:12'})`}
+          {chat.lastMessage.type === 'document' && `${chat.lastMessage.text} • ${chat.lastMessage.size || '2.4 MB'}`}
+          {!['voice', 'video', 'audio', 'document'].includes(chat.lastMessage.type) && chat.lastMessage.text}
+        </span>
+      </>
+    );
   };
 
 
@@ -158,16 +178,11 @@ export default function ChatList({ onChatSelect, selectedChatId }) {
                   </div>
                   <div className="flex items-center mt-1">
                   {/* Texte (occupe tout l'espace restant) */}
-                  <p className={`flex items-center flex-1 text-sm truncate text-gray-300`}>
-                    {chat.isTyping ? (
-                      <span className="text-[#1DAA61]">{chat.name} is typing...</span>
-                    ) : (
-                      <>
-                        <MessageIcon type={chat.lastMessage.type} />
-                        <span>{chat.lastMessage.text}</span>
-                      </>
-                    )}
-                  </p>
+                  <div className="flex items-center flex-1 min-w-0">
+                      <p className="text-sm text-gray-300 truncate flex items-center">
+                        {renderLastMessage(chat)}
+                      </p>
+                    </div>
 
 
                   {/* Icônes + badge alignés à droite */}
