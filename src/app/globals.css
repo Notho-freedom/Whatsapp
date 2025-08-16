@@ -6,6 +6,28 @@
   --foreground-rgb: 255, 255, 255;
   --background-start-rgb: 18, 18, 18;
   --background-end-rgb: 18, 18, 18;
+  
+  /* Couleurs WhatsApp Desktop exactes */
+  --wa-background-default: #0a0e11;
+  --wa-background-deeper: #0b141a;
+  --wa-panel-header: #202c33;
+  --wa-drawer-background: #111b21;
+  --wa-background-stripe: #005242;
+  --wa-chat-bubble-self: #005c4b;
+  --wa-chat-bubble-others: #202c33;
+  --wa-primary-strong: #e9edef;
+  --wa-primary: #d1d7db;
+  --wa-secondary: #8696a0;
+  --wa-secondary-lighter: #667781;
+  --wa-system-message: #182229;
+  --wa-highlight: #00a884;
+  --wa-icon: #aebac1;
+  --wa-bubble-meta: #ffffff99;
+  --wa-outgoing-background: #005c4b;
+  --wa-incoming-background: #202c33;
+  --wa-conversation-panel-background: #0b141a;
+  --wa-border-default: #222d34;
+  --wa-border-strong: #2a373f;
 }
 
 /* Empêcher les défilements globaux */
@@ -37,9 +59,8 @@ body {
 
 /* Scrollbar styles */
 ::-webkit-scrollbar {
-  width: 2px;
-  height: 2px;
-  transition: width 0.3s ease;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -47,19 +68,18 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background-color: #9F9F9F;
-  border-radius: 3px;
+  background-color: rgba(255, 255, 255, 0.16);
+  border-radius: 20px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background-color: #B3B3B3;
+  background-color: rgba(255, 255, 255, 0.24);
 }
 
 /* Firefox scrollbar */
 * {
   scrollbar-width: thin;
-  
-  scrollbar-color: #9F9F9F transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
 }
 
 .chat-list{
@@ -80,8 +100,149 @@ body {
   }
 }
 
-
-
+/* WhatsApp message bubble styles */
+@layer components {
+  .wa-message-bubble {
+    @apply relative px-[9px] pt-[6px] pb-[8px] rounded-lg shadow-sm;
+    max-width: 65%;
+    word-wrap: break-word;
+    line-height: 19px;
+    font-size: 14.2px;
+  }
+  
+  .wa-message-bubble-self {
+    background-color: var(--wa-chat-bubble-self);
+    border-top-right-radius: 0;
+    margin-left: auto;
+  }
+  
+  .wa-message-bubble-others {
+    background-color: var(--wa-chat-bubble-others);
+    border-top-left-radius: 0;
+  }
+  
+  .wa-message-text {
+    color: var(--wa-primary-strong);
+    white-space: pre-wrap;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .wa-message-meta {
+    @apply flex items-center justify-end gap-1 mt-[3px] -mb-[5px] float-right ml-[4px];
+    font-size: 11px;
+    color: var(--wa-bubble-meta);
+    height: 15px;
+  }
+  
+  .wa-message-time {
+    @apply inline-block;
+    line-height: 15px;
+  }
+  
+  .wa-message-status {
+    @apply inline-flex items-center;
+    width: 16px;
+    height: 11px;
+  }
+  
+  .wa-system-message {
+    @apply text-center py-[5px] px-[12px] mx-auto rounded-md;
+    background-color: var(--wa-system-message);
+    color: var(--wa-secondary);
+    font-size: 12.5px;
+    max-width: 85%;
+    box-shadow: 0 1px 0.5px rgba(0, 0, 0, 0.13);
+  }
+  
+  .wa-date-divider {
+    @apply flex items-center justify-center my-[12px];
+  }
+  
+  .wa-date-divider-text {
+    @apply px-[12px] py-[5px] rounded-md;
+    background-color: var(--wa-system-message);
+    color: var(--wa-secondary);
+    font-size: 12.5px;
+    box-shadow: 0 1px 0.5px rgba(0, 0, 0, 0.13);
+  }
+  
+  .wa-message-container {
+    @apply relative mb-[12px];
+  }
+  
+  .wa-message-tail {
+    @apply absolute top-0 w-[8px] h-[13px];
+  }
+  
+  .wa-message-tail-self {
+    @apply -right-[8px];
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 13' width='8' height='13'%3E%3Cpath opacity='.13' d='M5.188 1H0v11.193l6.467-8.625C7.526 2.156 6.958 1 5.188 1z'/%3E%3Cpath fill='%23005c4b' d='M5.188 0H0v11.193l6.467-8.625C7.526 1.156 6.958 0 5.188 0z'/%3E%3C/svg%3E");
+  }
+  
+  .wa-message-tail-others {
+    @apply -left-[8px] scale-x-[-1];
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 13' width='8' height='13'%3E%3Cpath opacity='.13' d='M5.188 1H0v11.193l6.467-8.625C7.526 2.156 6.958 1 5.188 1z'/%3E%3Cpath fill='%23202c33' d='M5.188 0H0v11.193l6.467-8.625C7.526 1.156 6.958 0 5.188 0z'/%3E%3C/svg%3E");
+  }
+  
+  .wa-chat-background {
+    background-color: var(--wa-conversation-panel-background);
+    background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgBAMAAAAQtmoLAAAAFVBMVEUAAAARFRkRFRkRFRkRFRkRFRkRFRl+8cx7AAAABnRSTlMApZnxTgCCjTOAAAABP0lEQVRo3u3XMUoDQRiGYTfBYq1gNYKFhZVgIdjmBCJewMrKwtOEQE4gwpzAG4iVlYjvsO7g7s4/szP/ZBfyPQe877DDt7PZAQAAAAAAAAAgO+Uxr4zP6rWMNt5lNTkpF2M2qhdGa09rYzW+oR7XaONBRhuPMtq4F35faOPGaHhSa+Oooqa0Mb5L6rSxXkppY5TR2tilatXGuKyosTE+S+q0sZnSxjijjW36zNgM13pza3SVaWPcVNTYNKyky0bD3rj2Xvubt4Y+1PUWaG3cb2ljPCTirbFbtYaNR0kbtxna2KwFNq4lbaw3tLGZCmysO23c51yMu9DGYidmZDPQ2NgJNPafvzUeOm2Mq5z/MG+B1sZ5oLHxEahtfHba2G1pY/zpTGNjL5QyBgAAAAAAAADAP/kBepVOwCEfXfQAAAAASUVORK5CYII=");
+    background-attachment: fixed;
+    background-repeat: repeat;
+    opacity: 0.06;
+  }
+  
+  .wa-reply-bar {
+    @apply relative pl-[12px];
+  }
+  
+  .wa-reply-bar::before {
+    content: '';
+    @apply absolute left-0 top-0 bottom-0 w-[3px] rounded-sm;
+    background-color: var(--wa-highlight);
+  }
+  
+  .wa-message-bubble img,
+  .wa-message-bubble video {
+    @apply select-none;
+  }
+  
+  .wa-message-select-check {
+    @apply absolute -left-[30px] top-1/2 -translate-y-1/2 w-[18px] h-[18px] rounded-full border-2 border-[#8696a0] bg-transparent;
+  }
+  
+  /* Animations */
+  @keyframes message-in {
+    from {
+      opacity: 0;
+      transform: scale(0.8) translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+  
+  .wa-message-container {
+    animation: message-in 0.3s ease-out;
+  }
+  
+  /* Selection styles */
+  .wa-message-text ::selection {
+    background-color: var(--wa-highlight);
+    color: white;
+  }
+  
+  /* Link styles in messages */
+  .wa-message-text a {
+    @apply text-[#53bdeb] underline cursor-pointer;
+  }
+  
+  .wa-message-text a:hover {
+    @apply text-[#7cc8ed];
+  }
+}
 
 /* Remove default focus outline and add custom one */
 *:focus {
