@@ -2,23 +2,7 @@ import { Video, Phone, Search } from 'lucide-react';
 
 export default function ChatHeader({ selectedChat }) {
   if (!selectedChat) {
-    return (
-      <header className="flex items-center justify-between px-4 py-3 bg-whatsapp-dark-800 w-full border-b border-gray-700">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-whatsapp-dark-700 flex items-center justify-center">
-            <span className="text-gray-400">💬</span>
-          </div>
-          <div>
-            <p className="font-semibold text-white text-sm font-segoe">
-              Sélectionnez un chat
-            </p>
-            <p className="text-xs text-gray-400">
-              Commencez une conversation
-            </p>
-          </div>
-        </div>
-      </header>
-    );
+    return null;
   }
 
   return (

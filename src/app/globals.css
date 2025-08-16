@@ -37,8 +37,8 @@ body {
 
 /* Scrollbar styles */
 ::-webkit-scrollbar {
-  width: 1px;
-  height: 1px;
+  width: 2px;
+  height: 2px;
   transition: width 0.3s ease;
 }
 
@@ -61,6 +61,35 @@ body {
   
   scrollbar-color: #9F9F9F transparent;
 }
+
+*{
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* Même sur desktop, ça active l'inertie */
+  scroll-behavior: smooth;
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+
+/* Active le momentum scrolling sur WebKit (Safari/Chrome) */
+.chat-list {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* Même sur desktop, ça active l'inertie */
+  scroll-behavior: smooth;
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* Pour tous les navigateurs */
+@supports (scroll-behavior: smooth) {
+  .chat-list {
+    scroll-behavior: smooth;
+  }
+}
+
+
 
 
 /* Remove default focus outline and add custom one */

@@ -135,7 +135,14 @@ export function AppProvider({ children }) {
           unreadCount: Math.floor(Math.random() * 5),
           online: Math.random() > 0.7,
           phone: user.phone,
-          email: user.email
+          email: user.email,
+          isMuted: Math.random() > 0.5,
+          isPinned: Math.random() > 0.5,
+          isArchived: Math.random() > 0.5,
+          isStarred: Math.random() > 0.5,
+          isUnread: Math.random() > 0.5,
+          isTyping: Math.random() > 0.5,
+          isRead: Math.random() > 0.5,
         }));
 
         actions.setUsers(transformedUsers);
@@ -173,11 +180,11 @@ export function AppProvider({ children }) {
 
   function getRandomLastMessage() {
     const messages = [
-      'Salut ! Comment ça va ?',
-      'Ok, à plus tard !',
+      'reacted to your status',
+      '~Beguel: Hey, how are you? long message to test the chat list',
       'Merci beaucoup !',
       'Parfait, on se voit demain',
-      'Tu as raison',
+      'long message to test the chat list',
       'Je suis d\'accord',
       'C\'est noté',
       'Super idée !',
@@ -194,7 +201,7 @@ export function AppProvider({ children }) {
       `${now.getHours() - 1}:${String(now.getMinutes()).padStart(2, '0')}`,
       `${now.getHours() - 2}:${String(now.getMinutes()).padStart(2, '0')}`,
       'Hier',
-      'Il y a 2 jours'
+      '~ 2 jours'
     ];
     return times[Math.floor(Math.random() * times.length)];
   }
