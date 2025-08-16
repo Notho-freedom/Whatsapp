@@ -2,10 +2,22 @@ import { FaLock, FaWhatsapp } from 'react-icons/fa';
 import MessageBubble from './MessageBubble';
 import SystemMessage from './SystemMessage';
 import mocMessages from './mocMessages';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export default function ChatBody({ selectedChat, messages = {} }) {
   const scrollRef = useRef(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -16,25 +28,25 @@ export default function ChatBody({ selectedChat, messages = {} }) {
   if (!selectedChat) {
     return (
       <section className="flex-1 flex flex-col" style={{ backgroundColor: 'var(--wa-conversation-panel-background)' }}>
-        <div className="flex-1 flex flex-col items-center justify-center">
+        <div className="flex-1 flex flex-col items-center justify-center px-4">
           <div className="text-center">
-            <div className="w-[320px] h-[188px] mx-auto mb-8 opacity-40">
+            <div className="w-[240px] h-[140px] sm:w-[320px] sm:h-[188px] mx-auto mb-6 sm:mb-8 opacity-40">
               <img src="/bgl.png" alt="WhatsApp" className="w-full h-full object-contain" />
             </div>
-            <h1 className="text-[32px] font-light text-[#e9edef] mb-2">
+            <h1 className="text-[24px] sm:text-[32px] font-light text-[#e9edef] mb-2">
               WhatsApp for Windows
             </h1>
-            <p className="text-[14px] text-[#8696a0] leading-[20px] max-w-[500px] mx-auto">
+            <p className="text-[12px] sm:text-[14px] text-[#8696a0] leading-[18px] sm:leading-[20px] max-w-[400px] sm:max-w-[500px] mx-auto">
               Send and receive messages without keeping your phone online.
             </p>
-            <p className="text-[14px] text-[#8696a0] leading-[20px] max-w-[500px] mx-auto">
+            <p className="text-[12px] sm:text-[14px] text-[#8696a0] leading-[18px] sm:leading-[20px] max-w-[400px] sm:max-w-[500px] mx-auto">
               Use WhatsApp on up to 4 linked devices and 1 phone at the same time.
             </p>
           </div>
         </div>
-        <div className="py-7 flex items-center justify-center gap-1">
-          <FaLock size={12} className="text-[#8696a0]" />
-          <p className="text-[12px] text-[#8696a0]">End-to-end encrypted</p>
+        <div className="py-5 sm:py-7 flex items-center justify-center gap-1">
+          <FaLock size={isMobile ? 10 : 12} className="text-[#8696a0]" />
+          <p className="text-[11px] sm:text-[12px] text-[#8696a0]">End-to-end encrypted</p>
         </div>
       </section>
     );
@@ -55,10 +67,10 @@ export default function ChatBody({ selectedChat, messages = {} }) {
         ref={scrollRef}
         className="flex-1 overflow-y-auto overflow-x-hidden relative z-10"
         style={{ 
-          paddingLeft: 'max(9%, 60px)',
-          paddingRight: 'max(9%, 60px)',
-          paddingTop: '20px',
-          paddingBottom: '20px',
+          paddingLeft: isMobile ? '12px' : 'max(9%, 60px)',
+          paddingRight: isMobile ? '12px' : 'max(9%, 60px)',
+          paddingTop: isMobile ? '12px' : '20px',
+          paddingBottom: isMobile ? '12px' : '20px',
           scrollbarGutter: 'stable' 
         }}
       >
@@ -91,6 +103,7 @@ export default function ChatBody({ selectedChat, messages = {} }) {
                     message={msg}
                     isFirstInGroup={isFirstInGroup}
                     isLastInGroup={isLastInGroup}
+                    isMobile={isMobile}
                   />
                 );
               })}
