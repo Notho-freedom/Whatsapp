@@ -2,28 +2,54 @@ import { FaLock, FaWhatsapp } from 'react-icons/fa';
 import MessageBubble from './MessageBubble';
 import SystemMessage from './SystemMessage';
 import mocMessages from './mocMessages';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback, memo } from 'react';
 
-export default function ChatBody({ selectedChat, messages = {} }) {
+const ChatBody = memo(function ChatBody({ selectedChat, messages = {} }) {
   const scrollRef = useRef(null);
   const [isMobile, setIsMobile] = useState(false);
+  const [autoScroll, setAutoScroll] = useState(true);
+
+  // Optimisation avec useCallback
+  const checkMobile = useCallback(() => {
+    setIsMobile(window.innerWidth < 768);
+  }, []);
 
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
     checkMobile();
     window.addEventListener('resize', checkMobile);
     
     return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+  }, [checkMobile]);
+
+  // Gestion du scroll automatique
+  const scrollToBottom = useCallback((smooth = true) => {
+    if (scrollRef.current && autoScroll) {
+      scrollRef.current.scrollTo({
+        top: scrollRef.current.scrollHeight,
+        behavior: smooth ? 'smooth' : 'auto'
+      });
+    }
+  }, [autoScroll]);
 
   useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [selectedChat, messages]);
+    // Scroll instantané au changement de chat
+    scrollToBottom(false);
+  }, [selectedChat, scrollToBottom]);
+
+  useEffect(() => {
+    // Scroll smooth pour les nouveaux messages
+    scrollToBottom(true);
+  }, [messages, scrollToBottom]);
+
+  // Détection du scroll manuel
+  const handleScroll = useCallback(() => {
+    if (!scrollRef.current) return;
+    
+    const { scrollTop, scrollHeight, clientHeight } = scrollRef.current;
+    const isAtBottom = scrollHeight - scrollTop - clientHeight < 100;
+    
+    setAutoScroll(isAtBottom);
+  }, []);
 
   if (!selectedChat) {
     return (
@@ -31,7 +57,12 @@ export default function ChatBody({ selectedChat, messages = {} }) {
         <div className="flex-1 flex flex-col items-center justify-center px-4">
           <div className="text-center">
             <div className="w-[240px] h-[140px] sm:w-[320px] sm:h-[188px] mx-auto mb-6 sm:mb-8 opacity-40">
-              <img src="/bgl.png" alt="WhatsApp" className="w-full h-full object-contain" />
+              <img 
+                src="/bgl.png" 
+                alt="WhatsApp Logo" 
+                className="w-full h-full object-contain"
+                loading="lazy"
+              />
             </div>
             <h1 className="text-[24px] sm:text-[32px] font-light text-[#e9edef] mb-2">
               WhatsApp for Windows
@@ -52,15 +83,21 @@ export default function ChatBody({ selectedChat, messages = {} }) {
     );
   }
 
-  const chatMessages = messages[selectedChat?.id] || mocMessages;
+  // Utiliser les messages mockés si pas de messages
+  const chatMessages = messages[selectedChat?.id] || mocMessages || [];
 
   // Grouper les messages par date
   const groupedMessages = groupMessagesByDate(chatMessages);
 
   return (
-    <section className="flex-1 flex flex-col relative overflow-hidden" style={{ backgroundImage: 'url(https://images5.alphacoders.com/133/thumb-1920-1339662.jpeg)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
+    <section 
+      className="flex-1 flex flex-col relative overflow-hidden" 
+      style={{ backgroundColor: 'var(--wa-conversation-panel-background)' }}
+      role="main"
+      aria-label="Chat messages"
+    >
       {/* Background pattern */}
-      <div className="absolute inset-0 wa-chat-background pointer-events-none" />
+      <div className="absolute inset-0 wa-chat-background pointer-events-none" aria-hidden="true" />
       
       {/* Messages container */}
       <div 
@@ -73,50 +110,80 @@ export default function ChatBody({ selectedChat, messages = {} }) {
           paddingBottom: isMobile ? '12px' : '20px',
           scrollbarGutter: 'stable' 
         }}
+        onScroll={handleScroll}
+        role="log"
+        aria-live="polite"
+        aria-label="Message list"
       >
         <div className="flex flex-col">
-          {groupedMessages.map((group, groupIdx) => (
-            <div key={groupIdx}>
-              {/* Date divider */}
-              {group.date && group.date !== 'TODAY' && (
-                <div className="wa-date-divider">
-                  <span className="wa-date-divider-text">{group.date}</span>
-                </div>
-              )}
-              
-              {/* Messages */}
-              {group.messages.map((msg, idx) => {
-                const isFirstInGroup = idx === 0 || 
-                  group.messages[idx - 1]?.sender !== msg.sender ||
-                  group.messages[idx - 1]?.type === 'system';
-                const isLastInGroup = idx === group.messages.length - 1 || 
-                  group.messages[idx + 1]?.sender !== msg.sender ||
-                  group.messages[idx + 1]?.type === 'system';
-                
-                if (msg.type === 'system') {
-                  return <SystemMessage key={msg.id} message={msg} />;
-                }
-                
-                return (
-                  <MessageBubble 
-                    key={msg.id} 
-                    message={msg}
-                    isFirstInGroup={isFirstInGroup}
-                    isLastInGroup={isLastInGroup}
-                    isMobile={isMobile}
-                  />
-                );
-              })}
+          {groupedMessages.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-[#8696a0] text-sm">No messages yet. Start a conversation!</p>
             </div>
-          ))}
+          ) : (
+            groupedMessages.map((group, groupIdx) => (
+              <div key={`group-${groupIdx}-${group.date}`}>
+                {/* Date divider */}
+                {group.date && group.date !== 'TODAY' && (
+                  <div className="wa-date-divider" role="separator">
+                    <span className="wa-date-divider-text">{group.date}</span>
+                  </div>
+                )}
+                
+                {/* Messages */}
+                {group.messages.map((msg, idx) => {
+                  const isFirstInGroup = idx === 0 || 
+                    group.messages[idx - 1]?.sender !== msg.sender ||
+                    group.messages[idx - 1]?.type === 'system';
+                  const isLastInGroup = idx === group.messages.length - 1 || 
+                    group.messages[idx + 1]?.sender !== msg.sender ||
+                    group.messages[idx + 1]?.type === 'system';
+                  
+                  if (msg.type === 'system') {
+                    return <SystemMessage key={msg.id} message={msg} />;
+                  }
+                  
+                  return (
+                    <MessageBubble 
+                      key={msg.id} 
+                      message={msg}
+                      isFirstInGroup={isFirstInGroup}
+                      isLastInGroup={isLastInGroup}
+                      isMobile={isMobile}
+                    />
+                  );
+                })}
+              </div>
+            ))
+          )}
         </div>
       </div>
+
+      {/* Scroll to bottom button */}
+      {!autoScroll && (
+        <button
+          className="absolute bottom-4 right-4 w-10 h-10 rounded-full bg-[#202c33] shadow-lg flex items-center justify-center hover:bg-[#2a373f] transition-colors"
+          onClick={() => {
+            setAutoScroll(true);
+            scrollToBottom(true);
+          }}
+          aria-label="Scroll to bottom"
+        >
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M10 13L6 9L7.4 7.6L10 10.2L12.6 7.6L14 9L10 13Z" fill="#8696a0"/>
+          </svg>
+        </button>
+      )}
     </section>
   );
-}
+});
 
 // Fonction pour grouper les messages par date
 function groupMessagesByDate(messages) {
+  if (!Array.isArray(messages) || messages.length === 0) {
+    return [];
+  }
+
   const groups = [];
   let currentGroup = null;
   let lastDate = null;
@@ -135,12 +202,16 @@ function groupMessagesByDate(messages) {
       lastDate = msgDate;
     }
     
-    currentGroup.messages.push(msg);
+    if (currentGroup) {
+      currentGroup.messages.push(msg);
+    }
   });
 
-  if (currentGroup) {
+  if (currentGroup && currentGroup.messages.length > 0) {
     groups.push(currentGroup);
   }
 
   return groups;
 }
+
+export default ChatBody;
