@@ -58,7 +58,7 @@ export default function ChatBody({ selectedChat, messages = {} }) {
   const groupedMessages = groupMessagesByDate(chatMessages);
 
   return (
-    <section className="flex-1 flex flex-col relative overflow-hidden" style={{ backgroundColor: 'var(--wa-conversation-panel-background)' }}>
+    <section className="flex-1 flex flex-col relative overflow-hidden" style={{ backgroundImage: 'url(https://images5.alphacoders.com/133/thumb-1920-1339662.jpeg)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
       {/* Background pattern */}
       <div className="absolute inset-0 wa-chat-background pointer-events-none" />
       
