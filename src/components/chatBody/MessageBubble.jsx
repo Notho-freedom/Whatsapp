@@ -3,86 +3,121 @@ import { MdOutlineCheckBox } from 'react-icons/md';
 import MediaGroup from './MediaGroup';
 import PreviewLink from './PreviewLink';
 import ReactionBar from './ReactionBar';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback, memo } from 'react';
 
-export default function MessageBubble({ message, isFirstInGroup, isLastInGroup, isMobile }) {
+const MessageBubble = memo(function MessageBubble({ message, isFirstInGroup, isLastInGroup, isMobile }) {
   const isMe = message.sender === 'me';
   const [showMenu, setShowMenu] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
   const menuRef = useRef(null);
   const messageRef = useRef(null);
+  const longPressTimer = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
+      if (menuRef.current && !menuRef.current.contains(event.target) && 
+          messageRef.current && !messageRef.current.contains(event.target)) {
+        setShowMenu(false);
+      }
+    };
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
         setShowMenu(false);
       }
     };
 
     if (showMenu) {
       document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleEscape);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
     };
   }, [showMenu]);
 
-  const handleContextMenu = (e) => {
+  const handleContextMenu = useCallback((e) => {
     e.preventDefault();
     if (isMobile) return; // Désactiver le menu contextuel sur mobile
     
-    const rect = messageRef.current.getBoundingClientRect();
     setMenuPosition({
       x: e.clientX,
       y: e.clientY
     });
     setShowMenu(true);
-  };
+  }, [isMobile]);
 
-  const handleChevronClick = (e) => {
+  const handleChevronClick = useCallback((e) => {
     e.stopPropagation();
-    const rect = messageRef.current.getBoundingClientRect();
+    const rect = messageRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    
     const menuWidth = 200;
     
     // Ajuster la position pour mobile
     if (isMobile) {
       setMenuPosition({
         x: Math.min(window.innerWidth - menuWidth - 10, Math.max(10, isMe ? rect.left - menuWidth : rect.right)),
-        y: rect.top
+        y: Math.min(window.innerHeight - 300, rect.top)
       });
     } else {
       setMenuPosition({
-        x: isMe ? rect.left - menuWidth : rect.right,
+        x: isMe ? Math.max(10, rect.left - menuWidth) : Math.min(window.innerWidth - menuWidth - 10, rect.right),
         y: rect.top
       });
     }
     setShowMenu(true);
-  };
+  }, [isMobile, isMe]);
 
-  const handleLongPress = () => {
+  const handleLongPressStart = useCallback(() => {
     if (!isMobile) return;
     
-    const rect = messageRef.current.getBoundingClientRect();
-    const menuWidth = 200;
-    
-    setMenuPosition({
-      x: Math.min(window.innerWidth - menuWidth - 10, Math.max(10, rect.left)),
-      y: rect.top - 50
-    });
-    setShowMenu(true);
-  };
+    longPressTimer.current = setTimeout(() => {
+      const rect = messageRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      
+      const menuWidth = 200;
+      
+      setMenuPosition({
+        x: Math.min(window.innerWidth - menuWidth - 10, Math.max(10, rect.left)),
+        y: Math.max(10, rect.top - 50)
+      });
+      setShowMenu(true);
+      
+      // Vibration feedback si disponible
+      if (navigator.vibrate) {
+        navigator.vibrate(50);
+      }
+    }, 500);
+  }, [isMobile]);
+
+  const handleLongPressEnd = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+      }
+    };
+  }, []);
 
   return (
     <>
       <div 
         className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-[2px] group`}
         ref={messageRef}
-        onTouchStart={isMobile ? () => {
-          const timer = setTimeout(handleLongPress, 500);
-          messageRef.current.addEventListener('touchend', () => clearTimeout(timer), { once: true });
-          messageRef.current.addEventListener('touchmove', () => clearTimeout(timer), { once: true });
-        } : undefined}
+        onTouchStart={handleLongPressStart}
+        onTouchEnd={handleLongPressEnd}
+        onTouchMove={handleLongPressEnd}
+        onTouchCancel={handleLongPressEnd}
       >
         <div className="relative flex items-start max-w-[65%] md:max-w-[65%]">
           {/* Message tail pour le premier message d'un groupe */}
@@ -99,6 +134,8 @@ export default function MessageBubble({ message, isFirstInGroup, isLastInGroup, 
               borderTopLeftRadius: !isMe && isFirstInGroup ? 0 : 7.5,
             }}
             onContextMenu={handleContextMenu}
+            role="article"
+            aria-label={`Message from ${isMe ? 'you' : message.senderName || 'contact'}`}
           >
             {/* Message forwarded label */}
             {message.forwarded && (
@@ -110,23 +147,26 @@ export default function MessageBubble({ message, isFirstInGroup, isLastInGroup, 
             {/* Reply */}
             {message.replyTo && (
               <div 
-                className="mb-[3px] p-[5px] sm:p-[6px] rounded-[7.5px] border-l-[4px] cursor-pointer"
+                className="mb-[3px] p-[5px] sm:p-[6px] rounded-[7.5px] border-l-[4px] cursor-pointer hover:opacity-80 transition-opacity"
                 style={{
                   backgroundColor: isMe ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.06)',
                   borderColor: isMe ? '#06cf9c' : '#8696a0'
                 }}
+                role="blockquote"
               >
                 <div className="text-[12px] sm:text-[13px] font-medium mb-[2px]" style={{ color: isMe ? '#06cf9c' : '#53bdeb' }}>
-                  {message.replyTo.sender === 'me' ? 'You' : message.replyTo.senderName}
+                  {message.replyTo.sender === 'me' ? 'You' : message.replyTo.senderName || 'Unknown'}
                 </div>
                 <div className="text-[#d1d7db] text-[13px] sm:text-[14px] line-clamp-3">
-                  {message.replyTo.text}
+                  {message.replyTo.text || (message.replyTo.media ? 'Media' : 'Message')}
                 </div>
               </div>
             )}
 
             {/* Media */}
-            {message.media && <MediaGroup media={message.media} isMe={isMe} isMobile={isMobile} />}
+            {message.media && message.media.length > 0 && (
+              <MediaGroup media={message.media} isMe={isMe} isMobile={isMobile} />
+            )}
 
             {/* Link preview */}
             {message.link && <PreviewLink link={message.link} />}
@@ -143,9 +183,9 @@ export default function MessageBubble({ message, isFirstInGroup, isLastInGroup, 
             {/* Message metadata (time + status) */}
             <div className="wa-message-meta">
               {message.edited && <span className="text-[10px] sm:text-[11px] mr-1">edited</span>}
-              <span className="wa-message-time">{message.time}</span>
+              <span className="wa-message-time">{message.time || 'now'}</span>
               {isMe && (
-                <span className="wa-message-status ml-1">
+                <span className="wa-message-status ml-1" aria-label={message.read ? 'Read' : 'Delivered'}>
                   {message.read ? (
                     <FaCheckDouble className="text-[#53bdeb]" style={{ width: isMobile ? '14px' : '16px', height: isMobile ? '10px' : '11px' }} />
                   ) : (
@@ -163,13 +203,14 @@ export default function MessageBubble({ message, isFirstInGroup, isLastInGroup, 
 
           {/* Options chevron on hover - Desktop only */}
           {!isMobile && (
-            <div 
+            <button 
               className={`absolute top-[4px] ${isMe ? '-left-[28px]' : '-right-[28px]'} 
-                opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer p-1`}
+                opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer p-1 rounded hover:bg-[#2a373f]`}
               onClick={handleChevronClick}
+              aria-label="Message options"
             >
               <FaAngleDown size={20} className="text-[#8696a0] hover:text-[#d1d7db]" />
-            </div>
+            </button>
           )}
         </div>
       </div>
@@ -183,29 +224,53 @@ export default function MessageBubble({ message, isFirstInGroup, isLastInGroup, 
             backgroundColor: 'var(--wa-context-menu-bg)',
             left: `${menuPosition.x}px`,
             top: `${menuPosition.y}px`,
-            border: '1px solid rgba(255, 255, 255, 0.08)'
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            maxHeight: '300px',
+            overflowY: 'auto'
           }}
+          role="menu"
+          aria-label="Message options menu"
         >
-          <button className={`w-full ${isMobile ? 'px-4 py-2' : 'px-6 py-2.5'} text-left text-[14px] text-[#d1d7db] hover:bg-[var(--wa-context-menu-hover)] flex items-center gap-3`}>
+          <button 
+            className={`w-full ${isMobile ? 'px-4 py-2' : 'px-6 py-2.5'} text-left text-[14px] text-[#d1d7db] hover:bg-[var(--wa-context-menu-hover)] flex items-center gap-3 transition-colors`}
+            role="menuitem"
+            onClick={() => setShowMenu(false)}
+          >
             <FaReply size={isMobile ? 14 : 16} className="text-[#8696a0]" />
             Reply
           </button>
-          <button className={`w-full ${isMobile ? 'px-4 py-2' : 'px-6 py-2.5'} text-left text-[14px] text-[#d1d7db] hover:bg-[var(--wa-context-menu-hover)] flex items-center gap-3`}>
+          <button 
+            className={`w-full ${isMobile ? 'px-4 py-2' : 'px-6 py-2.5'} text-left text-[14px] text-[#d1d7db] hover:bg-[var(--wa-context-menu-hover)] flex items-center gap-3 transition-colors`}
+            role="menuitem"
+            onClick={() => setShowMenu(false)}
+          >
             <FaStar size={isMobile ? 14 : 16} className="text-[#8696a0]" />
             Star
           </button>
-          <button className={`w-full ${isMobile ? 'px-4 py-2' : 'px-6 py-2.5'} text-left text-[14px] text-[#d1d7db] hover:bg-[var(--wa-context-menu-hover)] flex items-center gap-3`}>
+          <button 
+            className={`w-full ${isMobile ? 'px-4 py-2' : 'px-6 py-2.5'} text-left text-[14px] text-[#d1d7db] hover:bg-[var(--wa-context-menu-hover)] flex items-center gap-3 transition-colors`}
+            role="menuitem"
+            onClick={() => setShowMenu(false)}
+          >
             <FaThumbtack size={isMobile ? 14 : 16} className="text-[#8696a0]" />
             Pin
           </button>
           {isMe && (
-            <button className={`w-full ${isMobile ? 'px-4 py-2' : 'px-6 py-2.5'} text-left text-[14px] text-[#d1d7db] hover:bg-[var(--wa-context-menu-hover)] flex items-center gap-3`}>
+            <button 
+              className={`w-full ${isMobile ? 'px-4 py-2' : 'px-6 py-2.5'} text-left text-[14px] text-[#d1d7db] hover:bg-[var(--wa-context-menu-hover)] flex items-center gap-3 transition-colors`}
+              role="menuitem"
+              onClick={() => setShowMenu(false)}
+            >
               <FaTrash size={isMobile ? 14 : 16} className="text-[#8696a0]" />
               Delete for me
             </button>
           )}
-          <div className="border-t border-[rgba(255,255,255,0.08)] my-1" />
-          <button className={`w-full ${isMobile ? 'px-4 py-2' : 'px-6 py-2.5'} text-left text-[14px] text-[#d1d7db] hover:bg-[var(--wa-context-menu-hover)] flex items-center gap-3`}>
+          <div className="border-t border-[rgba(255,255,255,0.08)] my-1" role="separator" />
+          <button 
+            className={`w-full ${isMobile ? 'px-4 py-2' : 'px-6 py-2.5'} text-left text-[14px] text-[#d1d7db] hover:bg-[var(--wa-context-menu-hover)] flex items-center gap-3 transition-colors`}
+            role="menuitem"
+            onClick={() => setShowMenu(false)}
+          >
             <MdOutlineCheckBox size={isMobile ? 16 : 18} className="text-[#8696a0]" />
             Select
           </button>
@@ -213,4 +278,12 @@ export default function MessageBubble({ message, isFirstInGroup, isLastInGroup, 
       )}
     </>
   );
-}
+}, (prevProps, nextProps) => {
+  // Optimisation des re-renders
+  return prevProps.message.id === nextProps.message.id &&
+         prevProps.isFirstInGroup === nextProps.isFirstInGroup &&
+         prevProps.isLastInGroup === nextProps.isLastInGroup &&
+         prevProps.isMobile === nextProps.isMobile;
+});
+
+export default MessageBubble;
