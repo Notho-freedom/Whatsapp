@@ -60,7 +60,7 @@ export default function ChatBody({ selectedChat, messages = {} }) {
     <section
       className="flex-1 overflow-y-auto p-4"
       style={{
-        backgroundImage: 'url(/cloud.jpg)',
+        backgroundImage: 'url(https://images5.alphacoders.com/133/thumb-1920-1339662.jpeg)',
         backgroundSize: 'cover',
       }}
     >
