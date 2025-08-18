@@ -7,13 +7,14 @@ import ChatList from './ChatList';
 import ChatHeader from './ChatHeader';
 import ChatBody from './chatBody/ChatBody';
 import ChatFooter from './ChatFooter';
+import Splitter from './Splitter';
 import { useAppContext } from '@/context/AppContext';
 
 export default function WhatsApp() {
   const [isClient, setIsClient] = useState(false);
+  const [chatListWidth, setChatListWidth] = useState(300); // Largeur initiale pour 25%
   const { 
     selectedChat, 
-    messages, 
     sendMessage, 
     selectChat,
     loading,
@@ -22,6 +23,20 @@ export default function WhatsApp() {
 
   useEffect(() => {
     setIsClient(true);
+    
+    // Calculer la largeur initiale basée sur 25% de la largeur de l'écran
+    const calculateInitialWidth = () => {
+      const screenWidth = window.innerWidth;
+      const sidebarWidth = 48; // Largeur de la sidebar
+      const availableWidth = screenWidth - sidebarWidth;
+      const initialWidth = Math.max(200, Math.min(400, availableWidth * 0.25));
+      setChatListWidth(initialWidth);
+    };
+    
+    calculateInitialWidth();
+    window.addEventListener('resize', calculateInitialWidth);
+    
+    return () => window.removeEventListener('resize', calculateInitialWidth);
   }, []);
 
   if (!isClient) {
@@ -65,7 +80,9 @@ export default function WhatsApp() {
     }
   };
 
-  const currentMessages = selectedChat ? messages[selectedChat.id] || [] : [];
+  const handleSplitterResize = (newWidth) => {
+    setChatListWidth(newWidth);
+  };
 
   return (
     <div className="h-screen w-screen flex flex-col bg-[#202020] font-segoe overflow-hidden rounded-md">
@@ -77,19 +94,29 @@ export default function WhatsApp() {
         {/* Sidebar */}
         <Sidebar />
 
-        {/* Chat List */}
-        <ChatList
-          onChatSelect={handleChatSelect}
-          selectedChatId={selectedChat?.id}
+        {/* Chat List avec largeur fixe */}
+        <div 
+          className="ml-12 flex-shrink-0 bg-[#2C2C2C] border-r border-neutral-800 chat-list-container"
+          style={{ width: `${chatListWidth}px` }}
+        >
+          <ChatList
+            onChatSelect={handleChatSelect}
+            selectedChatId={selectedChat?.id}
+          />
+        </div>
+
+        {/* Splitter */}
+        <Splitter
+          onResize={handleSplitterResize}
+          minWidth={200}
+          maxWidth={400}
+          initialWidth={chatListWidth}
         />
 
-        {/* Chat Area */}
-        <div className="flex-1 flex flex-col">
+        {/* Chat Area - prend le reste de l'espace */}
+        <div className="flex-1 flex flex-col min-w-0">
           <ChatHeader selectedChat={selectedChat} />
-          <ChatBody
-            selectedChat={selectedChat}
-            messages={currentMessages}
-          />
+          <ChatBody selectedChat={selectedChat} />
           <ChatFooter
             selectedChat={selectedChat}
             onSendMessage={handleSendMessage}

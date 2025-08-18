@@ -1,47 +1,81 @@
+import { FaPlus } from 'react-icons/fa';
 import { useState } from 'react';
 
-export default function ReactionBar({ reactions = [] }) {
-  const [showAllReactions, setShowAllReactions] = useState(false);
+export default function ReactionBar({ 
+  reactions = [], 
+  isMobile = false, 
+  onAddReaction,
+  onRemoveReaction 
+}) {
+  const [showReactionPicker, setShowReactionPicker] = useState(false);
 
-  if (!reactions.length) return null;
+  if (!reactions.length && !onAddReaction) return null;
 
-  // Grouper les réactions par emoji
-  const groupedReactions = reactions.reduce((acc, reaction) => {
-    if (typeof reaction === 'string') {
-      acc[reaction] = (acc[reaction] || 0) + 1;
-    } else if (reaction.emoji) {
-      acc[reaction.emoji] = (acc[reaction.emoji] || 0) + 1;
+  const handleReactionClick = (reaction) => {
+    if (onRemoveReaction) {
+      onRemoveReaction(reaction);
     }
-    return acc;
-  }, {});
+  };
 
-  const reactionEntries = Object.entries(groupedReactions);
-  const displayReactions = showAllReactions ? reactionEntries : reactionEntries.slice(0, 3);
+  const handleAddReaction = () => {
+    if (onAddReaction) {
+      // Ajouter une réaction aléatoire pour la démo
+      const availableReactions = ['👍', '❤️', '😊', '😮', '😢', '🙏', '😂', '😍', '🤔', '👏'];
+      const randomReaction = availableReactions[Math.floor(Math.random() * availableReactions.length)];
+      onAddReaction(randomReaction);
+    }
+  };
 
   return (
-    <div className="flex items-center gap-0.5 sm:gap-1">
-      {/* Réactions visibles */}
-      {displayReactions.map(([emoji, count], index) => (
-        <div
-          key={index}
-          className="reaction-bubble rounded-full px-1.5 py-0.5 sm:px-2 sm:py-1 text-xs flex items-center gap-0.5 sm:gap-1 cursor-pointer hover:bg-gray-700 transition-colors"
-          title={`${emoji} ${count}`}
-        >
-          <span className="text-xs sm:text-sm">{emoji}</span>
-          {count > 1 && <span className="text-gray-300 text-xs">{count}</span>}
-        </div>
-      ))}
+    <>
+      <div 
+        className={`absolute ${isMobile ? '-bottom-[16px]' : '-bottom-[18px]'} right-[8px] flex items-center gap-[1px] px-[3px] py-[2px] rounded-full shadow-md z-10`}
+        style={{ 
+          backgroundColor: '#1f2c34',
+          border: '1px solid rgba(255, 255, 255, 0.12)',
+        }}
+      >
+        {reactions.slice(0, isMobile ? 4 : 6).map((reaction, idx) => (
+          <button
+            key={idx} 
+            className={`inline-block ${isMobile ? 'text-[12px] px-[2px]' : 'text-[13px] px-[3px]'} cursor-pointer hover:scale-125 transition-transform`}
+            onClick={() => handleReactionClick(reaction)}
+            aria-label={`Remove reaction ${reaction}`}
+          >
+            {reaction}
+          </button>
+        ))}
+        {onAddReaction && (
+          <button 
+            className={`inline-flex items-center justify-center ${isMobile ? 'w-[18px] h-[18px]' : 'w-[20px] h-[20px]'} rounded-full hover:bg-[#2a373f] transition-colors ml-[2px]`}
+            onClick={handleAddReaction}
+            aria-label="Add reaction"
+          >
+            <FaPlus size={isMobile ? 8 : 10} className="text-[#8696a0]" />
+          </button>
+        )}
+      </div>
 
-      {/* Indicateur de plus de réactions */}
-      {reactionEntries.length > 3 && (
-        <button
-          onClick={() => setShowAllReactions(!showAllReactions)}
-          className="reaction-bubble rounded-full px-1.5 py-0.5 sm:px-2 sm:py-1 text-xs text-gray-300 hover:bg-gray-700 transition-colors"
-        >
-          {showAllReactions ? '−' : `+${reactionEntries.length - 3}`}
-        </button>
+      {/* Reaction Picker (pour une implémentation future) */}
+      {showReactionPicker && (
+        <div className="absolute bottom-8 right-0 bg-[#233138] rounded-lg shadow-lg p-2 border border-[#2a373f]">
+          <div className="grid grid-cols-5 gap-1">
+            {['👍', '❤️', '😊', '😮', '😢', '🙏', '😂', '😍', '🤔', '👏'].map((emoji) => (
+              <button
+                key={emoji}
+                className="w-8 h-8 flex items-center justify-center hover:bg-[#2a373f] rounded transition-colors"
+                onClick={() => {
+                  onAddReaction?.(emoji);
+                  setShowReactionPicker(false);
+                }}
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
-    </div>
+    </>
   );
 }
   
