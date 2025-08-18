@@ -1,75 +1,39 @@
-import { FaExternalLinkAlt, FaGlobe } from 'react-icons/fa';
-
 export default function PreviewLink({ link }) {
   if (!link) return null;
 
-  const getDomainIcon = (domain) => {
-    if (domain.includes('youtube') || domain.includes('youtu.be')) return '🎥';
-    if (domain.includes('instagram')) return '📷';
-    if (domain.includes('facebook')) return '📘';
-    if (domain.includes('twitter') || domain.includes('x.com')) return '🐦';
-    if (domain.includes('linkedin')) return '💼';
-    if (domain.includes('github')) return '🐙';
-    return <FaGlobe className="w-2.5 h-2.5 sm:w-3 sm:h-3" />;
-  };
-
-  const truncateText = (text, maxLength = 60) => {
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + '...';
-  };
-
   return (
-    <div className="mt-1 link-preview link-preview-compact border border-gray-600 rounded-lg overflow-hidden hover:border-gray-500 transition-colors">
-      <a
-        href={link.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="block hover:bg-black/10 transition-colors"
-      >
-        {/* Image preview */}
+    <a
+      href={link.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block mt-[6px] mb-[3px] -mx-[9px] overflow-hidden cursor-pointer group"
+      style={{ borderRadius: '7.5px' }}
+    >
+      <div className="bg-[#0b141a] border border-[#ffffff0d]">
         {link.image && (
-          <div className="relative">
+          <div className="relative h-[150px] overflow-hidden bg-[#0b141a]">
             <img 
               src={link.image} 
+              className="w-full h-full object-cover"
               alt={link.title}
-              className="w-full h-20 sm:h-24 object-cover"
-              loading="lazy"
             />
-            <div className="absolute top-1 right-1 bg-black/70 text-white p-1 rounded">
-              <FaExternalLinkAlt className="w-2 h-2" />
-            </div>
           </div>
         )}
-
-        {/* Content */}
-        <div className="p-1.5 sm:p-2">
-          {/* Domain */}
-          <div className="flex items-center gap-1 text-xs text-gray-400 mb-1">
-            {getDomainIcon(link.domain)}
-            <span className="font-medium">{link.domain}</span>
+        <div className="p-[10px]">
+          <div className="text-[11px] text-[#8696a0] mb-[2px] uppercase tracking-wider">
+            {link.domain}
           </div>
-
-          {/* Title */}
-          {link.title && (
-            <div className="font-semibold text-white mb-1 line-clamp-2 text-sm">
-              {truncateText(link.title, 50)}
-            </div>
-          )}
-
-          {/* Description */}
+          <div className="text-[14px] text-[#e9edef] font-medium mb-[4px] line-clamp-2">
+            {link.title}
+          </div>
           {link.description && (
-            <div className="text-xs text-gray-300 mb-1 line-clamp-2">
-              {truncateText(link.description, 80)}
+            <div className="text-[13px] text-[#8696a0] line-clamp-2">
+              {link.description}
             </div>
           )}
-
-          {/* URL */}
-          <div className="text-xs text-blue-400 truncate">
-            {link.url}
-          </div>
         </div>
-      </a>
-    </div>
+      </div>
+    </a>
   );
 }
   

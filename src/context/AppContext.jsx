@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useReducer, useEffect } from 'react';
+import { createContext, useContext, useReducer, useEffect, useCallback, useMemo } from 'react';
 
 // Types d'actions
 const ACTIONS = {
@@ -8,12 +8,18 @@ const ACTIONS = {
   SET_USERS: 'SET_USERS',
   SET_SELECTED_CHAT: 'SET_SELECTED_CHAT',
   ADD_MESSAGE: 'ADD_MESSAGE',
+  UPDATE_MESSAGE: 'UPDATE_MESSAGE',
+  DELETE_MESSAGE: 'DELETE_MESSAGE',
   SET_MESSAGES: 'SET_MESSAGES',
   SET_ERROR: 'SET_ERROR',
   UPDATE_USER_STATUS: 'UPDATE_USER_STATUS',
+  UPDATE_LAST_MESSAGE: 'UPDATE_LAST_MESSAGE',
   SET_SEARCH_QUERY: 'SET_SEARCH_QUERY',
   TOGGLE_SIDEBAR: 'TOGGLE_SIDEBAR',
-  SET_ACTIVE_TAB: 'SET_ACTIVE_TAB'
+  SET_ACTIVE_TAB: 'SET_ACTIVE_TAB',
+  MARK_MESSAGES_READ: 'MARK_MESSAGES_READ',
+  ADD_REACTION: 'ADD_REACTION',
+  REMOVE_REACTION: 'REMOVE_REACTION'
 };
 
 // État initial
@@ -43,11 +49,41 @@ function appReducer(state, action) {
     case ACTIONS.ADD_MESSAGE:
       const { chatId, message } = action.payload;
       const existingMessages = state.messages[chatId] || [];
+      const newMessages = [...existingMessages, message];
+      
       return {
         ...state,
         messages: {
           ...state.messages,
-          [chatId]: [...existingMessages, message]
+          [chatId]: newMessages
+        }
+      };
+    
+    case ACTIONS.UPDATE_MESSAGE:
+      const { chatId: updateChatId, messageId, updates } = action.payload;
+      const messagesToUpdate = state.messages[updateChatId] || [];
+      const updatedMessages = messagesToUpdate.map(msg => 
+        msg.id === messageId ? { ...msg, ...updates } : msg
+      );
+      
+      return {
+        ...state,
+        messages: {
+          ...state.messages,
+          [updateChatId]: updatedMessages
+        }
+      };
+    
+    case ACTIONS.DELETE_MESSAGE:
+      const { chatId: deleteChatId, messageId: deleteMessageId } = action.payload;
+      const messagesToFilter = state.messages[deleteChatId] || [];
+      const filteredMessages = messagesToFilter.filter(msg => msg.id !== deleteMessageId);
+      
+      return {
+        ...state,
+        messages: {
+          ...state.messages,
+          [deleteChatId]: filteredMessages
         }
       };
     
@@ -66,6 +102,17 @@ function appReducer(state, action) {
         )
       };
     
+    case ACTIONS.UPDATE_LAST_MESSAGE:
+      const { chatId: lastMsgChatId, lastMessage } = action.payload;
+      return {
+        ...state,
+        users: state.users.map(user =>
+          user.id === lastMsgChatId 
+            ? { ...user, lastMessage, lastMessageTime: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) }
+            : user
+        )
+      };
+    
     case ACTIONS.SET_SEARCH_QUERY:
       return { ...state, searchQuery: action.payload };
     
@@ -74,6 +121,68 @@ function appReducer(state, action) {
     
     case ACTIONS.SET_ACTIVE_TAB:
       return { ...state, activeTab: action.payload };
+    
+    case ACTIONS.MARK_MESSAGES_READ:
+      const { chatId: readChatId } = action.payload;
+      const messagesToMark = state.messages[readChatId] || [];
+      const markedMessages = messagesToMark.map(msg => 
+        msg.sender === 'other' ? { ...msg, read: true } : msg
+      );
+      
+      return {
+        ...state,
+        messages: {
+          ...state.messages,
+          [readChatId]: markedMessages
+        },
+        users: state.users.map(user =>
+          user.id === readChatId ? { ...user, unreadCount: 0 } : user
+        )
+      };
+    
+    case ACTIONS.ADD_REACTION:
+      const { chatId: reactionChatId, messageId: reactionMessageId, reaction } = action.payload;
+      const messagesForReaction = state.messages[reactionChatId] || [];
+      const messagesWithReaction = messagesForReaction.map(msg => {
+        if (msg.id === reactionMessageId) {
+          const currentReactions = msg.reactions || [];
+          return {
+            ...msg,
+            reactions: [...currentReactions, reaction]
+          };
+        }
+        return msg;
+      });
+      
+      return {
+        ...state,
+        messages: {
+          ...state.messages,
+          [reactionChatId]: messagesWithReaction
+        }
+      };
+    
+    case ACTIONS.REMOVE_REACTION:
+      const { chatId: removeReactionChatId, messageId: removeReactionMessageId, reaction: reactionToRemove } = action.payload;
+      const messagesForRemoveReaction = state.messages[removeReactionChatId] || [];
+      const messagesWithoutReaction = messagesForRemoveReaction.map(msg => {
+        if (msg.id === removeReactionMessageId) {
+          const currentReactions = msg.reactions || [];
+          return {
+            ...msg,
+            reactions: currentReactions.filter(r => r !== reactionToRemove)
+          };
+        }
+        return msg;
+      });
+      
+      return {
+        ...state,
+        messages: {
+          ...state.messages,
+          [removeReactionChatId]: messagesWithoutReaction
+        }
+      };
     
     default:
       return state;
@@ -96,19 +205,253 @@ export function useAppContext() {
 export function AppProvider({ children }) {
   const [state, dispatch] = useReducer(appReducer, initialState);
 
-  // Actions
-  const actions = {
+  // Actions optimisées avec useCallback
+  const actions = useMemo(() => ({
     setLoading: (loading) => dispatch({ type: ACTIONS.SET_LOADING, payload: loading }),
     setUsers: (users) => dispatch({ type: ACTIONS.SET_USERS, payload: users }),
     setSelectedChat: (chat) => dispatch({ type: ACTIONS.SET_SELECTED_CHAT, payload: chat }),
     addMessage: (chatId, message) => dispatch({ type: ACTIONS.ADD_MESSAGE, payload: { chatId, message } }),
+    updateMessage: (chatId, messageId, updates) => dispatch({ type: ACTIONS.UPDATE_MESSAGE, payload: { chatId, messageId, updates } }),
+    deleteMessage: (chatId, messageId) => dispatch({ type: ACTIONS.DELETE_MESSAGE, payload: { chatId, messageId } }),
     setMessages: (messages) => dispatch({ type: ACTIONS.SET_MESSAGES, payload: messages }),
     setError: (error) => dispatch({ type: ACTIONS.SET_ERROR, payload: error }),
     updateUserStatus: (userId, status) => dispatch({ type: ACTIONS.UPDATE_USER_STATUS, payload: { userId, status } }),
+    updateLastMessage: (chatId, lastMessage) => dispatch({ type: ACTIONS.UPDATE_LAST_MESSAGE, payload: { chatId, lastMessage } }),
     setSearchQuery: (query) => dispatch({ type: ACTIONS.SET_SEARCH_QUERY, payload: query }),
     toggleSidebar: () => dispatch({ type: ACTIONS.TOGGLE_SIDEBAR }),
-    setActiveTab: (tab) => dispatch({ type: ACTIONS.SET_ACTIVE_TAB, payload: tab })
-  };
+    setActiveTab: (tab) => dispatch({ type: ACTIONS.SET_ACTIVE_TAB, payload: tab }),
+    markMessagesRead: (chatId) => dispatch({ type: ACTIONS.MARK_MESSAGES_READ, payload: { chatId } }),
+    addReaction: (chatId, messageId, reaction) => dispatch({ type: ACTIONS.ADD_REACTION, payload: { chatId, messageId, reaction } }),
+    removeReaction: (chatId, messageId, reaction) => dispatch({ type: ACTIONS.REMOVE_REACTION, payload: { chatId, messageId, reaction } })
+  }), []);
+
+  // Fonctions utilitaires pour générer des messages
+  const generateMessageId = useCallback((chatId, type = 'msg') => {
+    return `${chatId}-${type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  }, []);
+
+  const createSystemMessage = useCallback((chatId, systemType, text, options = {}) => {
+    return {
+      id: generateMessageId(chatId, 'system'),
+      type: 'system',
+      systemType,
+      text,
+      time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+      date: new Date().toLocaleDateString('fr-FR'),
+      ...options
+    };
+  }, [generateMessageId]);
+
+  const createTextMessage = useCallback((chatId, sender, text, options = {}) => {
+    const isMe = sender === 'me';
+    return {
+      id: generateMessageId(chatId, 'text'),
+      sender,
+      senderName: options.senderName,
+      text,
+      time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+      date: new Date().toLocaleDateString('fr-FR'),
+      read: isMe ? false : undefined,
+      edited: options.edited || false,
+      forwarded: options.forwarded || false,
+      replyTo: options.replyTo,
+      reactions: options.reactions || [],
+      ...options
+    };
+  }, [generateMessageId]);
+
+  const createMediaMessage = useCallback((chatId, sender, media, options = {}) => {
+    const isMe = sender === 'me';
+    return {
+      id: generateMessageId(chatId, 'media'),
+      sender,
+      senderName: options.senderName,
+      media,
+      time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+      date: new Date().toLocaleDateString('fr-FR'),
+      read: isMe ? false : undefined,
+      reactions: options.reactions || [],
+      ...options
+    };
+  }, [generateMessageId]);
+
+  // Génération de messages initiaux intelligente
+  const generateInitialMessages = useCallback((user) => {
+    const messages = [];
+    const messageCount = Math.floor(Math.random() * 15) + 10;
+    const now = new Date();
+    
+    // Ajouter un message de date système
+    messages.push(createSystemMessage(user.id, 'date', now.toLocaleDateString('fr-FR')));
+    
+    for (let i = 0; i < messageCount; i++) {
+      const isFromUser = Math.random() > 0.5;
+      const timestamp = new Date(now.getTime() - Math.random() * 7 * 24 * 60 * 60 * 1000);
+      const messageType = Math.random();
+      
+      let message;
+      
+      if (messageType < 0.7) {
+        // Message texte
+        message = createTextMessage(
+          user.id,
+          isFromUser ? 'me' : 'other',
+          getRandomMessageText(),
+          {
+            senderName: isFromUser ? undefined : user.name,
+            time: timestamp.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+            date: timestamp.toLocaleDateString('fr-FR'),
+            read: isFromUser ? (Math.random() > 0.3) : undefined,
+            reactions: Math.random() > 0.8 ? getRandomReactions() : []
+          }
+        );
+      } else if (messageType < 0.85) {
+        // Message média
+        const mediaType = Math.random();
+        let media;
+        
+        if (mediaType < 0.4) {
+          media = [{ type: 'image', url: `https://picsum.photos/seed/${user.id}${i}/400/300` }];
+        } else if (mediaType < 0.7) {
+          media = [{ type: 'audio', duration: `${Math.floor(Math.random() * 3) + 1}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}` }];
+        } else {
+          media = [{ type: 'video', url: `https://picsum.photos/seed/video${user.id}${i}/400/300`, duration: `${Math.floor(Math.random() * 2) + 1}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}` }];
+        }
+        
+        message = createMediaMessage(
+          user.id,
+          isFromUser ? 'me' : 'other',
+          media,
+          {
+            senderName: isFromUser ? undefined : user.name,
+            time: timestamp.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+            date: timestamp.toLocaleDateString('fr-FR'),
+            read: isFromUser ? (Math.random() > 0.3) : undefined
+          }
+        );
+      } else {
+        // Message système (appel)
+        const callTypes = ['call', 'video'];
+        const callStatuses = ['missed', 'incoming', 'outgoing'];
+        
+        message = createSystemMessage(
+          user.id,
+          callTypes[Math.floor(Math.random() * callTypes.length)],
+          `${callStatuses[Math.floor(Math.random() * callStatuses.length)]} ${callTypes[Math.floor(Math.random() * callTypes.length)]} call`,
+          {
+            callStatus: callStatuses[Math.floor(Math.random() * callStatuses.length)],
+            time: timestamp.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+            date: timestamp.toLocaleDateString('fr-FR')
+          }
+        );
+      }
+      
+      messages.push(message);
+    }
+    
+    return messages.sort((a, b) => new Date(a.time) - new Date(b.time));
+  }, [createSystemMessage, createTextMessage, createMediaMessage]);
+
+  // Fonctions utilitaires
+  const getRandomMessageText = useCallback(() => {
+    const texts = [
+      'Salut ! Comment ça va ?',
+      'Ça va bien, merci ! Et toi ?',
+      'Tu fais quoi aujourd\'hui ?',
+      'Pas grand chose, je me repose',
+      'Ok, à plus tard !',
+      'Merci beaucoup !',
+      'Parfait, c\'est noté',
+      'Super ! Je suis content',
+      'D\'accord, pas de problème',
+      'À bientôt !',
+      'C\'est noté, merci',
+      'Je suis d\'accord avec toi',
+      'Tu as raison, c\'est logique',
+      'Exactement !',
+      'Bien sûr, évidemment',
+      'C\'est ça, parfaitement',
+      'Je vois ce que tu veux dire',
+      'C\'est une bonne idée',
+      'Je pense que tu as raison',
+      'C\'est intéressant'
+    ];
+    return texts[Math.floor(Math.random() * texts.length)];
+  }, []);
+
+  const getRandomReactions = useCallback(() => {
+    const reactions = ['👍', '❤️', '😊', '😮', '😢', '🙏', '😂', '😍', '🤔', '👏'];
+    const count = Math.floor(Math.random() * 4) + 1;
+    const selected = [];
+    
+    for (let i = 0; i < count; i++) {
+      const reaction = reactions[Math.floor(Math.random() * reactions.length)];
+      if (!selected.includes(reaction)) {
+        selected.push(reaction);
+      }
+    }
+    
+    return selected;
+  }, []);
+
+  // Méthodes métier optimisées
+  const sendMessage = useCallback(async (chatId, text) => {
+    if (!text.trim()) return;
+
+    const message = createTextMessage(chatId, 'me', text.trim());
+    actions.addMessage(chatId, message);
+
+    // Mettre à jour le dernier message de l'utilisateur
+    actions.updateLastMessage(chatId, {
+      text: text.trim(),
+      type: 'text'
+    });
+
+    // Simuler une réponse après un délai
+    setTimeout(() => {
+      const reply = createTextMessage(
+        chatId,
+        'other',
+        getRandomMessageText(),
+        {
+          senderName: state.users.find(u => u.id === chatId)?.name
+        }
+      );
+      actions.addMessage(chatId, reply);
+      
+      // Mettre à jour le dernier message
+      actions.updateLastMessage(chatId, {
+        text: reply.text,
+        type: 'text'
+      });
+    }, 1000 + Math.random() * 2000);
+  }, [createTextMessage, getRandomMessageText, actions, state.users]);
+
+  const selectChat = useCallback((chat) => {
+    actions.setSelectedChat(chat);
+    // Marquer les messages comme lus
+    actions.markMessagesRead(chat.id);
+  }, [actions]);
+
+  const addReactionToMessage = useCallback((chatId, messageId, reaction) => {
+    actions.addReaction(chatId, messageId, reaction);
+  }, [actions]);
+
+  const removeReactionFromMessage = useCallback((chatId, messageId, reaction) => {
+    actions.removeReaction(chatId, messageId, reaction);
+  }, [actions]);
+
+  const deleteMessage = useCallback((chatId, messageId) => {
+    actions.deleteMessage(chatId, messageId);
+  }, [actions]);
+
+  // Filtrage intelligent des utilisateurs
+  const filteredUsers = useMemo(() => {
+    return state.users.filter(user =>
+      user.name.toLowerCase().includes(state.searchQuery.toLowerCase()) ||
+      user.lastMessage?.text?.toLowerCase().includes(state.searchQuery.toLowerCase())
+    );
+  }, [state.users, state.searchQuery]);
 
   // Charger les utilisateurs depuis l'API
   useEffect(() => {
@@ -124,7 +467,6 @@ export function AppProvider({ children }) {
           throw new Error('Erreur lors du chargement des utilisateurs');
         }
 
-      
         // Transformer les données pour correspondre à notre structure
         const transformedUsers = data.results.map((user, index) => ({
           id: user.login.uuid,
@@ -164,116 +506,41 @@ export function AppProvider({ children }) {
     }
 
     fetchUsers();
-  }, []);
+  }, [actions, generateInitialMessages]);
 
-// Utility functions
-function getRandomStatus() {
-  const statuses = [
-    'Online',
-    'Last seen 2 minutes ago',
-    'Last seen 1 hour ago',
-    'Last seen today at 2:30 PM',
-    'Last seen yesterday at 6:45 PM',
-    'Last seen 2 days ago'
-  ];
-  return statuses[Math.floor(Math.random() * statuses.length)];
-}
-
-function getRandomLastMessage() {
-  const messages = [
-    { 
-      text: 'reacted 👍 to your status', 
-      type: 'reaction',
-      icon: '👍' // Thumbs up emoji as reaction example
-    },
-    { 
-      text: '~Beguel: Hey, how are you? long message to test the chat list', 
-      type: 'text' 
-    },
-    { 
-      text: 'Thank you very much!', 
-      type: 'text' 
-    },
-    { 
-      text: 'Perfect, see you tomorrow', 
-      type: 'text' 
-    },
-    { 
-      text: 'Voice message', 
-      type: 'voice',
-      duration: '0:23' // Example duration for voice messages
-    },
-    { 
-      text: 'Video message', 
-      type: 'video',
-      duration: '1:45' // Example duration for videos
-    },
-    { 
-      text: 'Photo', 
-      type: 'image' 
-    },
-    { 
-      text: 'Document.pdf', 
-      type: 'document',
-      size: '2.4 MB' // Example file size
-    },
-    { 
-      text: 'https://example.com', 
-      type: 'link' 
-    },
-    { 
-      text: 'Great idea!', 
-      type: 'text' 
-    },
-    { 
-      text: 'See you soon!', 
-      type: 'text' 
-    },
-    { 
-      text: 'No problem', 
-      type: 'text' 
-    },
-    { 
-      text: 'Audio file', 
-      type: 'audio',
-      duration: '3:12'
-    },
-    { 
-      text: 'Location shared', 
-      type: 'location' 
-    },
-    { 
-      text: 'Sticker', 
-      type: 'sticker' 
-    }
-  ];
-  return messages[Math.floor(Math.random() * messages.length)];
-}
-
-// Détection automatique du type de message
-const getMessageType = (message) => {
-  if (!message) return 'text';
-
-  if (message.type) return message.type;
-
-  const text = message.text || '';
-
-  const urlRegex = /(https?:\/\/[^\s]+)/g;
-
-  if (message.file) {
-    const ext = message.file.name.split('.').pop().toLowerCase();
-    if (['mp3', 'wav', 'ogg'].includes(ext)) return 'audio';
-    if (['mp4', 'mov', 'webm'].includes(ext)) return 'video';
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return 'image';
-    return 'document';
+  // Fonctions utilitaires pour les données initiales
+  function getRandomStatus() {
+    const statuses = [
+      'Online',
+      'Last seen 2 minutes ago',
+      'Last seen 1 hour ago',
+      'Last seen today at 2:30 PM',
+      'Last seen yesterday at 6:45 PM',
+      'Last seen 2 days ago'
+    ];
+    return statuses[Math.floor(Math.random() * statuses.length)];
   }
 
-  if (text.match(urlRegex)) return 'link';
-  if (message.sticker) return 'sticker';
-  if (message.location) return 'location';
-
-  return 'text';
-};
+  function getRandomLastMessage() {
+    const messages = [
+      { text: 'reacted 👍 to your status', type: 'reaction' },
+      { text: 'Hey, how are you?', type: 'text' },
+      { text: 'Thank you very much!', type: 'text' },
+      { text: 'Perfect, see you tomorrow', type: 'text' },
+      { text: 'Voice message', type: 'voice', duration: '0:23' },
+      { text: 'Video message', type: 'video', duration: '1:45' },
+      { text: 'Photo', type: 'image' },
+      { text: 'Document.pdf', type: 'document', size: '2.4 MB' },
+      { text: 'https://example.com', type: 'link' },
+      { text: 'Great idea!', type: 'text' },
+      { text: 'See you soon!', type: 'text' },
+      { text: 'No problem', type: 'text' },
+      { text: 'Audio file', type: 'audio', duration: '3:12' },
+      { text: 'Location shared', type: 'location' },
+      { text: 'Sticker', type: 'sticker' }
+    ];
+    return messages[Math.floor(Math.random() * messages.length)];
+  }
 
   function getRandomTime() {
     const now = new Date();
@@ -287,94 +554,32 @@ const getMessageType = (message) => {
     return times[Math.floor(Math.random() * times.length)];
   }
 
-  function generateInitialMessages(user) {
-    const messages = [];
-    const messageCount = Math.floor(Math.random() * 10) + 5;
-    
-    for (let i = 0; i < messageCount; i++) {
-      const isFromUser = Math.random() > 0.5;
-      const timestamp = new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000);
-      
-      messages.push({
-        id: `${user.id}-${i}`,
-        text: getRandomMessageText(),
-        timestamp: timestamp.toISOString(),
-        isFromUser,
-        status: isFromUser ? (Math.random() > 0.3 ? 'read' : 'sent') : null
-      });
-    }
-    
-    return messages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-  }
-
-  function getRandomMessageText() {
-    const texts = [
-      'Salut !',
-      'Comment ça va ?',
-      'Ça va bien, merci !',
-      'Tu fais quoi ?',
-      'Pas grand chose',
-      'Ok, à plus tard !',
-      'Merci beaucoup !',
-      'Parfait',
-      'Super !',
-      'D\'accord',
-      'Pas de problème',
-      'À bientôt !',
-      'C\'est noté',
-      'Je suis d\'accord',
-      'Tu as raison',
-      'Exactement',
-      'Bien sûr',
-      'Évidemment',
-      'C\'est ça',
-      'Parfaitement'
-    ];
-    return texts[Math.floor(Math.random() * texts.length)];
-  }
-
-  // Méthodes métier
-  const sendMessage = async (chatId, text) => {
-    if (!text.trim()) return;
-
-    const message = {
-      id: `${chatId}-${Date.now()}`,
-      text: text.trim(),
-      timestamp: new Date().toISOString(),
-      isFromUser: true,
-      status: 'sent'
-    };
-
-    actions.addMessage(chatId, message);
-
-    // Simuler une réponse après un délai
-    setTimeout(() => {
-      const reply = {
-        id: `${chatId}-reply-${Date.now()}`,
-        text: getRandomMessageText(),
-        timestamp: new Date().toISOString(),
-        isFromUser: false,
-        status: null
-      };
-      actions.addMessage(chatId, reply);
-    }, 1000 + Math.random() * 2000);
-  };
-
-  const selectChat = (chat) => {
-    actions.setSelectedChat(chat);
-  };
-
-  const filteredUsers = state.users.filter(user =>
-    user.name.toLowerCase().includes(state.searchQuery.toLowerCase())
-  );
-
-  const value = {
+  const value = useMemo(() => ({
     ...state,
     ...actions,
     sendMessage,
     selectChat,
-    filteredUsers
-  };
+    addReactionToMessage,
+    removeReactionFromMessage,
+    deleteMessage,
+    filteredUsers,
+    // Fonctions utilitaires exposées
+    createTextMessage: (chatId, sender, text, options) => createTextMessage(chatId, sender, text, options),
+    createMediaMessage: (chatId, sender, media, options) => createMediaMessage(chatId, sender, media, options),
+    createSystemMessage: (chatId, systemType, text, options) => createSystemMessage(chatId, systemType, text, options)
+  }), [
+    state,
+    actions,
+    sendMessage,
+    selectChat,
+    addReactionToMessage,
+    removeReactionFromMessage,
+    deleteMessage,
+    filteredUsers,
+    createTextMessage,
+    createMediaMessage,
+    createSystemMessage
+  ]);
 
   return (
     <AppContext.Provider value={value}>
