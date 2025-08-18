@@ -8,7 +8,10 @@ import ChatHeader from './ChatHeader';
 import ChatBody from './chatBody/ChatBody';
 import ChatFooter from './ChatFooter';
 import Splitter from './Splitter';
+import StarredMessages from './StarredMessages';
 import { useAppContext } from '@/context/AppContext';
+import CallPanel from './calls/CallPanel';
+import CallScreen from './calls/CallScreen';
 
 export default function WhatsApp() {
   const [isClient, setIsClient] = useState(false);
@@ -18,7 +21,8 @@ export default function WhatsApp() {
     sendMessage, 
     selectChat,
     loading,
-    error 
+    error,
+    activeTab
   } = useAppContext();
 
   useEffect(() => {
@@ -105,10 +109,14 @@ export default function WhatsApp() {
           className="ml-12 rounded-tl-xl flex-shrink-0 bg-[#2C2C2C] border-r border-neutral-800 chat-list-container"
           style={{ width: `${chatListWidth}px` }}
         >
-          <ChatList
-            onChatSelect={handleChatSelect}
-            selectedChatId={selectedChat?.id}
-          />
+          {activeTab === 'chats' && (
+            <ChatList
+              onChatSelect={handleChatSelect}
+              selectedChatId={selectedChat?.id}
+            />
+          )}
+          {activeTab === 'calls' && <CallPanel />}
+          {activeTab === 'star' && <StarredMessages />}
         </div>
 
         {/* Splitter */}
@@ -121,12 +129,18 @@ export default function WhatsApp() {
 
         {/* Chat Area - prend le reste de l'espace */}
         <div className="flex-1 flex flex-col min-w-0 bg-[#0b0e11]">
-          <ChatHeader selectedChat={selectedChat} />
-          <ChatBody selectedChat={selectedChat} />
-          <ChatFooter
-            selectedChat={selectedChat}
-            onSendMessage={handleSendMessage}
-          />
+          {activeTab === 'chats' && (
+            <>
+              <ChatHeader selectedChat={selectedChat} />
+              <ChatBody selectedChat={selectedChat} />
+              <ChatFooter
+                selectedChat={selectedChat}
+                onSendMessage={handleSendMessage}
+              />
+            </>
+          )}
+          {activeTab === 'calls' && <CallScreen />}
+          {activeTab === 'star' && <StarredMessages />}
         </div>
       </div>
     </div>

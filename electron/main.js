@@ -1,7 +1,7 @@
 const { app, BrowserWindow, Menu, shell, ipcMain, dialog, Notification, protocol } = require('electron');
 const path = require('path');
 const fs = require('fs');
-const isDev = process.env.NODE_ENV === 'development';
+const isDev = true;
 
 // Log pour déboguer
 console.log('🔧 Mode de développement:', isDev);

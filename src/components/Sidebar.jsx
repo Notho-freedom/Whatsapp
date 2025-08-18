@@ -1,14 +1,27 @@
 import { Menu, MessageCircle, Phone, CircleCheckBigIcon, Star, Archive, Settings, CircleDivide, CircleDashedIcon, LucideMessageCircleDashed, CircleSlashed, CircleDashed, CircleDotDashed, CircleGauge, CircleOffIcon, MessageCircleReply, MessageCircleMore, MessageCircleWarningIcon, LucideMessageCircle, CirclePlayIcon } from 'lucide-react';
 import { useAppContext } from '@/context/AppContext';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { FaWhatsapp } from 'react-icons/fa';
 
 export default function Sidebar() {
-  const { activeTab, setActiveTab } = useAppContext();
+  const { activeTab, setActiveTab, messages } = useAppContext();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   const handleTabClick = (tab) => setActiveTab(tab);
+
+  // Compter les messages favoris
+  const starredMessagesCount = useMemo(() => {
+    let count = 0;
+    Object.values(messages).forEach(chatMessages => {
+      chatMessages.forEach(message => {
+        if (message.isStarred) {
+          count++;
+        }
+      });
+    });
+    return count;
+  }, [messages]);
 
   const isActive = (tab) => activeTab === tab;
   const ActiveIndicator = () => (
@@ -80,7 +93,7 @@ export default function Sidebar() {
           
           {/* Icônes du bas poussées vers le bas */}
           <nav className="flex flex-col px-1 mt-auto space-y-[6.5px] -mb-4">
-            <SidebarButton tab="star" icon={Star} label="Star" />
+            <SidebarButton tab="star" icon={Star} label="Star" badgeCount={starredMessagesCount} />
             <SidebarButton tab="archive" icon={Archive} label="Archive" badgeCount={1} />
 
             <div className="w-[90%] self-center border-t border-neutral-700 my-1 px-0.5" />
@@ -126,7 +139,7 @@ export default function Sidebar() {
               </nav>
 
               <nav className="flex flex-col px-1 mt-auto space-y-[6.5px] -mb-4">
-                <SidebarButton tab="star" icon={Star} label="Starred messages" />
+                <SidebarButton tab="star" icon={Star} label="Starred messages" badgeCount={starredMessagesCount} />
                 <SidebarButton tab="archive" icon={Archive} label="Archived chats" badgeCount={1} />
                 
                 <div className="w-full border-t border-neutral-700 my-1 px-0.5" />

@@ -20,84 +20,90 @@ export const isElectronAPI = (apiName) => {
  * @param {boolean} isMe - Si le message est de l'utilisateur
  * @returns {Array} Items du menu
  */
-export const createMessageMenuItems = (message, handlers, isMe = false) => {
+export const createMessageMenuItems = (message, handlers, isMe) => {
   const menuItems = [];
-  
-  // Options de base pour tous les messages
-  menuItems.push(
-    { 
-      label: 'Reply', 
-      id: 'reply',
-      click: () => handlers.handleReplyMessage(message) 
-    },
-    { 
-      label: 'Forward', 
-      id: 'forward',
-      click: () => handlers.handleForwardMessage(message) 
-    },
-    { type: 'separator' }
-  );
-  
-  // Options spécifiques pour les messages texte
+
+  // Actions de base (tous les messages)
+  menuItems.push({
+    id: 'reply',
+    label: 'Reply',
+    click: () => handlers.handleReplyMessage(message)
+  });
+
+  menuItems.push({
+    id: 'forward',
+    label: 'Forward',
+    click: () => handlers.handleForwardMessage(message)
+  });
+
+  // Star/Unstar - basé sur l'état actuel
+  menuItems.push({
+    id: 'star',
+    label: message.isStarred ? 'Unstar' : 'Star',
+    click: () => handlers.handleStarMessage(message)
+  });
+
+  // Pin/Unpin - basé sur l'état actuel de la conversation
+  menuItems.push({
+    id: 'pin',
+    label: 'Pin chat', // WhatsApp épinglent la conversation, pas le message
+    click: () => handlers.handlePinMessage(message)
+  });
+
+  // Séparateur
+  menuItems.push({ type: 'separator' });
+
+  // Actions spécifiques au texte
   if (message.text) {
-    menuItems.push(
-      { 
-        label: 'Copy', 
-        id: 'copy',
-        click: () => handlers.handleCopyMessage(message.text) 
-      },
-      { type: 'separator' }
-    );
+    menuItems.push({
+      id: 'copy',
+      label: 'Copy',
+      click: () => handlers.handleCopyMessage(message.text)
+    });
   }
-  
-  // Options spécifiques pour les médias
+
+  // Actions spécifiques aux médias
   if (message.media && message.media.length > 0) {
-    menuItems.push(
-      { 
-        label: 'View Media', 
-        id: 'view-media',
-        click: () => handlers.handleViewMedia(message.media) 
-      },
-      { 
-        label: 'Save Media', 
-        id: 'save-media',
-        click: () => handlers.handleSaveMedia(message.media) 
-      },
-      { 
-        label: 'Share Media', 
-        id: 'share-media',
-        click: () => handlers.handleShareMedia(message.media) 
-      },
-      { type: 'separator' }
-    );
+    menuItems.push({
+      id: 'view-media',
+      label: 'View media',
+      click: () => handlers.handleViewMedia(message.media[0])
+    });
+
+    menuItems.push({
+      id: 'save-media',
+      label: 'Save media',
+      click: () => handlers.handleSaveMedia(message.media[0])
+    });
+
+    menuItems.push({
+      id: 'share-media',
+      label: 'Share media',
+      click: () => handlers.handleShareMedia(message.media[0])
+    });
   }
-  
-  // Options supplémentaires
-  menuItems.push(
-    { 
-      label: 'Star Message', 
-      id: 'star',
-      click: () => handlers.handleStarMessage(message) 
-    },
-    { 
-      label: 'Pin Message', 
-      id: 'pin',
-      click: () => handlers.handlePinMessage(message) 
-    }
-  );
-  
-  // Option de suppression pour les messages de l'utilisateur
+
+  // Actions spécifiques aux liens
+  if (message.link) {
+    menuItems.push({
+      id: 'view-link',
+      label: 'View link',
+      click: () => handlers.handleViewMedia({ type: 'link', url: message.link.url })
+    });
+  }
+
+  // Séparateur
+  menuItems.push({ type: 'separator' });
+
+  // Actions utilisateur (messages de l'utilisateur uniquement)
   if (isMe) {
-    menuItems.push(
-      { type: 'separator' },
-      { 
-        label: 'Delete for me', 
-        id: 'delete',
-        click: () => handlers.handleDeleteMessage(message) 
-      }
-    );
+    menuItems.push({
+      id: 'delete',
+      label: 'Delete for me',
+      click: () => handlers.handleDeleteMessage(message)
+    });
   }
-  
+
   return menuItems;
 };
 

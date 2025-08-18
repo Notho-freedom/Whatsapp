@@ -21,7 +21,9 @@ const ACTIONS = {
   ADD_REACTION: 'ADD_REACTION',
   REMOVE_REACTION: 'REMOVE_REACTION',
   SET_REPLY_TO: 'SET_REPLY_TO',
-  CLEAR_REPLY_TO: 'CLEAR_REPLY_TO'
+  CLEAR_REPLY_TO: 'CLEAR_REPLY_TO',
+  TOGGLE_MESSAGE_STAR: 'TOGGLE_MESSAGE_STAR',
+  TOGGLE_CHAT_PIN: 'TOGGLE_CHAT_PIN'
 };
 
 // État initial
@@ -199,6 +201,36 @@ function appReducer(state, action) {
         replyTo: null
       };
     
+    case ACTIONS.TOGGLE_MESSAGE_STAR:
+      const { chatId: starChatId, messageId: starMessageId } = action.payload;
+      const messagesForStar = state.messages[starChatId] || [];
+      const messagesWithStarToggle = messagesForStar.map(msg => {
+        if (msg.id === starMessageId) {
+          return {
+            ...msg,
+            isStarred: !msg.isStarred
+          };
+        }
+        return msg;
+      });
+      
+      return {
+        ...state,
+        messages: {
+          ...state.messages,
+          [starChatId]: messagesWithStarToggle
+        }
+      };
+    
+    case ACTIONS.TOGGLE_CHAT_PIN:
+      const { chatId: pinChatId } = action.payload;
+      return {
+        ...state,
+        users: state.users.map(user =>
+          user.id === pinChatId ? { ...user, isPinned: !user.isPinned } : user
+        )
+      };
+    
     default:
       return state;
   }
@@ -239,7 +271,9 @@ export function AppProvider({ children }) {
     addReaction: (chatId, messageId, reaction) => dispatch({ type: ACTIONS.ADD_REACTION, payload: { chatId, messageId, reaction } }),
     removeReaction: (chatId, messageId, reaction) => dispatch({ type: ACTIONS.REMOVE_REACTION, payload: { chatId, messageId, reaction } }),
     setReplyTo: (replyTo) => dispatch({ type: ACTIONS.SET_REPLY_TO, payload: replyTo }),
-    clearReplyTo: () => dispatch({ type: ACTIONS.CLEAR_REPLY_TO })
+    clearReplyTo: () => dispatch({ type: ACTIONS.CLEAR_REPLY_TO }),
+    toggleMessageStar: (chatId, messageId) => dispatch({ type: ACTIONS.TOGGLE_MESSAGE_STAR, payload: { chatId, messageId } }),
+    toggleChatPin: (chatId) => dispatch({ type: ACTIONS.TOGGLE_CHAT_PIN, payload: { chatId } })
   }), []);
 
   // Fonctions utilitaires pour générer des messages
@@ -462,6 +496,14 @@ export function AppProvider({ children }) {
     actions.deleteMessage(chatId, messageId);
   }, [actions]);
 
+  const toggleMessageStar = useCallback((chatId, messageId) => {
+    actions.toggleMessageStar(chatId, messageId);
+  }, [actions]);
+
+  const toggleChatPin = useCallback((chatId) => {
+    actions.toggleChatPin(chatId);
+  }, [actions]);
+
   // Filtrage intelligent des utilisateurs
   const filteredUsers = useMemo(() => {
     return state.users.filter(user =>
@@ -579,6 +621,8 @@ export function AppProvider({ children }) {
     addReactionToMessage,
     removeReactionFromMessage,
     deleteMessage,
+    toggleMessageStar,
+    toggleChatPin,
     filteredUsers,
     // Fonctions utilitaires exposées
     createTextMessage,
@@ -592,6 +636,8 @@ export function AppProvider({ children }) {
     addReactionToMessage,
     removeReactionFromMessage,
     deleteMessage,
+    toggleMessageStar,
+    toggleChatPin,
     filteredUsers,
     createTextMessage,
     createMediaMessage,

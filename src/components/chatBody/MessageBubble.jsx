@@ -11,7 +11,7 @@ const MessageBubble = memo(function MessageBubble({ message, isFirstInGroup, isL
   const isMe = message.sender === 'me';
   const messageRef = useRef(null);
   const longPressTimer = useRef(null);
-  const { addReactionToMessage, removeReactionFromMessage, deleteMessage, selectedChat, setReplyTo } = useAppContext();
+  const { addReactionToMessage, removeReactionFromMessage, deleteMessage, selectedChat, setReplyTo, toggleMessageStar, toggleChatPin } = useAppContext();
 
   // Gestionnaires d'actions avec notifications améliorées
   const handleReplyMessage = useCallback(async (messageData) => {
@@ -93,23 +93,37 @@ const MessageBubble = memo(function MessageBubble({ message, isFirstInGroup, isL
 
   const handleStarMessage = useCallback(async (messageData) => {
     try {
-      console.log('Star message:', messageData);
-      showSuccess('Starred', 'Message marqué comme favori');
+      if (selectedChat && messageData.id) {
+        toggleMessageStar(selectedChat.id, messageData.id);
+        const isStarred = messageData.isStarred;
+        if (isStarred) {
+          showSuccess('Unstarred', 'Message retiré des favoris');
+        } else {
+          showSuccess('Starred', 'Message ajouté aux favoris');
+        }
+      }
     } catch (error) {
       console.error('Erreur lors du marquage:', error);
       showError('Erreur', 'Erreur lors du marquage du message');
     }
-  }, []);
+  }, [selectedChat, toggleMessageStar]);
 
   const handlePinMessage = useCallback(async (messageData) => {
     try {
-      console.log('Pin message:', messageData);
-      showSuccess('Pinned', 'Message épinglé avec succès');
+      if (selectedChat) {
+        toggleChatPin(selectedChat.id);
+        const isPinned = selectedChat.isPinned;
+        if (isPinned) {
+          showSuccess('Unpinned', 'Conversation désépinglée');
+        } else {
+          showSuccess('Pinned', 'Conversation épinglée');
+        }
+      }
     } catch (error) {
       console.error('Erreur lors de l\'épinglage:', error);
-      showError('Erreur', 'Erreur lors de l\'épinglage du message');
+      showError('Erreur', 'Erreur lors de l\'épinglage de la conversation');
     }
-  }, []);
+  }, [selectedChat, toggleChatPin]);
 
   const handleDeleteMessage = useCallback(async (messageData) => {
     try {
@@ -223,7 +237,7 @@ const MessageBubble = memo(function MessageBubble({ message, isFirstInGroup, isL
         {/* Message bubble */}
         <div
           className={`wa-message-bubble ${isMe ? 'wa-message-bubble-self' : 'wa-message-bubble-others'} 
-            hover:shadow-lg transition-shadow cursor-pointer`}
+            hover:shadow-lg transition-shadow cursor-pointer relative`}
           style={{
             borderTopRightRadius: isMe && isFirstInGroup ? 0 : 7.5,
             borderTopLeftRadius: !isMe && isFirstInGroup ? 0 : 7.5,
@@ -232,6 +246,13 @@ const MessageBubble = memo(function MessageBubble({ message, isFirstInGroup, isL
           role="article"
           aria-label={`Message from ${isMe ? 'you' : message.senderName || 'contact'}`}
         >
+          {/* Étoile pour les messages favoris */}
+          {message.isStarred && (
+            <div className="absolute -top-1 -right-1 bg-yellow-500 rounded-full p-0.5 z-10">
+              <FaStar size={8} className="text-white" />
+            </div>
+          )}
+
           {/* Message forwarded label */}
           {message.forwarded && (
             <div className="text-[#8696a0] text-[12px] sm:text-[13px] mb-[2px]">

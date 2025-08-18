@@ -44,8 +44,17 @@ export default function ChatList({ onChatSelect, selectedChatId }) {
     setSearchQuery(e.target.value);
   };
 
-  // Priorité : pinned > non pinned
-  const sortedUsers = [...filteredUsers].sort((a, b) => b.isPinned - a.isPinned);
+  // Priorité : pinned > non pinned, puis par temps
+  const sortedUsers = [...filteredUsers].sort((a, b) => {
+    // D'abord par statut épinglé
+    if (a.isPinned && !b.isPinned) return -1;
+    if (!a.isPinned && b.isPinned) return 1;
+    
+    // Ensuite par temps (plus récent en premier)
+    const timeA = new Date(a.lastMessageTime || 0);
+    const timeB = new Date(b.lastMessageTime || 0);
+    return timeB - timeA;
+  });
 
 
   const MessageIcon = ({ type }) => {
