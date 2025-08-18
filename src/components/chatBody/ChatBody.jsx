@@ -61,35 +61,30 @@ const ChatBody = memo(function ChatBody({ selectedChat }) {
 
   if (!selectedChat) {
     return (
-      <section className="flex-1 flex flex-col" style={{ backgroundColor: 'var(--wa-conversation-panel-background)' }}>
-        <div className="flex-1 flex flex-col items-center justify-center px-4">
+      <section className="flex-1 bg-whatsapp-chat-bg flex flex-col">
+        <div className="flex-1 flex flex-col items-center justify-center">
           <div className="text-center">
-            <div className="w-[240px] h-[140px] sm:w-[320px] sm:h-[188px] mx-auto mb-6 sm:mb-8 opacity-40">
-              <img 
-                src="/bgl.png" 
-                alt="WhatsApp Logo" 
-                className="w-full h-full object-contain"
-                loading="lazy"
-              />
+            <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+              <FaWhatsapp size={100} className="text-neutral-600" />
             </div>
-            <h1 className="text-[24px] sm:text-[32px] font-light text-[#e9edef] mb-2">
+            <h3 className="text-lg text-white mb-2 font-segoe">
               WhatsApp for Windows
-            </h1>
-            <p className="text-[12px] sm:text-[14px] text-[#8696a0] leading-[18px] sm:leading-[20px] max-w-[400px] sm:max-w-[500px] mx-auto">
+            </h3>
+            <p className="text-sm max-w-md text-neutral-400">
               Send and receive messages without keeping your phone online.
-            </p>
-            <p className="text-[12px] sm:text-[14px] text-[#8696a0] leading-[18px] sm:leading-[20px] max-w-[400px] sm:max-w-[500px] mx-auto">
+              <br />
               Use WhatsApp on up to 4 linked devices and 1 phone at the same time.
             </p>
           </div>
         </div>
-        <div className="py-5 sm:py-7 flex items-center justify-center gap-1">
-          <FaLock size={isMobile ? 10 : 12} className="text-[#8696a0]" />
-          <p className="text-[11px] sm:text-[12px] text-[#8696a0]">End-to-end encrypted</p>
+        <div className="pb-12 flex items-center justify-center gap-2">
+          <FaLock size={10} className="text-neutral-500" />
+          <p className="text-sm text-neutral-500">End-to-end encrypted.</p>
         </div>
       </section>
     );
   }
+
 
   // Récupérer les messages du chat sélectionné
   const chatMessages = messages[selectedChat?.id] || [];

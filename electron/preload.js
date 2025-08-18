@@ -30,7 +30,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   closeWindow: () => ipcRenderer.invoke('close-window'),
   
   // API pour les liens externes
-  openExternal: (url) => ipcRenderer.invoke('open-external', url)
+  openExternal: (url) => ipcRenderer.invoke('open-external', url),
+  
+  // Nouvelles API pour les menus contextuels et médias
+  showContextMenu: (menuItems, x, y) => ipcRenderer.invoke('show-context-menu', menuItems, x, y),
+  downloadMedia: (media) => ipcRenderer.invoke('download-media', media),
+  viewMedia: (media) => ipcRenderer.invoke('view-media', media),
+  shareMedia: (media) => ipcRenderer.invoke('share-media', media),
+  executeContextMenuAction: (actionId, actionData) => ipcRenderer.invoke('execute-context-menu-action', actionId, actionData)
 });
 
 // Exposer les informations de l'environnement

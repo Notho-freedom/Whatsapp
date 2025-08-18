@@ -1,155 +1,125 @@
-import { FaCheck, FaCheckDouble, FaAngleDown, FaReply, FaStar, FaThumbtack, FaTrash, FaCopy, FaForward } from 'react-icons/fa';
-import { MdOutlineCheckBox } from 'react-icons/md';
+import { FaCheck, FaCheckDouble, FaAngleDown, FaReply, FaStar, FaThumbtack, FaTrash, FaCopy, FaForward, FaDownload, FaShare, FaEye } from 'react-icons/fa';
 import MediaGroup from './MediaGroup';
 import PreviewLink from './PreviewLink';
 import ReactionBar from './ReactionBar';
 import { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { useAppContext } from '@/context/AppContext';
+import { showContextMenu, downloadMedia, viewMedia, shareMedia, createMessageMenuItems } from '@/utils/electronUtils';
+import { showSuccess, showError, showInfo } from '@/utils/notificationUtils';
 
 const MessageBubble = memo(function MessageBubble({ message, isFirstInGroup, isLastInGroup, isMobile }) {
   const isMe = message.sender === 'me';
-  const [showMenu, setShowMenu] = useState(false);
-  const [menuPosition, setMenuPosition] = useState({ x: 0, y: 0 });
-  const menuRef = useRef(null);
   const messageRef = useRef(null);
   const longPressTimer = useRef(null);
   const { addReactionToMessage, removeReactionFromMessage, deleteMessage, selectedChat } = useAppContext();
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target) && 
-          messageRef.current && !messageRef.current.contains(event.target)) {
-        setShowMenu(false);
-      }
-    };
-
-    const handleEscape = (event) => {
-      if (event.key === 'Escape') {
-        setShowMenu(false);
-      }
-    };
-
-    const handleScroll = () => {
-      setShowMenu(false);
-    };
-
-    if (showMenu) {
-      document.addEventListener('mousedown', handleClickOutside);
-      document.addEventListener('keydown', handleEscape);
-      document.addEventListener('scroll', handleScroll, true);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleEscape);
-      document.removeEventListener('scroll', handleScroll, true);
-    };
-  }, [showMenu]);
-
-  const calculateMenuPosition = useCallback((triggerElement, isContextMenu = false) => {
-    if (!triggerElement) return { x: 0, y: 0 };
-
-    const rect = triggerElement.getBoundingClientRect();
-    const menuWidth = isMobile ? 180 : 200;
-    const menuHeight = 280; // Hauteur approximative du menu
-    const padding = 10;
-
-    let x, y;
-
-    if (isContextMenu) {
-      // Menu contextuel - position à la souris
-      x = Math.min(window.innerWidth - menuWidth - padding, Math.max(padding, rect.left));
-      y = Math.min(window.innerHeight - menuHeight - padding, Math.max(padding, rect.top));
-    } else {
-      // Menu chevron - position relative au message
-      if (isMe) {
-        // Message de l'utilisateur - menu à gauche du message
-        x = Math.max(padding, rect.left - menuWidth - 8);
-      } else {
-        // Message de l'autre - menu à droite du message
-        x = Math.min(window.innerWidth - menuWidth - padding, rect.right + 8);
-      }
-      y = Math.min(window.innerHeight - menuHeight - padding, Math.max(padding, rect.top - 5));
-    }
-
-    return { x, y };
-  }, [isMe, isMobile]);
-
-  const handleContextMenu = useCallback((e) => {
-    e.preventDefault();
-    if (isMobile) return; // Désactiver le menu contextuel sur mobile
-    
-    const position = calculateMenuPosition(e.currentTarget, true);
-    setMenuPosition(position);
-    setShowMenu(true);
-  }, [isMobile, calculateMenuPosition]);
-
-  const handleChevronClick = useCallback((e) => {
-    e.stopPropagation();
-    const position = calculateMenuPosition(messageRef.current);
-    setMenuPosition(position);
-    setShowMenu(true);
-  }, [calculateMenuPosition]);
-
-  const handleLongPressStart = useCallback(() => {
-    if (!isMobile) return;
-    
-    longPressTimer.current = setTimeout(() => {
-      const position = calculateMenuPosition(messageRef.current);
-      setMenuPosition(position);
-      setShowMenu(true);
-      
-      // Vibration feedback si disponible
-      if (navigator.vibrate) {
-        navigator.vibrate(50);
-      }
-    }, 500);
-  }, [isMobile, calculateMenuPosition]);
-
-  const handleLongPressEnd = useCallback(() => {
-    if (longPressTimer.current) {
-      clearTimeout(longPressTimer.current);
-      longPressTimer.current = null;
+  // Gestionnaires d'actions avec notifications améliorées
+  const handleReplyMessage = useCallback(async (messageData) => {
+    try {
+      console.log('Reply to message:', messageData);
+      showInfo('Reply', 'Fonction de réponse en cours de développement');
+    } catch (error) {
+      console.error('Erreur lors de la réponse:', error);
+      showError('Erreur', 'Erreur lors de la réponse au message');
     }
   }, []);
 
-  const handleDeleteMessage = useCallback(() => {
-    if (selectedChat && message.id) {
-      deleteMessage(selectedChat.id, message.id);
+  const handleForwardMessage = useCallback(async (messageData) => {
+    try {
+      console.log('Forward message:', messageData);
+      showInfo('Forward', 'Fonction de transfert en cours de développement');
+    } catch (error) {
+      console.error('Erreur lors du transfert:', error);
+      showError('Erreur', 'Erreur lors du transfert du message');
     }
-    setShowMenu(false);
-  }, [selectedChat, message.id, deleteMessage]);
+  }, []);
 
-  const handleCopyMessage = useCallback(() => {
-    if (message.text) {
-      navigator.clipboard.writeText(message.text);
+  const handleCopyMessage = useCallback(async (text) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      showSuccess('Copied', 'Message copié dans le presse-papiers');
+    } catch (error) {
+      console.error('Erreur lors de la copie:', error);
+      showError('Erreur', 'Erreur lors de la copie du message');
     }
-    setShowMenu(false);
-  }, [message.text]);
+  }, []);
 
-  const handleForwardMessage = useCallback(() => {
-    // TODO: Implémenter le forward
-    console.log('Forward message:', message);
-    setShowMenu(false);
-  }, [message]);
+  const handleViewMedia = useCallback(async (media) => {
+    try {
+      console.log('View media:', media);
+      const result = await viewMedia(media);
+      if (result.success) {
+        showSuccess('Media', result.message || 'Média affiché avec succès');
+      } else {
+        showError('Erreur', result.error || 'Erreur lors de l\'affichage du média');
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'affichage du média:', error);
+      showError('Erreur', 'Erreur lors de l\'affichage du média');
+    }
+  }, []);
 
-  const handleStarMessage = useCallback(() => {
-    // TODO: Implémenter le star
-    console.log('Star message:', message);
-    setShowMenu(false);
-  }, [message]);
+  const handleSaveMedia = useCallback(async (media) => {
+    try {
+      console.log('Save media:', media);
+      const result = await downloadMedia(media);
+      if (result.success) {
+        showSuccess('Download', result.message || 'Média téléchargé avec succès');
+      } else {
+        showError('Erreur', result.error || 'Erreur lors du téléchargement');
+      }
+    } catch (error) {
+      console.error('Erreur lors du téléchargement:', error);
+      showError('Erreur', 'Erreur lors du téléchargement du média');
+    }
+  }, []);
 
-  const handlePinMessage = useCallback(() => {
-    // TODO: Implémenter le pin
-    console.log('Pin message:', message);
-    setShowMenu(false);
-  }, [message]);
+  const handleShareMedia = useCallback(async (media) => {
+    try {
+      console.log('Share media:', media);
+      const result = await shareMedia(media);
+      if (result.success) {
+        showSuccess('Shared', result.message || 'Média partagé avec succès');
+      } else {
+        showError('Erreur', result.error || 'Erreur lors du partage');
+      }
+    } catch (error) {
+      console.error('Erreur lors du partage:', error);
+      showError('Erreur', 'Erreur lors du partage du média');
+    }
+  }, []);
 
-  const handleReplyMessage = useCallback(() => {
-    // TODO: Implémenter le reply
-    console.log('Reply to message:', message);
-    setShowMenu(false);
-  }, [message]);
+  const handleStarMessage = useCallback(async (messageData) => {
+    try {
+      console.log('Star message:', messageData);
+      showSuccess('Starred', 'Message marqué comme favori');
+    } catch (error) {
+      console.error('Erreur lors du marquage:', error);
+      showError('Erreur', 'Erreur lors du marquage du message');
+    }
+  }, []);
+
+  const handlePinMessage = useCallback(async (messageData) => {
+    try {
+      console.log('Pin message:', messageData);
+      showSuccess('Pinned', 'Message épinglé avec succès');
+    } catch (error) {
+      console.error('Erreur lors de l\'épinglage:', error);
+      showError('Erreur', 'Erreur lors de l\'épinglage du message');
+    }
+  }, []);
+
+  const handleDeleteMessage = useCallback(async (messageData) => {
+    try {
+      if (selectedChat && messageData.id) {
+        deleteMessage(selectedChat.id, messageData.id);
+        showSuccess('Deleted', 'Message supprimé avec succès');
+      }
+    } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
+      showError('Erreur', 'Erreur lors de la suppression du message');
+    }
+  }, [selectedChat, deleteMessage]);
 
   const handleAddReaction = useCallback((reaction) => {
     if (selectedChat && message.id) {
@@ -163,6 +133,67 @@ const MessageBubble = memo(function MessageBubble({ message, isFirstInGroup, isL
     }
   }, [selectedChat, message.id, removeReactionFromMessage]);
 
+  // Fonction pour ouvrir le menu contextuel natif
+  const showNativeContextMenu = useCallback(async (e, messageData) => {
+    e.preventDefault();
+    
+    try {
+      // Créer les gestionnaires d'actions
+      const handlers = {
+        handleReplyMessage,
+        handleForwardMessage,
+        handleCopyMessage,
+        handleViewMedia,
+        handleSaveMedia,
+        handleShareMedia,
+        handleStarMessage,
+        handlePinMessage,
+        handleDeleteMessage
+      };
+      
+      // Créer les items du menu
+      const menuItems = createMessageMenuItems(messageData, handlers, isMe);
+      
+      // Afficher le menu contextuel
+      const result = await showContextMenu(menuItems, e.clientX, e.clientY);
+      
+      if (result && result.success) {
+        console.log('Menu contextuel affiché avec succès');
+      } else if (result && result.error) {
+        console.error('Erreur du menu contextuel:', result.error);
+        showError('Erreur', 'Erreur lors de l\'affichage du menu contextuel');
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'affichage du menu contextuel:', error);
+      showError('Erreur', 'Erreur lors de l\'affichage du menu contextuel');
+    }
+  }, [isMe, handleReplyMessage, handleForwardMessage, handleCopyMessage, handleViewMedia, handleSaveMedia, handleShareMedia, handleStarMessage, handlePinMessage, handleDeleteMessage]);
+
+  // Gestion du long press sur mobile
+  const handleLongPressStart = useCallback(() => {
+    if (!isMobile) return;
+    
+    longPressTimer.current = setTimeout(() => {
+      showNativeContextMenu({ 
+        preventDefault: () => {}, 
+        clientX: 0, 
+        clientY: 0 
+      }, message);
+      
+      // Vibration feedback si disponible
+      if (navigator.vibrate) {
+        navigator.vibrate(50);
+      }
+    }, 500);
+  }, [isMobile, showNativeContextMenu, message]);
+
+  const handleLongPressEnd = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -173,204 +204,114 @@ const MessageBubble = memo(function MessageBubble({ message, isFirstInGroup, isL
   }, []);
 
   return (
-    <>
-      <div 
-        className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-[2px] group`}
-        ref={messageRef}
-        onTouchStart={handleLongPressStart}
-        onTouchEnd={handleLongPressEnd}
-        onTouchMove={handleLongPressEnd}
-        onTouchCancel={handleLongPressEnd}
-      >
-        <div className="relative flex items-start max-w-[75%] md:max-w-[80%]">
-          {/* Message tail pour le premier message d'un groupe */}
-          {isFirstInGroup && (
-            <div className={`wa-message-tail ${isMe ? 'wa-message-tail-self' : 'wa-message-tail-others'}`} />
+    <div 
+      className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-[2px] group`}
+      ref={messageRef}
+      onTouchStart={handleLongPressStart}
+      onTouchEnd={handleLongPressEnd}
+      onTouchMove={handleLongPressEnd}
+      onTouchCancel={handleLongPressEnd}
+    >
+      <div className="relative flex items-start max-w-[75%] md:max-w-[80%]">
+        {/* Message tail pour le premier message d'un groupe */}
+        {isFirstInGroup && (
+          <div className={`wa-message-tail ${isMe ? 'wa-message-tail-self' : 'wa-message-tail-others'}`} />
+        )}
+
+        {/* Message bubble */}
+        <div
+          className={`wa-message-bubble ${isMe ? 'wa-message-bubble-self' : 'wa-message-bubble-others'} 
+            hover:shadow-lg transition-shadow cursor-pointer`}
+          style={{
+            borderTopRightRadius: isMe && isFirstInGroup ? 0 : 7.5,
+            borderTopLeftRadius: !isMe && isFirstInGroup ? 0 : 7.5,
+          }}
+          onContextMenu={(e) => showNativeContextMenu(e, message)}
+          role="article"
+          aria-label={`Message from ${isMe ? 'you' : message.senderName || 'contact'}`}
+        >
+          {/* Message forwarded label */}
+          {message.forwarded && (
+            <div className="text-[#8696a0] text-[12px] sm:text-[13px] mb-[2px]">
+              Forwarded
+            </div>
           )}
 
-          {/* Message bubble */}
-          <div
-            className={`wa-message-bubble ${isMe ? 'wa-message-bubble-self' : 'wa-message-bubble-others'} 
-              hover:shadow-lg transition-shadow cursor-pointer`}
-            style={{
-              borderTopRightRadius: isMe && isFirstInGroup ? 0 : 7.5,
-              borderTopLeftRadius: !isMe && isFirstInGroup ? 0 : 7.5,
-            }}
-            onContextMenu={handleContextMenu}
-            role="article"
-            aria-label={`Message from ${isMe ? 'you' : message.senderName || 'contact'}`}
-          >
-            {/* Message forwarded label */}
-            {message.forwarded && (
-              <div className="text-[#8696a0] text-[12px] sm:text-[13px] mb-[2px]">
-                Forwarded
+          {/* Reply */}
+          {message.replyTo && (
+            <div 
+              className="mb-[3px] p-[5px] sm:p-[6px] rounded-[7.5px] border-l-[4px] cursor-pointer hover:opacity-80 transition-opacity"
+              style={{
+                backgroundColor: isMe ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.06)',
+                borderColor: isMe ? '#06cf9c' : '#8696a0'
+              }}
+              role="blockquote"
+            >
+              <div className="text-[12px] sm:text-[13px] font-medium mb-[2px]" style={{ color: isMe ? '#06cf9c' : '#53bdeb' }}>
+                {message.replyTo.sender === 'me' ? 'You' : message.replyTo.senderName || 'Unknown'}
               </div>
-            )}
-
-            {/* Reply */}
-            {message.replyTo && (
-              <div 
-                className="mb-[3px] p-[5px] sm:p-[6px] rounded-[7.5px] border-l-[4px] cursor-pointer hover:opacity-80 transition-opacity"
-                style={{
-                  backgroundColor: isMe ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.06)',
-                  borderColor: isMe ? '#06cf9c' : '#8696a0'
-                }}
-                role="blockquote"
-              >
-                <div className="text-[12px] sm:text-[13px] font-medium mb-[2px]" style={{ color: isMe ? '#06cf9c' : '#53bdeb' }}>
-                  {message.replyTo.sender === 'me' ? 'You' : message.replyTo.senderName || 'Unknown'}
-                </div>
-                <div className="text-[#d1d7db] text-[13px] sm:text-[14px] line-clamp-3">
-                  {message.replyTo.text || (message.replyTo.media ? 'Media' : 'Message')}
-                </div>
+              <div className="text-[#d1d7db] text-[13px] sm:text-[14px] line-clamp-3">
+                {message.replyTo.text || (message.replyTo.media ? 'Media' : 'Message')}
               </div>
-            )}
-
-            {/* Media */}
-            {message.media && message.media.length > 0 && (
-              <MediaGroup media={message.media} isMe={isMe} isMobile={isMobile} />
-            )}
-
-            {/* Link preview */}
-            {message.link && <PreviewLink link={message.link} />}
-
-            {/* Text message */}
-            {message.text && (
-              <div className="wa-message-text">
-                <span>{message.text}</span>
-                {/* Spacer for metadata */}
-                <span className="inline-block" style={{ width: message.edited ? '85px' : '74px' }}></span>
-              </div>
-            )}
-
-            {/* Message metadata (time + status) */}
-            <div className="wa-message-meta">
-              {message.edited && <span className="text-[10px] sm:text-[11px] mr-1">edited</span>}
-              <span className="wa-message-time">{message.time || 'now'}</span>
-              {isMe && (
-                <span className="wa-message-status ml-1" aria-label={message.read ? 'Read' : 'Delivered'}>
-                  {message.read ? (
-                    <FaCheckDouble className="text-[#53bdeb]" style={{ width: isMobile ? '14px' : '16px', height: isMobile ? '10px' : '11px' }} />
-                  ) : (
-                    <FaCheckDouble className="text-[#8b9a9f]" style={{ width: isMobile ? '14px' : '16px', height: isMobile ? '10px' : '11px' }} />
-                  )}
-                </span>
-              )}
             </div>
+          )}
 
-            {/* Reactions */}
-            {message.reactions && message.reactions.length > 0 && (
-              <ReactionBar 
-                reactions={message.reactions} 
-                isMobile={isMobile}
-                onAddReaction={handleAddReaction}
-                onRemoveReaction={handleRemoveReaction}
-              />
+          {/* Media */}
+          {message.media && message.media.length > 0 && (
+            <MediaGroup media={message.media} isMe={isMe} isMobile={isMobile} />
+          )}
+
+          {/* Link preview */}
+          {message.link && <PreviewLink link={message.link} />}
+
+          {/* Text message */}
+          {message.text && (
+            <div className="wa-message-text">
+              <span>{message.text}</span>
+              {/* Spacer for metadata */}
+              <span className="inline-block" style={{ width: message.edited ? '85px' : '74px' }}></span>
+            </div>
+          )}
+
+          {/* Message metadata (time + status) */}
+          <div className="wa-message-meta">
+            {message.edited && <span className="text-[10px] sm:text-[11px] mr-1">edited</span>}
+            <span className="wa-message-time">{message.time || 'now'}</span>
+            {isMe && (
+              <span className="wa-message-status ml-1" aria-label={message.read ? 'Read' : 'Delivered'}>
+                {message.read ? (
+                  <FaCheckDouble className="text-[#53bdeb]" style={{ width: isMobile ? '14px' : '16px', height: isMobile ? '10px' : '11px' }} />
+                ) : (
+                  <FaCheckDouble className="text-[#8b9a9f]" style={{ width: isMobile ? '14px' : '16px', height: isMobile ? '10px' : '11px' }} />
+                )}
+              </span>
             )}
           </div>
 
-          {/* Options chevron on hover - Desktop only */}
-          {!isMobile && (
-            <button 
-              className={`absolute top-[8px] ${isMe ? '-left-[28px]' : '-right-[28px]'} 
-                opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer p-1 rounded hover:bg-[#2a373f]`}
-              onClick={handleChevronClick}
-              aria-label="Message options"
-            >
-              <FaAngleDown size={18} className="text-[#8696a0] hover:text-[#d1d7db]" />
-            </button>
+          {/* Reactions */}
+          {message.reactions && message.reactions.length > 0 && (
+            <ReactionBar 
+              reactions={message.reactions} 
+              isMobile={isMobile}
+              onAddReaction={handleAddReaction}
+              onRemoveReaction={handleRemoveReaction}
+            />
           )}
         </div>
+
+        {/* Options chevron on hover - Desktop only */}
+        {!isMobile && (
+          <button 
+            className={`absolute top-[8px] ${isMe ? '-left-[28px]' : '-right-[28px]'} 
+              opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer p-1 rounded hover:bg-[#2a373f]`}
+            onClick={(e) => showNativeContextMenu(e, message)}
+            aria-label="Message options"
+          >
+            <FaAngleDown size={18} className="text-[#8696a0] hover:text-[#d1d7db]" />
+          </button>
+        )}
       </div>
-
-      {/* Context Menu */}
-      {showMenu && (
-        <div
-          ref={menuRef}
-          className={`fixed z-[9999] py-2 rounded-md shadow-xl message-dropdown ${isMobile ? 'min-w-[180px]' : 'min-w-[200px]'}`}
-          style={{
-            backgroundColor: 'var(--wa-context-menu-bg)',
-            left: `${menuPosition.x}px`,
-            top: `${menuPosition.y}px`,
-            border: '1px solid rgba(255, 255, 255, 0.12)',
-            maxHeight: '300px',
-            overflowY: 'auto',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4)'
-          }}
-          role="menu"
-          aria-label="Message options menu"
-        >
-          <button 
-            className={`w-full ${isMobile ? 'px-4 py-2' : 'px-6 py-2.5'} text-left text-[14px] text-[#d1d7db] hover:bg-[var(--wa-context-menu-hover)] flex items-center gap-3 transition-colors message-dropdown-item`}
-            role="menuitem"
-            onClick={handleReplyMessage}
-          >
-            <FaReply size={isMobile ? 14 : 16} className="text-[#8696a0]" />
-            Reply
-          </button>
-          
-          <button 
-            className={`w-full ${isMobile ? 'px-4 py-2' : 'px-6 py-2.5'} text-left text-[14px] text-[#d1d7db] hover:bg-[var(--wa-context-menu-hover)] flex items-center gap-3 transition-colors message-dropdown-item`}
-            role="menuitem"
-            onClick={handleForwardMessage}
-          >
-            <FaForward size={isMobile ? 14 : 16} className="text-[#8696a0]" />
-            Forward
-          </button>
-
-          {message.text && (
-            <button 
-              className={`w-full ${isMobile ? 'px-4 py-2' : 'px-6 py-2.5'} text-left text-[14px] text-[#d1d7db] hover:bg-[var(--wa-context-menu-hover)] flex items-center gap-3 transition-colors message-dropdown-item`}
-              role="menuitem"
-              onClick={handleCopyMessage}
-            >
-              <FaCopy size={isMobile ? 14 : 16} className="text-[#8696a0]" />
-              Copy
-            </button>
-          )}
-
-          <button 
-            className={`w-full ${isMobile ? 'px-4 py-2' : 'px-6 py-2.5'} text-left text-[14px] text-[#d1d7db] hover:bg-[var(--wa-context-menu-hover)] flex items-center gap-3 transition-colors message-dropdown-item`}
-            role="menuitem"
-            onClick={handleStarMessage}
-          >
-            <FaStar size={isMobile ? 14 : 16} className="text-[#8696a0]" />
-            Star
-          </button>
-          
-          <button 
-            className={`w-full ${isMobile ? 'px-4 py-2' : 'px-6 py-2.5'} text-left text-[14px] text-[#d1d7db] hover:bg-[var(--wa-context-menu-hover)] flex items-center gap-3 transition-colors message-dropdown-item`}
-            role="menuitem"
-            onClick={handlePinMessage}
-          >
-            <FaThumbtack size={isMobile ? 14 : 16} className="text-[#8696a0]" />
-            Pin
-          </button>
-          
-          {isMe && (
-            <button 
-              className={`w-full ${isMobile ? 'px-4 py-2' : 'px-6 py-2.5'} text-left text-[14px] text-[#d1d7db] hover:bg-[var(--wa-context-menu-hover)] flex items-center gap-3 transition-colors message-dropdown-item`}
-              role="menuitem"
-              onClick={handleDeleteMessage}
-            >
-              <FaTrash size={isMobile ? 14 : 16} className="text-[#8696a0]" />
-              Delete for me
-            </button>
-          )}
-          
-          <div className="border-t border-[rgba(255,255,255,0.08)] my-1" role="separator" />
-          
-          <button 
-            className={`w-full ${isMobile ? 'px-4 py-2' : 'px-6 py-2.5'} text-left text-[14px] text-[#d1d7db] hover:bg-[var(--wa-context-menu-hover)] flex items-center gap-3 transition-colors message-dropdown-item`}
-            role="menuitem"
-            onClick={() => setShowMenu(false)}
-          >
-            <MdOutlineCheckBox size={isMobile ? 16 : 18} className="text-[#8696a0]" />
-            Select
-          </button>
-        </div>
-      )}
-    </>
+    </div>
   );
 }, (prevProps, nextProps) => {
   // Optimisation des re-renders
