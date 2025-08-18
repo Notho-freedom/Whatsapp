@@ -96,7 +96,7 @@ export default function WhatsApp() {
 
         {/* Chat List avec largeur fixe */}
         <div 
-          className="ml-12 flex-shrink-0 bg-[#2C2C2C] border-r border-neutral-800 chat-list-container"
+          className="flex-shrink-0 bg-[#2C2C2C] border-r border-neutral-800 chat-list-container"
           style={{ width: `${chatListWidth}px` }}
         >
           <ChatList
