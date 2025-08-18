@@ -11,18 +11,20 @@ const MessageBubble = memo(function MessageBubble({ message, isFirstInGroup, isL
   const isMe = message.sender === 'me';
   const messageRef = useRef(null);
   const longPressTimer = useRef(null);
-  const { addReactionToMessage, removeReactionFromMessage, deleteMessage, selectedChat } = useAppContext();
+  const { addReactionToMessage, removeReactionFromMessage, deleteMessage, selectedChat, setReplyTo } = useAppContext();
 
   // Gestionnaires d'actions avec notifications améliorées
   const handleReplyMessage = useCallback(async (messageData) => {
     try {
       console.log('Reply to message:', messageData);
-      showInfo('Reply', 'Fonction de réponse en cours de développement');
+      // Définir le message auquel on répond
+      setReplyTo(messageData);
+      showInfo('Reply', 'Réponse activée - tapez votre message');
     } catch (error) {
       console.error('Erreur lors de la réponse:', error);
       showError('Erreur', 'Erreur lors de la réponse au message');
     }
-  }, []);
+  }, [setReplyTo]);
 
   const handleForwardMessage = useCallback(async (messageData) => {
     try {
