@@ -19,7 +19,9 @@ const ACTIONS = {
   SET_ACTIVE_TAB: 'SET_ACTIVE_TAB',
   MARK_MESSAGES_READ: 'MARK_MESSAGES_READ',
   ADD_REACTION: 'ADD_REACTION',
-  REMOVE_REACTION: 'REMOVE_REACTION'
+  REMOVE_REACTION: 'REMOVE_REACTION',
+  SET_REPLY_TO: 'SET_REPLY_TO',
+  CLEAR_REPLY_TO: 'CLEAR_REPLY_TO'
 };
 
 // État initial
@@ -31,7 +33,8 @@ const initialState = {
   messages: {},
   searchQuery: '',
   sidebarOpen: true,
-  activeTab: 'chats'
+  activeTab: 'chats',
+  replyTo: null // État pour le message auquel on répond
 };
 
 // Reducer pour gérer les actions
@@ -184,6 +187,18 @@ function appReducer(state, action) {
         }
       };
     
+    case ACTIONS.SET_REPLY_TO:
+      return {
+        ...state,
+        replyTo: action.payload
+      };
+    
+    case ACTIONS.CLEAR_REPLY_TO:
+      return {
+        ...state,
+        replyTo: null
+      };
+    
     default:
       return state;
   }
@@ -222,7 +237,9 @@ export function AppProvider({ children }) {
     setActiveTab: (tab) => dispatch({ type: ACTIONS.SET_ACTIVE_TAB, payload: tab }),
     markMessagesRead: (chatId) => dispatch({ type: ACTIONS.MARK_MESSAGES_READ, payload: { chatId } }),
     addReaction: (chatId, messageId, reaction) => dispatch({ type: ACTIONS.ADD_REACTION, payload: { chatId, messageId, reaction } }),
-    removeReaction: (chatId, messageId, reaction) => dispatch({ type: ACTIONS.REMOVE_REACTION, payload: { chatId, messageId, reaction } })
+    removeReaction: (chatId, messageId, reaction) => dispatch({ type: ACTIONS.REMOVE_REACTION, payload: { chatId, messageId, reaction } }),
+    setReplyTo: (replyTo) => dispatch({ type: ACTIONS.SET_REPLY_TO, payload: replyTo }),
+    clearReplyTo: () => dispatch({ type: ACTIONS.CLEAR_REPLY_TO })
   }), []);
 
   // Fonctions utilitaires pour générer des messages
@@ -395,10 +412,12 @@ export function AppProvider({ children }) {
   }, []);
 
   // Méthodes métier optimisées
-  const sendMessage = useCallback(async (chatId, text) => {
+  const sendMessage = useCallback(async (chatId, text, replyTo = null) => {
     if (!text.trim()) return;
 
-    const message = createTextMessage(chatId, 'me', text.trim());
+    const message = createTextMessage(chatId, 'me', text.trim(), {
+      replyTo: replyTo
+    });
     actions.addMessage(chatId, message);
 
     // Mettre à jour le dernier message de l'utilisateur

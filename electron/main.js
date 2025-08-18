@@ -41,6 +41,42 @@ function createWindow() {
     
     // Ouvrir les outils de développement
     mainWindow.webContents.openDevTools();
+    
+    // Hot reload pour le développement
+    mainWindow.webContents.on('did-fail-load', () => {
+      console.log('Page failed to load, retrying...');
+      setTimeout(() => {
+        mainWindow.loadURL('http://localhost:3000');
+      }, 1000);
+    });
+    
+    // Recharger automatiquement quand le serveur de développement redémarre
+    let reloadTimer = null;
+    const checkDevServer = async () => {
+      try {
+        const response = await fetch('http://localhost:3000');
+        if (response.ok) {
+          // Le serveur est disponible, on peut arrêter de vérifier
+          if (reloadTimer) {
+            clearInterval(reloadTimer);
+            reloadTimer = null;
+          }
+        }
+      } catch (error) {
+        // Le serveur n'est pas disponible, on continue de vérifier
+        console.log('Dev server not ready, retrying...');
+      }
+    };
+    
+    // Vérifier le serveur toutes les 2 secondes
+    reloadTimer = setInterval(checkDevServer, 2000);
+    
+    // Nettoyer le timer quand la fenêtre se ferme
+    mainWindow.on('closed', () => {
+      if (reloadTimer) {
+        clearInterval(reloadTimer);
+      }
+    });
   } else {
     console.log('📦 Mode production: Chargement depuis les fichiers buildés');
     // En production, charger depuis les fichiers buildés

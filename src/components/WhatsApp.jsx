@@ -74,9 +74,15 @@ export default function WhatsApp() {
     selectChat(chat);
   };
 
-  const handleSendMessage = (text) => {
+  const handleSendMessage = (messageData) => {
     if (selectedChat) {
-      sendMessage(selectedChat.id, text);
+      // Si messageData est une chaîne (ancien format), la convertir
+      if (typeof messageData === 'string') {
+        sendMessage(selectedChat.id, messageData);
+      } else {
+        // Nouveau format avec replyTo
+        sendMessage(selectedChat.id, messageData.text, messageData.replyTo);
+      }
     }
   };
 
