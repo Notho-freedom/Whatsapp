@@ -2,9 +2,9 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 
 export default function Splitter({ 
   onResize, 
-  minWidth = 200, 
+  minWidth = 300, 
   maxWidth = 600, 
-  initialWidth = 300,
+  initialWidth = 400,
   direction = 'horizontal' 
 }) {
   const [isDragging, setIsDragging] = useState(false);
@@ -69,7 +69,7 @@ export default function Splitter({
       </div>
       
       {/* Zone de drag étendue pour faciliter la saisie */}
-      <div className="absolute inset-0 -left-2 -right-2" />
+      <div className="absolute inset-0" />
       
       {/* Overlay pendant le drag */}
       {isDragging && (
