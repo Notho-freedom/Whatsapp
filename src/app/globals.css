@@ -560,15 +560,10 @@ body {
 .splitter {
   background-color: var(--wa-border-strong);
   transition: background-color 0.2s ease;
+  width: 1px;
+  opacity: 0;
 }
 
-.splitter:hover {
-  background-color: var(--wa-highlight);
-}
-
-.splitter:active {
-  background-color: var(--wa-highlight);
-}
 
 /* Message dropdown styles */
 .message-dropdown {
