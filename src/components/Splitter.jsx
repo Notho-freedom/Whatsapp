@@ -65,7 +65,7 @@ export default function Splitter({
     >
       {/* Indicateur visuel du splitter */}
       <div className="absolute inset-0 flex items-center justify-center">
-        <div className="w-0.5 h-8 bg-[#8696a0] rounded-full opacity-50" />
+        <div className="w-0.5 h-8 rounded-full opacity-50" />
       </div>
       
       {/* Zone de drag étendue pour faciliter la saisie */}
