@@ -429,8 +429,6 @@ export function AppProvider({ children }) {
 
   const selectChat = useCallback((chat) => {
     actions.setSelectedChat(chat);
-    // Marquer les messages comme lus
-    actions.markMessagesRead(chat.id);
   }, [actions]);
 
   const addReactionToMessage = useCallback((chatId, messageId, reaction) => {
@@ -506,7 +504,7 @@ export function AppProvider({ children }) {
     }
 
     fetchUsers();
-  }, [actions, generateInitialMessages]);
+  }, []); // Exécuter seulement au montage
 
   // Fonctions utilitaires pour les données initiales
   function getRandomStatus() {
@@ -564,9 +562,9 @@ export function AppProvider({ children }) {
     deleteMessage,
     filteredUsers,
     // Fonctions utilitaires exposées
-    createTextMessage: (chatId, sender, text, options) => createTextMessage(chatId, sender, text, options),
-    createMediaMessage: (chatId, sender, media, options) => createMediaMessage(chatId, sender, media, options),
-    createSystemMessage: (chatId, systemType, text, options) => createSystemMessage(chatId, systemType, text, options)
+    createTextMessage,
+    createMediaMessage,
+    createSystemMessage
   }), [
     state,
     actions,

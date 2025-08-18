@@ -47,7 +47,7 @@ const ChatBody = memo(function ChatBody({ selectedChat }) {
     if (selectedChat && messages[selectedChat.id]) {
       markMessagesRead(selectedChat.id);
     }
-  }, [selectedChat, messages, markMessagesRead]);
+  }, [selectedChat?.id, markMessagesRead]);
 
   // Détection du scroll manuel
   const handleScroll = useCallback(() => {
