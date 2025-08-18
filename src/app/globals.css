@@ -564,46 +564,6 @@ body {
   opacity: 0;
 }
 
-
-/* Message dropdown styles */
-.message-dropdown {
-  animation: dropdown-fade-in 0.2s ease-out;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
-
-@keyframes dropdown-fade-in {
-  from {
-    opacity: 0;
-    transform: scale(0.95) translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-.message-dropdown-item {
-  position: relative;
-  overflow: hidden;
-}
-
-.message-dropdown-item::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.05), transparent);
-  transform: translateX(-100%);
-  transition: transform 0.3s ease;
-}
-
-.message-dropdown-item:hover::before {
-  transform: translateX(100%);
-}
-
 /* Amélioration du scroll pour la chat list */
 .chat-list {
   scrollbar-width: thin;
@@ -636,20 +596,5 @@ body {
 @media (max-width: 768px) {
   .splitter {
     width: 2px;
-  }
-  
-  .message-dropdown {
-    animation: dropdown-fade-in-mobile 0.15s ease-out;
-  }
-}
-
-@keyframes dropdown-fade-in-mobile {
-  from {
-    opacity: 0;
-    transform: scale(0.9) translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
   }
 }

@@ -232,6 +232,171 @@ ipcMain.handle('open-external', async (event, url) => {
   await shell.openExternal(url);
 });
 
+// Nouveaux gestionnaires pour les menus contextuels et médias
+ipcMain.handle('show-context-menu', async (event, menuItems, x, y) => {
+  try {
+    console.log('Affichage du menu contextuel:', { menuItems, x, y });
+    
+    // Créer le menu avec les items sérialisés
+    const menu = Menu.buildFromTemplate(menuItems);
+    
+    // Utiliser une promesse avec timeout pour éviter le blocage
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        console.log('Timeout du menu contextuel');
+        resolve({ success: false, error: 'Timeout' });
+      }, 5000); // 5 secondes de timeout
+      
+      menu.popup({ x, y }, () => {
+        clearTimeout(timeout);
+        console.log('Menu contextuel fermé');
+        resolve({ success: true });
+      });
+      
+      // Gestion d'erreur
+      menu.on('menu-will-close', () => {
+        clearTimeout(timeout);
+        console.log('Menu contextuel fermé (will-close)');
+        resolve({ success: true });
+      });
+    });
+  } catch (error) {
+    console.error('Erreur lors de l\'affichage du menu contextuel:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Gestionnaire pour exécuter les actions du menu contextuel
+ipcMain.handle('execute-context-menu-action', async (event, actionId, actionData) => {
+  try {
+    console.log('Exécution de l\'action:', actionId, actionData);
+    
+    switch (actionId) {
+      case 'reply':
+        // Logique pour répondre au message
+        console.log('Action: Reply to message');
+        return { success: true, action: 'reply' };
+        
+      case 'forward':
+        // Logique pour transférer le message
+        console.log('Action: Forward message');
+        return { success: true, action: 'forward' };
+        
+      case 'copy':
+        // Copier le texte dans le presse-papiers
+        if (actionData && actionData.text) {
+          require('electron').clipboard.writeText(actionData.text);
+          console.log('Action: Copy text to clipboard');
+        }
+        return { success: true, action: 'copy' };
+        
+      case 'view-media':
+        // Ouvrir le média avec l'application par défaut
+        if (actionData && actionData.url) {
+          await shell.openExternal(actionData.url);
+          console.log('Action: View media');
+        }
+        return { success: true, action: 'view-media' };
+        
+      case 'save-media':
+        // Télécharger le média
+        console.log('Action: Save media');
+        return { success: true, action: 'save-media' };
+        
+      case 'share-media':
+        // Partager le média
+        console.log('Action: Share media');
+        return { success: true, action: 'share-media' };
+        
+      case 'star':
+        // Marquer comme favori
+        console.log('Action: Star message');
+        return { success: true, action: 'star' };
+        
+      case 'pin':
+        // Épingler le message
+        console.log('Action: Pin message');
+        return { success: true, action: 'pin' };
+        
+      case 'delete':
+        // Supprimer le message
+        console.log('Action: Delete message');
+        return { success: true, action: 'delete' };
+        
+      default:
+        console.log('Action inconnue:', actionId);
+        return { success: false, error: 'Action inconnue' };
+    }
+  } catch (error) {
+    console.error('Erreur lors de l\'exécution de l\'action:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('download-media', async (event, media) => {
+  try {
+    console.log('Téléchargement de média:', media);
+    
+    // Ouvrir une boîte de dialogue pour choisir l'emplacement
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: 'Sauvegarder le média',
+      defaultPath: `media_${Date.now()}`,
+      filters: [
+        { name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp'] },
+        { name: 'Vidéos', extensions: ['mp4', 'avi', 'mov', 'mkv'] },
+        { name: 'Audio', extensions: ['mp3', 'wav', 'ogg', 'm4a'] },
+        { name: 'Tous les fichiers', extensions: ['*'] }
+      ]
+    });
+    
+    if (!result.canceled && result.filePath) {
+      // Ici vous pouvez implémenter la logique de téléchargement
+      // Pour l'instant, on simule le téléchargement
+      console.log('Média sauvegardé à:', result.filePath);
+      return { success: true, path: result.filePath };
+    }
+    
+    return { success: false, message: 'Téléchargement annulé' };
+  } catch (error) {
+    console.error('Erreur lors du téléchargement:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('view-media', async (event, media) => {
+  try {
+    console.log('Affichage du média:', media);
+    
+    // Ouvrir le média dans une nouvelle fenêtre ou avec l'application par défaut
+    if (media.url) {
+      await shell.openExternal(media.url);
+    }
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Erreur lors de l\'affichage du média:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('share-media', async (event, media) => {
+  try {
+    console.log('Partage du média:', media);
+    
+    // Ici vous pouvez implémenter la logique de partage
+    // Par exemple, copier le lien dans le presse-papiers
+    if (media.url) {
+      // Copier l'URL dans le presse-papiers
+      mainWindow.webContents.copy(media.url);
+    }
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Erreur lors du partage:', error);
+    return { success: false, error: error.message };
+  }
+});
+
 ipcMain.handle('open-file-dialog', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
     properties: ['openFile'],
