@@ -66,19 +66,19 @@ function AudioMessage({ audio, isMe, isMobile }) {
   const [currentTime, setCurrentTime] = useState(0);
   
   // Générer une forme d'onde aléatoire mais réaliste
-  const waveformBars = Array.from({ length: isMobile ? 30 : 40 }, () => 
+  const waveformBars = Array.from({ length: isMobile ? 25 : 35 }, () => 
     Math.random() * 0.7 + 0.3
   );
 
   return (
     <div 
-      className={`flex items-center gap-2 py-[6px] pr-[6px] -ml-[9px] -mr-[9px] ${isMobile ? 'min-w-[200px]' : 'min-w-[250px]'}`}
+      className={`flex items-center gap-2 py-[6px] ${isMobile ? 'w-full max-w-[320px]' : 'w-full max-w-[380px]'}`}
       style={{ backgroundColor: 'transparent' }}
     >
       {/* Avatar/Bouton Play */}
-      <div className="relative flex-shrink-0 ml-[9px]">
+      <div className="relative flex-shrink-0">
         <div 
-          className={`${isMobile ? 'w-[35px] h-[35px]' : 'w-[40px] h-[40px]'} rounded-full overflow-hidden cursor-pointer group`}
+          className={`${isMobile ? 'w-[32px] h-[32px]' : 'w-[36px] h-[36px]'} rounded-full overflow-hidden cursor-pointer group`}
           onClick={() => setIsPlaying(!isPlaying)}
         >
           <img 
@@ -88,23 +88,23 @@ function AudioMessage({ audio, isMe, isMobile }) {
           />
           <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
             {isPlaying ? (
-              <FaPause size={isMobile ? 14 : 16} className="text-white" />
+              <FaPause size={isMobile ? 12 : 14} className="text-white" />
             ) : (
-              <FaPlay size={isMobile ? 14 : 16} className="text-white ml-1" />
+              <FaPlay size={isMobile ? 12 : 14} className="text-white ml-1" />
             )}
           </div>
         </div>
       </div>
 
       {/* Forme d'onde et durée */}
-      <div className="flex-1 flex flex-col gap-1">
-        <div className={`flex items-center gap-[2px] ${isMobile ? 'h-[25px]' : 'h-[30px]'}`}>
+      <div className="flex-1 flex flex-col gap-1 min-w-0">
+        <div className={`flex items-center gap-[1px] ${isMobile ? 'h-[22px]' : 'h-[26px]'}`}>
           {waveformBars.map((height, idx) => (
             <div
               key={idx}
-              className="w-[2px] bg-[#3b4a54] rounded-full transition-all"
+              className="w-[1.5px] bg-[#3b4a54] rounded-full transition-all flex-shrink-0"
               style={{
-                height: `${height * (isMobile ? 20 : 25)}px`,
+                height: `${height * (isMobile ? 18 : 22)}px`,
                 backgroundColor: idx < (currentTime * waveformBars.length) ? '#00a884' : '#3b4a54'
               }}
             />
@@ -118,9 +118,9 @@ function AudioMessage({ audio, isMe, isMobile }) {
       </div>
 
       {/* Icône microphone */}
-      <div className="flex-shrink-0 mr-[6px]">
-        <div className={`${isMobile ? 'w-[14px] h-[14px]' : 'w-[16px] h-[16px]'} rounded-full bg-[#00a884] flex items-center justify-center`}>
-          <FaMicrophone size={isMobile ? 8 : 9} className="text-white" />
+      <div className="flex-shrink-0">
+        <div className={`${isMobile ? 'w-[12px] h-[12px]' : 'w-[14px] h-[14px]'} rounded-full bg-[#00a884] flex items-center justify-center`}>
+          <FaMicrophone size={isMobile ? 6 : 7} className="text-white" />
         </div>
       </div>
     </div>

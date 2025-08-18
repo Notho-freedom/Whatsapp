@@ -94,7 +94,7 @@ export default function ChatList({ onChatSelect, selectedChatId }) {
 
 
   return (
-    <div className="max-w-[380px] w-auto min-w-[200px] rounded-tl-xl ml-12 bg-[#2C2C2C] border-r border-neutral-800 flex flex-col pl-1.5">
+    <div className="h-full flex flex-col pl-1.5">
       {/* Header */}
       <div className="pl-4 pt-4 pr-2 mb-4">
         <div className="flex items-center justify-between mb-4">
@@ -118,90 +118,88 @@ export default function ChatList({ onChatSelect, selectedChatId }) {
                 viewBox="0 0 24 24" 
                 fill="none" 
                 stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
                 className="text-gray-200"
               >
-                <path d="M4 7H20" strokeWidth="2" strokeLinecap="round"/>
-                <path d="M6 12H18" strokeWidth="2" strokeLinecap="round"/>
-                <path d="M8 17H16" strokeWidth="2" strokeLinecap="round"/>
+                <polygon points="22,3 2,3 10,12.46 10,19 14,21 14,12.46" />
               </svg>
             </button>
           </div>
         </div>
 
-        {/* Search */}
+        {/* Search Input */}
         <div className="relative">
-          
-          <input 
-            className="w-full max-h-8 bg-[#3D3D3D] text-white placeholder-gray-200 placeholder:text-sm py-2 pl-8 pr-3 rounded-[0.30rem] border-b border-white/50 backdrop-blur-lg focus:outline-none focus:ring-none focus:border-b-2 focus:border-[#1DAA61] focus:bg-[#202020]" 
-            placeholder="Search or start a new chat" 
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+          <input
             type="text"
-            onChange={handleSearchChange}
+            placeholder="Search or start new chat"
             value={searchQuery}
+            onChange={handleSearchChange}
+            className="w-full pl-10 pr-4 py-2 bg-[#3D3D3D] text-white placeholder-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1DAA61] text-sm"
           />
-          <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/3 text-gray-200 text-xs rotate-90 weigth-thin" />
         </div>
       </div>
 
-      {/* Chat List avec Lenis */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-1 chat-list">
-        <div>
-          {sortedUsers.length === 0 ? (
-            <div className="p-4 text-center text-gray-400">
-              <p>Aucune conversation trouvée</p>
-            </div>
-          ) : (
-            sortedUsers.map((chat) => (
-              <div
-                key={chat.id}
-                onClick={() => onChatSelect(chat)}
-                className={`flex items-center gap-3 p-4 cursor-pointer rounded-lg hover:bg-neutral-700/50 transition-colors ${
-                  selectedChatId === chat.id ? 'bg-neutral-700/50' : ''
-                }`}
-              >
-                {/* Avatar */}
-                <div className="relative">
-                  <img
-                    src={chat.avatar}
-                    className={`w-12 h-12 rounded-full object-cover ${chat.online ? 'border-2 border-[#1DAA61] p-[1px]' : ''}`}
-                  />
-                </div>
+      {/* Chat List */}
+      <div 
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto chat-list"
+      >
+        <div className="space-y-1">
+          {sortedUsers.map((chat) => (
+            <button
+              key={chat.id}
+              onClick={() => onChatSelect(chat)}
+              className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-[#3a3a3a] transition-colors ${
+                selectedChatId === chat.id ? 'bg-[#3a3a3a]' : ''
+              }`}
+            >
+              {/* Avatar avec indicateur de statut */}
+              <div className="relative flex-shrink-0">
+                <img
+                  src={chat.avatar || `https://placehold.co/40x40/png?text=${chat.name.charAt(0)}`}
+                  alt={`${chat.name} avatar`}
+                  className="w-10 h-10 rounded-full object-cover"
+                />
+                {chat.isOnline && (
+                  <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-[#1DAA61] rounded-full border-2 border-[#2C2C2C]" />
+                )}
+              </div>
 
-                {/* Chat Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-white font-semibold text-sm font-segoe truncate flex items-center gap-1">
-                      {chat.name}
-                    </h3>
-                    <span className={`text-xs w-[35%] pl-2 text-right text-nowrap ${chat.unreadCount > 0 ? 'text-[#1DAA61]' : 'text-gray-300'}`}>
-                      {chat.lastMessageTime}
+              {/* Contenu du chat */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between mb-1">
+                  <h3 className="text-white font-semibold text-sm truncate">
+                    {chat.name}
+                  </h3>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    {chat.isPinned && (
+                      <Pin size={12} className="text-gray-400" />
+                    )}
+                    <span className="text-xs text-gray-400">
+                      {chat.lastMessageTime || '12:00 PM'}
                     </span>
                   </div>
-                  <div className="flex items-center mt-1">
-                  {/* Texte (occupe tout l'espace restant) */}
-                  <div className="flex items-center flex-1 min-w-0">
-                      <p className="text-sm text-gray-300 truncate flex items-center">
-                        {renderLastMessage(chat)}
-                      </p>
-                    </div>
-
-
-                  {/* Icônes + badge alignés à droite */}
-                  <div className="flex items-center gap-1 ml-2 shrink-0">
-                    {chat.isPinned && <Pin size={12} className="text-gray-400" />}
-                    {chat.isMuted && <BellOff size={12} className="text-gray-500" />}
-
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center text-gray-300 text-sm truncate flex-1">
+                    {renderLastMessage(chat)}
+                  </div>
+                  
+                  <div className="flex items-center gap-1 flex-shrink-0 ml-2">
                     {chat.unreadCount > 0 && (
-                      <span className="bg-[#1DAA61] text-whatsapp-dark-950 text-[11px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                        {chat.unreadCount}
+                      <span className="bg-[#1DAA61] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-semibold">
+                        {chat.unreadCount > 99 ? '99+' : chat.unreadCount}
                       </span>
                     )}
                   </div>
                 </div>
-
-                </div>
               </div>
-            ))
-          )}
+            </button>
+          ))}
         </div>
       </div>
     </div>

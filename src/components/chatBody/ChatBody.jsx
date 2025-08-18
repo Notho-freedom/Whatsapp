@@ -1,13 +1,14 @@
 import { FaLock, FaWhatsapp } from 'react-icons/fa';
 import MessageBubble from './MessageBubble';
 import SystemMessage from './SystemMessage';
-import mocMessages from './mocMessages';
 import { useEffect, useRef, useState, useCallback, memo } from 'react';
+import { useAppContext } from '@/context/AppContext';
 
-const ChatBody = memo(function ChatBody({ selectedChat, messages = {} }) {
+const ChatBody = memo(function ChatBody({ selectedChat }) {
   const scrollRef = useRef(null);
   const [isMobile, setIsMobile] = useState(false);
   const [autoScroll, setAutoScroll] = useState(true);
+  const { messages, markMessagesRead } = useAppContext();
 
   // Optimisation avec useCallback
   const checkMobile = useCallback(() => {
@@ -40,6 +41,13 @@ const ChatBody = memo(function ChatBody({ selectedChat, messages = {} }) {
     // Scroll smooth pour les nouveaux messages
     scrollToBottom(true);
   }, [messages, scrollToBottom]);
+
+  // Marquer les messages comme lus quand on sélectionne un chat
+  useEffect(() => {
+    if (selectedChat && messages[selectedChat.id]) {
+      markMessagesRead(selectedChat.id);
+    }
+  }, [selectedChat, messages, markMessagesRead]);
 
   // Détection du scroll manuel
   const handleScroll = useCallback(() => {
@@ -83,8 +91,8 @@ const ChatBody = memo(function ChatBody({ selectedChat, messages = {} }) {
     );
   }
 
-  // Utiliser les messages mockés si pas de messages
-  const chatMessages = messages[selectedChat?.id] || mocMessages || [];
+  // Récupérer les messages du chat sélectionné
+  const chatMessages = messages[selectedChat?.id] || [];
 
   // Grouper les messages par date
   const groupedMessages = groupMessagesByDate(chatMessages);
