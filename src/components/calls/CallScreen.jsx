@@ -12,6 +12,35 @@ export default function CallScreen() {
 
   useEffect(() => {
     setIsClient(true);
+    
+    // Écouter les événements d'appels depuis le profil ou le chat
+    const handleStartCallFromProfile = (event) => {
+      const { type, participant, fromProfile, fromChat, chatId } = event.detail;
+      
+      // Créer l'appel sortant
+      setCurrentCall({
+        id: Date.now(),
+        type: type,
+        isVideo: type === 'video',
+        state: 'outgoing',
+        participant: participant,
+        participants: [participant],
+        startTime: new Date(),
+        fromProfile,
+        fromChat,
+        chatId
+      });
+      
+      // Basculer vers l'onglet des appels récents
+      setActiveTab('recent');
+    };
+    
+    // Écouter l'événement start-call
+    window.addEventListener('start-call', handleStartCallFromProfile);
+    
+    return () => {
+      window.removeEventListener('start-call', handleStartCallFromProfile);
+    };
   }, []);
 
   // Simuler un appel entrant après 5 secondes
@@ -42,25 +71,54 @@ export default function CallScreen() {
 
   const handleCreateCall = (type, userId = null) => {
     console.log('Creating call:', type, userId);
+    
     // Simuler un appel sortant
     const participant = userId ? users.find(u => u.id === userId) : users[0];
-    setCurrentCall({
-      id: Date.now(),
-      type: type,
-      isVideo: type === 'video',
-      state: 'outgoing',
-      participant: participant,
-      participants: [participant],
-      startTime: new Date()
-    });
+    if (participant) {
+      setCurrentCall({
+        id: Date.now(),
+        type: type,
+        isVideo: type === 'video',
+        state: 'outgoing',
+        participant: participant,
+        participants: [participant],
+        startTime: new Date()
+      });
+      
+      // Émettre un événement pour notifier l'application
+      window.dispatchEvent(new CustomEvent('call-started', { 
+        detail: { type, participant } 
+      }));
+    }
   };
 
   const handleCreateCallLink = () => {
     console.log('Creating call link');
+    
+    // Simuler la création d'un lien d'appel
+    const callLink = `https://wa.me/call/${Date.now()}`;
+    
+    // Copier le lien dans le presse-papiers
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(callLink).then(() => {
+        // Notifier l'utilisateur
+        window.dispatchEvent(new CustomEvent('show-notification', { 
+          detail: { 
+            type: 'success', 
+            message: 'Call link copied to clipboard' 
+          } 
+        }));
+      });
+    }
   };
 
   const handleOpenKeypad = () => {
     console.log('Opening keypad');
+    
+    // Émettre un événement pour ouvrir le pavé numérique
+    window.dispatchEvent(new CustomEvent('open-keypad', { 
+      detail: { action: 'dial' } 
+    }));
   };
 
   const handleEndCall = (callData) => {
@@ -147,6 +205,12 @@ export default function CallScreen() {
 
           <button 
             className="flex items-center gap-3 p-4 hover:bg-[#3D3D3D] rounded-lg transition-colors"
+            onClick={() => {
+              // Ouvrir l'interface d'ajout de contact
+              window.dispatchEvent(new CustomEvent('add-contact', { 
+                detail: { action: 'create' } 
+              }));
+            }}
           >
             <div className="w-10 h-10 bg-[#3D3D3D] rounded-full flex items-center justify-center">
               <UserPlus size={20} className="text-gray-400" />
@@ -211,10 +275,10 @@ export default function CallScreen() {
                     <div>
                       <h4 className="text-white font-medium text-sm">{call.name}</h4>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className={`text-xs ${
-                          call.type === 'missed' ? 'text-red-500' : 
-                          call.type === 'incoming' ? 'text-green-500' : 'text-blue-500'
-                        }`}>
+                                                 <span className={`text-xs ${
+                           call.type === 'missed' ? 'text-red-500' : 
+                           call.type === 'incoming' ? 'text-[#1DAA61]' : 'text-blue-500'
+                         }`}>
                           {call.type === 'missed' ? 'Missed call' : 
                            call.type === 'incoming' ? 'Incoming call' : 'Outgoing call'}
                           {call.duration && ` • ${call.duration}`}
@@ -299,6 +363,12 @@ export default function CallScreen() {
           <button 
             className="p-2 hover:bg-[#3D3D3D] rounded-lg transition-colors"
             aria-label="More options"
+            onClick={() => {
+              // Ouvrir le menu des options d'appel
+              window.dispatchEvent(new CustomEvent('open-call-options', { 
+                detail: { action: 'show-menu' } 
+              }));
+            }}
           >
             <MoreVertical size={18} className="text-gray-400" />
           </button>
@@ -331,18 +401,43 @@ export default function CallScreen() {
 
       {/* Tab Content */}
       <div className="flex-1 overflow-hidden">
-        {activeTab === 'create' ? <CreateCallTab /> : <RecentCallsTab />}
+        {currentCall ? (
+          <CallManager
+            callData={currentCall}
+            onEndCall={handleEndCall}
+            onAcceptCall={handleAcceptCall}
+            onDeclineCall={handleDeclineCall}
+          />
+        ) : (
+          activeTab === 'create' ? <CreateCallTab /> : <RecentCallsTab />
+        )}
       </div>
 
       {/* Footer */}
       <div className="px-4 py-3 border-t border-neutral-800 bg-[#2C2C2C]">
         <div className="flex items-center justify-between">
-          <button className="flex items-center gap-2 text-[#8696a0] hover:text-[#e9edef] transition-colors">
+          <button 
+            className="flex items-center gap-2 text-[#8696a0] hover:text-[#e9edef] transition-colors"
+            onClick={() => {
+              // Ouvrir le pavé numérique
+              window.dispatchEvent(new CustomEvent('open-keypad', { 
+                detail: { action: 'dial' } 
+              }));
+            }}
+          >
             <MdKeyboard size={16} />
             <span className="text-sm">Keypad</span>
           </button>
           
-          <button className="flex items-center gap-2 text-[#8696a0] hover:text-[#e9edef] transition-colors">
+          <button 
+            className="flex items-center gap-2 text-[#8696a0] hover:text-[#e9edef] transition-colors"
+            onClick={() => {
+              // Ouvrir les paramètres d'appel
+              window.dispatchEvent(new CustomEvent('open-call-settings', { 
+                detail: { action: 'open' } 
+              }));
+            }}
+          >
             <Settings size={16} />
             <span className="text-sm">Settings</span>
           </button>

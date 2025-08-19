@@ -12,17 +12,24 @@ import StarredMessages from './StarredMessages';
 import { useAppContext } from '@/context/AppContext';
 import CallPanel from './calls/CallPanel';
 import CallScreen from './calls/CallScreen';
+import { useEventManager } from '@/hooks/useEventManager';
+import ClientOnly from './ClientOnly';
 
 export default function WhatsApp() {
   const [isClient, setIsClient] = useState(false);
   const [chatListWidth, setChatListWidth] = useState(300); // Largeur initiale pour 25%
+  
+  // Initialiser le gestionnaire d'événements seulement côté client
+  const eventManager = useEventManager();
+  
   const { 
     selectedChat, 
     sendMessage, 
     selectChat,
     loading,
     error,
-    activeTab
+    activeTab,
+    setActiveTab
   } = useAppContext();
 
   useEffect(() => {
@@ -40,8 +47,20 @@ export default function WhatsApp() {
     calculateInitialWidth();
     window.addEventListener('resize', calculateInitialWidth);
     
-    return () => window.removeEventListener('resize', calculateInitialWidth);
-  }, []);
+    // Gestionnaire d'événements pour les appels
+    const handleStartCall = (event) => {
+      // Rediriger vers l'onglet "Appels"
+      setActiveTab('calls');
+    };
+    
+    // Écouter les événements d'appels
+    window.addEventListener('start-call', handleStartCall);
+    
+    return () => {
+      window.removeEventListener('resize', calculateInitialWidth);
+      window.removeEventListener('start-call', handleStartCall);
+    };
+  }, [setActiveTab]);
 
   if (!isClient) {
     return null;
@@ -82,6 +101,9 @@ export default function WhatsApp() {
     if (selectedChat) {
       // Si messageData est une chaîne (ancien format), la convertir
       if (typeof messageData === 'string') {
+        sendMessage(selectedChat.id, messageData);
+      } else if (messageData.type === 'audio') {
+        // Message vocal
         sendMessage(selectedChat.id, messageData);
       } else {
         // Nouveau format avec replyTo
@@ -143,6 +165,8 @@ export default function WhatsApp() {
           {activeTab === 'star' && <StarredMessages />}
         </div>
       </div>
+
+
     </div>
   );
 }

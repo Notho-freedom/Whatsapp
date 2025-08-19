@@ -446,19 +446,42 @@ export function AppProvider({ children }) {
   }, []);
 
   // Méthodes métier optimisées
-  const sendMessage = useCallback(async (chatId, text, replyTo = null) => {
-    if (!text.trim()) return;
+  const sendMessage = useCallback(async (chatId, content, replyTo = null) => {
+    // Gérer les différents types de contenu
+    if (typeof content === 'string') {
+      // Message texte
+      if (!content.trim()) return;
 
-    const message = createTextMessage(chatId, 'me', text.trim(), {
-      replyTo: replyTo
-    });
-    actions.addMessage(chatId, message);
+      const message = createTextMessage(chatId, 'me', content.trim(), {
+        replyTo: replyTo
+      });
+      actions.addMessage(chatId, message);
 
-    // Mettre à jour le dernier message de l'utilisateur
-    actions.updateLastMessage(chatId, {
-      text: text.trim(),
-      type: 'text'
-    });
+      // Mettre à jour le dernier message de l'utilisateur
+      actions.updateLastMessage(chatId, {
+        text: content.trim(),
+        type: 'text'
+      });
+    } else if (content && content.type === 'audio') {
+      // Message vocal
+      const message = createMediaMessage(chatId, 'me', 'audio', {
+        audio: content.audio,
+        duration: content.duration || 0,
+        replyTo: replyTo
+      });
+      actions.addMessage(chatId, message);
+
+      // Mettre à jour le dernier message de l'utilisateur
+      actions.updateLastMessage(chatId, {
+        text: 'Voice message',
+        type: 'audio',
+        duration: content.duration || 0
+      });
+    } else {
+      // Autres types de messages
+      console.warn('Type de message non supporté:', content);
+      return;
+    }
 
     // Simuler une réponse après un délai
     setTimeout(() => {
@@ -478,7 +501,7 @@ export function AppProvider({ children }) {
         type: 'text'
       });
     }, 1000 + Math.random() * 2000);
-  }, [createTextMessage, getRandomMessageText, actions, state.users]);
+  }, [createTextMessage, createMediaMessage, getRandomMessageText, actions, state.users]);
 
   const selectChat = useCallback((chat) => {
     actions.setSelectedChat(chat);
