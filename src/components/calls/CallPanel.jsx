@@ -127,7 +127,7 @@ export default function CallPanel() {
 
   return (
     <div className="h-full flex flex-col bg-[#0b0e11]">
-             {/* Header */}
+      {/* Header */}
        <div className="flex items-center justify-between px-3 py-2 border-b border-neutral-800 bg-[#2C2C2C]">
          <div className="flex items-center gap-2">
            <h2 className="text-base font-semibold text-white">Calls</h2>
@@ -158,21 +158,21 @@ export default function CallPanel() {
              <MoreVertical size={16} className="text-gray-400" />
            </button>
          </div>
-       </div>
+      </div>
 
              {/* Search Bar */}
        <div className="px-3 py-2 border-b border-neutral-800">
          <div className="relative">
            <Search size={14} className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400" />
-           <input
-             type="text"
-             placeholder="Search or start a new call"
+          <input
+            type="text"
+            placeholder="Search or start a new call"
              value={searchQuery}
              onChange={(e) => setSearchQuery(e.target.value)}
              className="w-full bg-[#3D3D3D] text-white placeholder-gray-200 rounded pl-8 pr-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#1DAA61]"
-           />
-         </div>
-       </div>
+          />
+        </div>
+      </div>
 
                            {/* Favorites Section */}
         <div className="px-3 py-2 border-b border-neutral-800">
@@ -262,10 +262,10 @@ export default function CallPanel() {
              <span className="text-[10px] text-gray-300">Create call link</span>
            </button>
          </div>
-       </div>
+      </div>
 
              {/* Recent Calls */}
-       <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto">
          <div className="px-3 py-1.5">
            <h3 className="text-xs font-medium text-gray-400 mb-1.5">Recent</h3>
          </div>
@@ -312,7 +312,7 @@ export default function CallPanel() {
                      <div className="flex items-center gap-1.5 mt-0.5">
                        <span className={`text-[10px] ${getCallStatusColor(call)}`}>
                          {getCallStatusText(call)}
-                       </span>
+                  </span>
                        <span className="text-gray-400">•</span>
                        <span className="text-[10px] text-gray-400">{call.time}</span>
                      </div>
@@ -346,7 +346,7 @@ export default function CallPanel() {
                    >
                      <Video size={14} className="text-gray-400" />
                    </button>
-                 </div>
+                </div>
               </div>
             ))}
           </div>
@@ -383,6 +383,6 @@ export default function CallPanel() {
            </button>
          </div>
        </div>
-    </div>
+      </div>
   );
 }

@@ -193,6 +193,7 @@ export default function ChatList({ onChatSelect, selectedChatId }) {
                 <div className="relative">
                   <img
                     src={chat.avatar}
+                    alt={`${chat.name} profile picture`}
                     className={`w-12 h-12 rounded-full object-cover ${chat.online ? 'border-2 border-[#1DAA61] p-[1px]' : ''}`}
                   />
                 </div>

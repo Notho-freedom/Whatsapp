@@ -326,26 +326,6 @@ export function AppProvider({ children }) {
     };
   }, [generateMessageId]);
 
-  const createAudioMessage = useCallback((chatId, sender, audioData, options = {}) => {
-    const isMe = sender === 'me';
-    return {
-      id: generateMessageId(chatId, 'audio'),
-      sender,
-      senderName: options.senderName,
-      type: 'audio',
-      audio: {
-        url: audioData.url,
-        duration: audioData.duration,
-        waveform: audioData.waveform || []
-      },
-      time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
-      date: new Date().toLocaleDateString('fr-FR'),
-      read: isMe ? false : undefined,
-      reactions: options.reactions || [],
-      ...options
-    };
-  }, [generateMessageId]);
-
   // Génération de messages initiaux intelligente
   const generateInitialMessages = useCallback((user) => {
     const messages = [];
@@ -466,39 +446,19 @@ export function AppProvider({ children }) {
   }, []);
 
   // Méthodes métier optimisées
-  const sendMessage = useCallback(async (chatId, messageData, replyTo = null) => {
-    let message;
-    let lastMessageText;
+  const sendMessage = useCallback(async (chatId, text, replyTo = null) => {
+    if (!text.trim()) return;
 
-    if (typeof messageData === 'string') {
-      // Message texte simple
-      if (!messageData.trim()) return;
-      message = createTextMessage(chatId, 'me', messageData.trim(), {
-        replyTo: replyTo || state.replyTo
-      });
-      lastMessageText = messageData.trim();
-    } else if (messageData.type === 'audio') {
-      // Message vocal
-      message = createAudioMessage(chatId, 'me', messageData, {
-        replyTo: replyTo || state.replyTo
-      });
-      lastMessageText = '🎵 Voice message';
-    } else if (messageData.text) {
-      // Message avec objet (pour les réponses)
-      message = createTextMessage(chatId, 'me', messageData.text, {
-        replyTo: messageData.replyTo || replyTo || state.replyTo
-      });
-      lastMessageText = messageData.text;
-    } else {
-      return;
-    }
-
-    actions.addMessage(chatId, message);
-    actions.updateLastMessage(chatId, {
-      text: lastMessageText,
-      type: message.type || 'text'
+    const message = createTextMessage(chatId, 'me', text.trim(), {
+      replyTo: replyTo
     });
-    actions.clearReplyTo();
+    actions.addMessage(chatId, message);
+
+    // Mettre à jour le dernier message de l'utilisateur
+    actions.updateLastMessage(chatId, {
+      text: text.trim(),
+      type: 'text'
+    });
 
     // Simuler une réponse après un délai
     setTimeout(() => {
@@ -518,7 +478,7 @@ export function AppProvider({ children }) {
         type: 'text'
       });
     }, 1000 + Math.random() * 2000);
-  }, [createTextMessage, createAudioMessage, getRandomMessageText, actions, state.users, state.replyTo]);
+  }, [createTextMessage, getRandomMessageText, actions, state.users]);
 
   const selectChat = useCallback((chat) => {
     actions.setSelectedChat(chat);
