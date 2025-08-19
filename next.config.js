@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export',
+  // output: 'export', // Temporairement commenté pour résoudre l'erreur
   trailingSlash: true,
   images: {
     unoptimized: true
