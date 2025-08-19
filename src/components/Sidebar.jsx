@@ -8,7 +8,60 @@ export default function Sidebar() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
-  const handleTabClick = (tab) => setActiveTab(tab);
+  
+  const handleTabClick = (tab) => {
+    setActiveTab(tab);
+    
+    // Émettre un événement pour notifier l'application du changement d'onglet
+    window.dispatchEvent(new CustomEvent('tab-changed', { 
+      detail: { 
+        tab,
+        timestamp: new Date()
+      } 
+    }));
+    
+    // Actions spécifiques selon l'onglet
+    switch (tab) {
+      case 'calls':
+        // Ouvrir l'écran des appels
+        window.dispatchEvent(new CustomEvent('open-calls', { 
+          detail: { action: 'show' } 
+        }));
+        break;
+      case 'status':
+        // Ouvrir l'écran des statuts
+        window.dispatchEvent(new CustomEvent('open-status', { 
+          detail: { action: 'show' } 
+        }));
+        break;
+      case 'star':
+        // Ouvrir les messages favoris
+        window.dispatchEvent(new CustomEvent('open-starred', { 
+          detail: { action: 'show' } 
+        }));
+        break;
+      case 'archive':
+        // Ouvrir les chats archivés
+        window.dispatchEvent(new CustomEvent('open-archived', { 
+          detail: { action: 'show' } 
+        }));
+        break;
+      case 'settings':
+        // Ouvrir les paramètres
+        window.dispatchEvent(new CustomEvent('open-settings', { 
+          detail: { action: 'show' } 
+        }));
+        break;
+      case 'profile':
+        // Ouvrir le profil
+        window.dispatchEvent(new CustomEvent('open-profile', { 
+          detail: { action: 'show' } 
+        }));
+        break;
+      default:
+        break;
+    }
+  };
 
   // Compter les messages favoris
   const starredMessagesCount = useMemo(() => {

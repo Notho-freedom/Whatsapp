@@ -112,14 +112,26 @@ export default function ChatList({ onChatSelect, selectedChatId }) {
           </h2>
           <div className="flex items-center gap-2">
             <button
-              aria-label="More options"
+              aria-label="New chat"
               className="p-2 rounded-md hover:bg-whatsapp-dark-700 transition-colors"
+              onClick={() => {
+                // Ouvrir la création d'un nouveau chat
+                window.dispatchEvent(new CustomEvent('new-chat', { 
+                  detail: { action: 'create' } 
+                }));
+              }}
             >
               <LucideEdit size={16} className="text-gray-200" />
             </button>
             <button
-              aria-label="Filter"
+              aria-label="Filter chats"
               className="p-2 rounded-md hover:bg-whatsapp-dark-700 transition-colors"
+              onClick={() => {
+                // Ouvrir le filtre des chats
+                window.dispatchEvent(new CustomEvent('filter-chats', { 
+                  detail: { action: 'open' } 
+                }));
+              }}
             >
               <svg 
                 width="18" 
@@ -162,7 +174,17 @@ export default function ChatList({ onChatSelect, selectedChatId }) {
             sortedUsers.map((chat) => (
               <div
                 key={chat.id}
-                onClick={() => onChatSelect(chat)}
+                onClick={() => {
+                  onChatSelect(chat);
+                  
+                  // Émettre un événement pour notifier l'application
+                  window.dispatchEvent(new CustomEvent('chat-selected', { 
+                    detail: { 
+                      chat,
+                      timestamp: new Date()
+                    } 
+                  }));
+                }}
                 className={`flex items-center gap-3 p-4 cursor-pointer rounded-lg hover:bg-neutral-700/50 transition-colors ${
                   selectedChatId === chat.id ? 'bg-neutral-700/50' : ''
                 }`}
