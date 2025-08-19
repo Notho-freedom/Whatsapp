@@ -17,60 +17,40 @@ import {
 
 const ATTACHMENT_OPTIONS = [
   {
-    id: 'document',
-    icon: File,
-    label: 'Document',
-    description: 'Partager un document',
-    color: '#00a884'
+    id: 'photos_videos',
+    icon: Image,
+    label: 'Photos & videos',
+    color: '#8B5CF6'
   },
   {
     id: 'camera',
     icon: Camera,
-    label: 'Appareil photo',
-    description: 'Prendre une photo',
-    color: '#00a884'
+    label: 'Camera',
+    color: '#F59E0B'
   },
   {
-    id: 'gallery',
-    icon: Gallery,
-    label: 'Galerie',
-    description: 'Choisir une photo',
-    color: '#00a884'
-  },
-  {
-    id: 'audio',
-    icon: Mic,
-    label: 'Audio',
-    description: 'Enregistrer un message vocal',
-    color: '#00a884'
-  },
-  {
-    id: 'video',
-    icon: Video,
-    label: 'Vidéo',
-    description: 'Enregistrer une vidéo',
-    color: '#00a884'
+    id: 'document',
+    icon: File,
+    label: 'Document',
+    color: '#3B82F6'
   },
   {
     id: 'contact',
     icon: User,
     label: 'Contact',
-    description: 'Partager un contact',
-    color: '#00a884'
-  },
-  {
-    id: 'location',
-    icon: MapPin,
-    label: 'Localisation',
-    description: 'Partager ma localisation',
-    color: '#00a884'
+    color: '#10B981'
   },
   {
     id: 'poll',
     icon: BarChart3,
-    label: 'Sondage',
-    description: 'Créer un sondage',
-    color: '#00a884'
+    label: 'Poll',
+    color: '#EF4444'
+  },
+  {
+    id: 'drawing',
+    icon: FileText,
+    label: 'Drawing',
+    color: '#F97316'
   }
 ];
 
@@ -103,61 +83,37 @@ export default function AttachmentMenu({ isOpen, onClose, onSelectOption }) {
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50 p-4">
+    return (
+    <div className="fixed inset-0 bg-black/60 flex items-end justify-center z-50">
       <div 
         ref={menuRef}
-        className="bg-[#202c33] rounded-t-lg shadow-2xl w-full max-w-sm animate-[slideUp_0.2s_ease-out]"
+        className="bg-[#3C4043] rounded-t-2xl shadow-2xl w-full max-w-md animate-[slideUp_0.2s_ease-out] mx-4 mb-4"
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-white/10">
-          <h3 className="text-white font-medium">Pièces jointes</h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
-          >
-            ✕
-          </button>
-        </div>
-
         {/* Options Grid */}
-        <div className="p-4">
-          <div className="grid grid-cols-4 gap-4">
+        <div className="p-6">
+          <div className="grid grid-cols-3 gap-6">
             {ATTACHMENT_OPTIONS.map((option) => {
               const IconComponent = option.icon;
               return (
                 <button
                   key={option.id}
                   onClick={() => handleOptionClick(option)}
-                  className="flex flex-col items-center gap-2 p-4 hover:bg-white/10 rounded-lg transition-colors group"
+                  className="flex flex-col items-center gap-3 p-4 hover:bg-white/10 rounded-xl transition-all group"
                 >
-                                     <div 
-                     className="w-10 h-10 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform"
-                     style={{ backgroundColor: `${option.color}20` }}
-                   >
-                                         <IconComponent 
-                       size={20} 
-                       style={{ color: option.color }}
-                     />
+                  <div 
+                    className="w-14 h-14 rounded-full flex items-center justify-center group-hover:scale-105 transition-transform"
+                    style={{ backgroundColor: option.color }}
+                  >
+                    <IconComponent 
+                      size={24} 
+                      className="text-white"
+                    />
                   </div>
-                  <div className="text-center">
-                    <p className="text-white text-xs font-medium">{option.label}</p>
-                    <p className="text-gray-400 text-xs mt-1">{option.description}</p>
-                  </div>
+                  <p className="text-white text-sm font-medium text-center leading-tight">{option.label}</p>
                 </button>
               );
             })}
           </div>
-        </div>
-
-        {/* Footer */}
-        <div className="p-4 border-t border-white/10">
-          <button
-            onClick={onClose}
-            className="w-full py-3 text-white bg-[#00a884] hover:bg-[#00a884]/80 rounded-lg transition-colors font-medium"
-          >
-            Annuler
-          </button>
         </div>
       </div>
     </div>
