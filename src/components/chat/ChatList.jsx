@@ -44,8 +44,17 @@ export default function ChatList({ onChatSelect, selectedChatId }) {
     setSearchQuery(e.target.value);
   };
 
-  // Priorité : pinned > non pinned
-  const sortedUsers = [...filteredUsers].sort((a, b) => b.isPinned - a.isPinned);
+  // Priorité : pinned > non pinned, puis par temps
+  const sortedUsers = [...filteredUsers].sort((a, b) => {
+    // D'abord par statut épinglé
+    if (a.isPinned && !b.isPinned) return -1;
+    if (!a.isPinned && b.isPinned) return 1;
+    
+    // Ensuite par temps (plus récent en premier)
+    const timeA = new Date(a.lastMessageTime || 0);
+    const timeB = new Date(b.lastMessageTime || 0);
+    return timeB - timeA;
+  });
 
 
   const MessageIcon = ({ type }) => {
@@ -94,7 +103,7 @@ export default function ChatList({ onChatSelect, selectedChatId }) {
 
 
   return (
-    <div className="max-w-[380px] w-auto min-w-[200px] rounded-tl-xl ml-12 bg-[#2C2C2C] border-r border-neutral-800 flex flex-col pl-1.5">
+    <div className="h-full flex flex-col pl-1.5">
       {/* Header */}
       <div className="pl-4 pt-4 pr-2 mb-4">
         <div className="flex items-center justify-between mb-4">
@@ -103,14 +112,26 @@ export default function ChatList({ onChatSelect, selectedChatId }) {
           </h2>
           <div className="flex items-center gap-2">
             <button
-              aria-label="More options"
+              aria-label="New chat"
               className="p-2 rounded-md hover:bg-whatsapp-dark-700 transition-colors"
+              onClick={() => {
+                // Ouvrir la création d'un nouveau chat
+                window.dispatchEvent(new CustomEvent('new-chat', { 
+                  detail: { action: 'create' } 
+                }));
+              }}
             >
               <LucideEdit size={16} className="text-gray-200" />
             </button>
             <button
-              aria-label="Filter"
+              aria-label="Filter chats"
               className="p-2 rounded-md hover:bg-whatsapp-dark-700 transition-colors"
+              onClick={() => {
+                // Ouvrir le filtre des chats
+                window.dispatchEvent(new CustomEvent('filter-chats', { 
+                  detail: { action: 'open' } 
+                }));
+              }}
             >
               <svg 
                 width="18" 
@@ -153,7 +174,17 @@ export default function ChatList({ onChatSelect, selectedChatId }) {
             sortedUsers.map((chat) => (
               <div
                 key={chat.id}
-                onClick={() => onChatSelect(chat)}
+                onClick={() => {
+                  onChatSelect(chat);
+                  
+                  // Émettre un événement pour notifier l'application
+                  window.dispatchEvent(new CustomEvent('chat-selected', { 
+                    detail: { 
+                      chat,
+                      timestamp: new Date()
+                    } 
+                  }));
+                }}
                 className={`flex items-center gap-3 p-4 cursor-pointer rounded-lg hover:bg-neutral-700/50 transition-colors ${
                   selectedChatId === chat.id ? 'bg-neutral-700/50' : ''
                 }`}
@@ -162,6 +193,7 @@ export default function ChatList({ onChatSelect, selectedChatId }) {
                 <div className="relative">
                   <img
                     src={chat.avatar}
+                    alt={`${chat.name} profile picture`}
                     className={`w-12 h-12 rounded-full object-cover ${chat.online ? 'border-2 border-[#1DAA61] p-[1px]' : ''}`}
                   />
                 </div>

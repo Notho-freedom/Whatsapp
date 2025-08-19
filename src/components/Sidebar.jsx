@@ -1,14 +1,80 @@
 import { Menu, MessageCircle, Phone, CircleCheckBigIcon, Star, Archive, Settings, CircleDivide, CircleDashedIcon, LucideMessageCircleDashed, CircleSlashed, CircleDashed, CircleDotDashed, CircleGauge, CircleOffIcon, MessageCircleReply, MessageCircleMore, MessageCircleWarningIcon, LucideMessageCircle, CirclePlayIcon } from 'lucide-react';
 import { useAppContext } from '@/context/AppContext';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { FaWhatsapp } from 'react-icons/fa';
 
 export default function Sidebar() {
-  const { activeTab, setActiveTab } = useAppContext();
+  const { activeTab, setActiveTab, messages } = useAppContext();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
-  const handleTabClick = (tab) => setActiveTab(tab);
+  
+  const handleTabClick = (tab) => {
+    setActiveTab(tab);
+    
+    // Émettre un événement pour notifier l'application du changement d'onglet
+    window.dispatchEvent(new CustomEvent('tab-changed', { 
+      detail: { 
+        tab,
+        timestamp: new Date()
+      } 
+    }));
+    
+    // Actions spécifiques selon l'onglet
+    switch (tab) {
+      case 'calls':
+        // Ouvrir l'écran des appels
+        window.dispatchEvent(new CustomEvent('open-calls', { 
+          detail: { action: 'show' } 
+        }));
+        break;
+      case 'status':
+        // Ouvrir l'écran des statuts
+        window.dispatchEvent(new CustomEvent('open-status', { 
+          detail: { action: 'show' } 
+        }));
+        break;
+      case 'star':
+        // Ouvrir les messages favoris
+        window.dispatchEvent(new CustomEvent('open-starred', { 
+          detail: { action: 'show' } 
+        }));
+        break;
+      case 'archive':
+        // Ouvrir les chats archivés
+        window.dispatchEvent(new CustomEvent('open-archived', { 
+          detail: { action: 'show' } 
+        }));
+        break;
+      case 'settings':
+        // Ouvrir les paramètres
+        window.dispatchEvent(new CustomEvent('open-settings', { 
+          detail: { action: 'show' } 
+        }));
+        break;
+      case 'profile':
+        // Ouvrir le profil
+        window.dispatchEvent(new CustomEvent('open-profile', { 
+          detail: { action: 'show' } 
+        }));
+        break;
+      default:
+        break;
+    }
+  };
+
+  // Compter les messages favoris
+  const starredMessagesCount = useMemo(() => {
+    let count = 0;
+    Object.values(messages).forEach(chatMessages => {
+      chatMessages.forEach(message => {
+        if (message.isStarred) {
+          count++;
+        }
+      });
+    });
+    return count;
+  }, [messages]);
 
   const isActive = (tab) => activeTab === tab;
   const ActiveIndicator = () => (
@@ -80,7 +146,7 @@ export default function Sidebar() {
           
           {/* Icônes du bas poussées vers le bas */}
           <nav className="flex flex-col px-1 mt-auto space-y-[6.5px] -mb-4">
-            <SidebarButton tab="star" icon={Star} label="Star" />
+            <SidebarButton tab="star" icon={Star} label="Star" badgeCount={starredMessagesCount} />
             <SidebarButton tab="archive" icon={Archive} label="Archive" badgeCount={1} />
 
             <div className="w-[90%] self-center border-t border-neutral-700 my-1 px-0.5" />
@@ -126,7 +192,7 @@ export default function Sidebar() {
               </nav>
 
               <nav className="flex flex-col px-1 mt-auto space-y-[6.5px] -mb-4">
-                <SidebarButton tab="star" icon={Star} label="Starred messages" />
+                <SidebarButton tab="star" icon={Star} label="Starred messages" badgeCount={starredMessagesCount} />
                 <SidebarButton tab="archive" icon={Archive} label="Archived chats" badgeCount={1} />
                 
                 <div className="w-full border-t border-neutral-700 my-1 px-0.5" />
