@@ -1,19 +1,17 @@
 import { Smile, Paperclip, Mic, Send } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useAppContext } from '@/context/AppContext';
 import ReplyCap from './chatBody/ReplyCap';
-import EmojiPicker from './chatFooter/EmojiPicker';
-import AttachmentMenu from './chatFooter/AttachmentMenu';
-import VoiceRecorder from './chatFooter/VoiceRecorder';
+import AttachmentMenu from './chatBody/AttachmentMenu';
+import EmojiPicker from './chatBody/EmojiPicker';
+import VoiceRecorder from './chatBody/VoiceRecorder';
 
 export default function ChatFooter({ selectedChat, onSendMessage }) {
   const [message, setMessage] = useState('');
   const [isClient, setIsClient] = useState(false);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
-  const [isVoiceRecording, setIsVoiceRecording] = useState(false);
-  const [isLongPress, setIsLongPress] = useState(false);
-  const longPressTimerRef = useRef(null);
+  const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false);
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
   const { replyTo, clearReplyTo } = useAppContext();
 
   useEffect(() => {
@@ -46,86 +44,76 @@ export default function ChatFooter({ selectedChat, onSendMessage }) {
     clearReplyTo();
   };
 
-  // Gestion des emojis
-  const handleEmojiSelect = (emoji) => {
-    setMessage(prev => prev + emoji);
-    setShowEmojiPicker(false);
-  };
-
-  // Gestion des pièces jointes
-  const handleAttachmentSelect = (option) => {
-    console.log('Option sélectionnée:', option);
-    // Ici on peut implémenter la logique pour chaque type de pièce jointe
-    switch (option.id) {
-      case 'document':
-        // Ouvrir le sélecteur de documents
+  const handleAttachmentOption = (optionId) => {
+    console.log('Selected attachment option:', optionId);
+    // Gérer les différentes options d'attachement
+    switch (optionId) {
+      case 'photos-videos':
+        // Ouvrir le sélecteur de photos/vidéos
+        window.dispatchEvent(new CustomEvent('open-media-picker', { 
+          detail: { type: 'photos-videos' } 
+        }));
         break;
       case 'camera':
-        // Ouvrir l'appareil photo
+        // Ouvrir la caméra
+        window.dispatchEvent(new CustomEvent('open-camera', { 
+          detail: { type: 'photo' } 
+        }));
         break;
-      case 'gallery':
-        // Ouvrir la galerie
-        break;
-      case 'audio':
-        // Démarrer l'enregistrement audio
-        setIsVoiceRecording(true);
-        break;
-      case 'video':
-        // Ouvrir l'enregistrement vidéo
+      case 'document':
+        // Ouvrir le sélecteur de documents
+        window.dispatchEvent(new CustomEvent('open-document-picker', { 
+          detail: { type: 'document' } 
+        }));
         break;
       case 'contact':
-        // Ouvrir la liste des contacts
-        break;
-      case 'location':
-        // Partager la localisation
+        // Ouvrir le sélecteur de contacts
+        window.dispatchEvent(new CustomEvent('open-contact-picker', { 
+          detail: { type: 'contact' } 
+        }));
         break;
       case 'poll':
-        // Créer un sondage
+        // Ouvrir le créateur de sondage
+        window.dispatchEvent(new CustomEvent('open-poll-creator', { 
+          detail: { type: 'poll' } 
+        }));
+        break;
+      case 'drawing':
+        // Ouvrir l'éditeur de dessin
+        window.dispatchEvent(new CustomEvent('open-drawing-editor', { 
+          detail: { type: 'drawing' } 
+        }));
         break;
       default:
         break;
     }
   };
 
-  // Gestion de l'enregistrement vocal
-  const handleVoiceRecording = (audioBlob) => {
-    // Créer un message audio
-    const audioMessage = {
+  const handleEmojiSelect = (emoji) => {
+    setMessage(prev => prev + emoji);
+  };
+
+  const handleStartRecording = () => {
+    setIsRecording(true);
+  };
+
+  const handleStopRecording = () => {
+    setIsRecording(false);
+  };
+
+  const handleSendVoiceMessage = () => {
+    // Envoyer le message vocal
+    const voiceMessage = {
       type: 'audio',
-      audio: audioBlob,
-      duration: 0, // À calculer
-      replyTo: replyTo
+      duration: 30, // Durée simulée
+      url: 'data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLZiTYIG2m98OScTgwOUarm7blmGgU7k9n1unEiBC13yO/eizEIHWq+8+OWT'
     };
-    onSendMessage(audioMessage);
-    clearReplyTo();
+    onSendMessage(voiceMessage);
+    setIsRecording(false);
   };
 
-  // Gestion du long press pour l'enregistrement vocal
-  const handleMicMouseDown = () => {
-    if (!message.trim()) {
-      longPressTimerRef.current = setTimeout(() => {
-        setIsVoiceRecording(true);
-        setIsLongPress(true);
-      }, 500);
-    }
-  };
-
-  const handleMicMouseUp = () => {
-    if (longPressTimerRef.current) {
-      clearTimeout(longPressTimerRef.current);
-      longPressTimerRef.current = null;
-    }
-    if (isLongPress) {
-      setIsVoiceRecording(false);
-      setIsLongPress(false);
-    }
-  };
-
-  const handleMicMouseLeave = () => {
-    if (longPressTimerRef.current) {
-      clearTimeout(longPressTimerRef.current);
-      longPressTimerRef.current = null;
-    }
+  const handleCancelRecording = () => {
+    setIsRecording(false);
   };
 
   if (!isClient) {
@@ -153,79 +141,67 @@ export default function ChatFooter({ selectedChat, onSendMessage }) {
       
       {/* Footer principal */}
       <footer className="flex items-center justify-between px-2 py-1 border-t bg-[#2C2C2C] border-neutral-800">
-                 {/* Bouton Emoji */}
-         <button 
-           aria-label="Emoji picker" 
-           className="hover:bg-neutral-700/50 p-2 transition-colors rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-           onClick={() => setShowEmojiPicker(true)}
-           disabled={isVoiceRecording}
-         >
-           <Smile size={17} className="text-gray-400" />
-         </button>
- 
-         {/* Bouton Pièces jointes */}
-         <button 
-           aria-label="Attach file" 
-           className="hover:bg-neutral-700/50 p-2 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-           onClick={() => setShowAttachmentMenu(true)}
-           disabled={isVoiceRecording}
-         >
-           <Paperclip size={17} className="rotate-180 text-gray-400" />
-         </button>
-
-                 {/* Zone de saisie */}
-         <form onSubmit={handleSubmit} className="flex-1">
-           <textarea
-             rows={1}
-             autoFocus
-             aria-label="Type a message"
-             className="w-full bg-transparent py-2 px-4 text-sm text-white placeholder-gray-400 focus:outline-none font-segoe resize-none hover:bg-neutral-700/50 rounded-lg transition-colors"
-             placeholder={isVoiceRecording ? "Enregistrement en cours..." : (replyTo ? "Reply to a message" : "Type a message")}
-             value={message}
-             onChange={(e) => setMessage(e.target.value)}
-             onKeyPress={handleKeyPress}
-             disabled={isVoiceRecording}
-           />
-         </form>
-
-                 {/* Bouton Envoyer/Enregistrer */}
-         <button 
-           aria-label={message.trim() ? "Send message" : "Voice message"}
-           className={`transition-colors p-2 rounded-md hover:bg-neutral-700/50 ${
-             isLongPress ? 'bg-red-500 hover:bg-red-600' : ''
-           }`}
-           onClick={message.trim() ? handleSubmit : undefined}
-           onMouseDown={!message.trim() ? handleMicMouseDown : undefined}
-           onMouseUp={!message.trim() ? handleMicMouseUp : undefined}
-           onMouseLeave={!message.trim() ? handleMicMouseLeave : undefined}
-         >
-           {message.trim() ? (
-             <Send size={17} className="rotate-[45deg] text-[#00a884]" />
-           ) : (
-             <Mic size={17} className={`${isLongPress ? 'text-white' : 'text-gray-400'}`} />
-           )}
-         </button>
+        <button 
+          aria-label="Emoji picker" 
+          className={`hover:bg-neutral-700/50 p-[9px] mb-[5.4px] transition-colors rounded-md ${
+            isEmojiPickerOpen ? 'bg-neutral-700/50' : ''
+          }`}
+          onClick={() => setIsEmojiPickerOpen(!isEmojiPickerOpen)}
+        >
+          <Smile size={19} />
+        </button>
+        <button 
+          aria-label="Attach file" 
+          className={`hover:bg-neutral-700/50 p-[9px] mb-[5.4px] rounded-md transition-colors ${
+            isAttachmentMenuOpen ? 'bg-neutral-700/50' : ''
+          }`}
+          onClick={() => setIsAttachmentMenuOpen(!isAttachmentMenuOpen)}
+        >
+          <Paperclip size={19} className="rotate-180" />
+        </button>
+        <form onSubmit={handleSubmit} className="flex-1">
+          <textarea
+            rows={1}
+            autoFocus
+            aria-label="Type a message"
+            className="w-full bg-transparent py-2 px-4 text-sm text-white placeholder-gray-400 focus:outline-none font-segoe resize-none hover:bg-neutral-700"
+            placeholder={replyTo ? "Reply to a message" : "Type a message"}
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            onKeyPress={handleKeyPress}
+          />
+        </form>
+        <button 
+          aria-label={message.trim() ? "Send message" : "Voice message"}
+          className={`transition-colors p-[9px] mb-[5.4px] rounded-md hover:bg-neutral-700/50`}
+          onClick={message.trim() ? handleSubmit : handleStartRecording}
+        >
+          {message.trim() ? <Send size={19} className="rotate-[45deg]" /> : <Mic size={19} />}
+        </button>
       </footer>
 
-      {/* Composants modaux */}
-      <EmojiPicker
-        isOpen={showEmojiPicker}
-        onClose={() => setShowEmojiPicker(false)}
-        onEmojiSelect={handleEmojiSelect}
-      />
-
+      {/* Attachment Menu */}
       <AttachmentMenu
-        isOpen={showAttachmentMenu}
-        onClose={() => setShowAttachmentMenu(false)}
-        onSelectOption={handleAttachmentSelect}
+        isOpen={isAttachmentMenuOpen}
+        onClose={() => setIsAttachmentMenuOpen(false)}
+        onSelectOption={handleAttachmentOption}
+        position="bottom"
       />
 
+      {/* Emoji Picker */}
+      <EmojiPicker
+        isOpen={isEmojiPickerOpen}
+        onClose={() => setIsEmojiPickerOpen(false)}
+        onSelectEmoji={handleEmojiSelect}
+        position="bottom"
+      />
+
+      {/* Voice Recorder */}
       <VoiceRecorder
-        isRecording={isVoiceRecording}
-        onStartRecording={() => setIsVoiceRecording(true)}
-        onStopRecording={() => setIsVoiceRecording(false)}
-        onCancelRecording={() => setIsVoiceRecording(false)}
-        onSendRecording={handleVoiceRecording}
+        isRecording={isRecording}
+        onStop={handleStopRecording}
+        onSend={handleSendVoiceMessage}
+        onCancel={handleCancelRecording}
       />
     </div>
   );

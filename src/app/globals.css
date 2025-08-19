@@ -57,11 +57,11 @@
   }
 }
 
-/* Animation pour les composants du footer */
+/* Animation pour les menus du footer */
 @keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateY(100%);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
