@@ -2,15 +2,17 @@ import { FaCheck, FaCheckDouble, FaAngleDown, FaReply, FaStar, FaThumbtack, FaTr
 import MediaGroup from './MediaGroup';
 import PreviewLink from './PreviewLink';
 import ReactionBar from './ReactionBar';
+import MessageContextMenu from './MessageContextMenu';
 import { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { useAppContext } from '@/context/AppContext';
-import { showContextMenu, downloadMedia, viewMedia, shareMedia, createMessageMenuItems } from '@/utils/electronUtils';
+import { downloadMedia, viewMedia, shareMedia } from '@/utils/electronUtils';
 import { showSuccess, showError, showInfo } from '@/utils/notificationUtils';
 
 const MessageBubble = memo(function MessageBubble({ message, isFirstInGroup, isLastInGroup, isMobile }) {
   const isMe = message.sender === 'me';
   const messageRef = useRef(null);
   const longPressTimer = useRef(null);
+  const [contextMenu, setContextMenu] = useState({ isOpen: false, position: null });
   const { addReactionToMessage, removeReactionFromMessage, deleteMessage, selectedChat, setReplyTo, toggleMessageStar, toggleChatPin } = useAppContext();
 
   // Gestionnaires d'actions avec notifications améliorées
@@ -139,7 +141,12 @@ const MessageBubble = memo(function MessageBubble({ message, isFirstInGroup, isL
 
   const handleAddReaction = useCallback((reaction) => {
     if (selectedChat && message.id) {
+      console.log('Adding reaction:', reaction, 'to message:', message.id, 'in chat:', selectedChat.id);
       addReactionToMessage(selectedChat.id, message.id, reaction);
+      showInfo('Reaction', `Réaction ${reaction} ajoutée`);
+    } else {
+      console.error('Cannot add reaction: missing selectedChat or message.id', { selectedChat, messageId: message.id });
+      showError('Erreur', 'Impossible d\'ajouter la réaction');
     }
   }, [selectedChat, message.id, addReactionToMessage]);
 
@@ -149,59 +156,82 @@ const MessageBubble = memo(function MessageBubble({ message, isFirstInGroup, isL
     }
   }, [selectedChat, message.id, removeReactionFromMessage]);
 
-  // Fonction pour ouvrir le menu contextuel natif
-  const showNativeContextMenu = useCallback(async (e, messageData) => {
+  // Fonction pour ouvrir le menu contextuel
+  const openContextMenu = useCallback((e, messageData) => {
     e.preventDefault();
+    e.stopPropagation();
     
-    try {
-      // Créer les gestionnaires d'actions
-      const handlers = {
-        handleReplyMessage,
-        handleForwardMessage,
-        handleCopyMessage,
-        handleViewMedia,
-        handleSaveMedia,
-        handleShareMedia,
-        handleStarMessage,
-        handlePinMessage,
-        handleDeleteMessage
-      };
-      
-      // Créer les items du menu
-      const menuItems = createMessageMenuItems(messageData, handlers, isMe);
-      
-      // Afficher le menu contextuel
-      const result = await showContextMenu(menuItems, e.clientX, e.clientY);
-      
-      if (result && result.success) {
-        console.log('Menu contextuel affiché avec succès');
-      } else if (result && result.error) {
-        console.error('Erreur du menu contextuel:', result.error);
-        showError('Erreur', 'Erreur lors de l\'affichage du menu contextuel');
-      }
-    } catch (error) {
-      console.error('Erreur lors de l\'affichage du menu contextuel:', error);
-      showError('Erreur', 'Erreur lors de l\'affichage du menu contextuel');
+    setContextMenu({
+      isOpen: true,
+      position: { x: e.clientX, y: e.clientY }
+    });
+  }, []);
+
+  // Fonction pour fermer le menu contextuel
+  const closeContextMenu = useCallback(() => {
+    setContextMenu({ isOpen: false, position: null });
+  }, []);
+
+
+
+  // Gestionnaire d'actions du menu contextuel
+  const handleMenuAction = useCallback((action, data) => {
+    switch (action) {
+      case 'reply':
+        handleReplyMessage(data);
+        break;
+      case 'forward':
+        handleForwardMessage(data);
+        break;
+      case 'copy':
+        handleCopyMessage(data);
+        break;
+      case 'star':
+        handleStarMessage(data);
+        break;
+      case 'pin':
+        handlePinMessage(data);
+        break;
+      case 'delete':
+        handleDeleteMessage(data);
+        break;
+      case 'view-media':
+        handleViewMedia(data);
+        break;
+      case 'save-media':
+        handleSaveMedia(data);
+        break;
+      case 'share-media':
+        handleShareMedia(data);
+        break;
+      case 'view-link':
+        handleViewMedia({ type: 'link', url: data.url });
+        break;
+      default:
+        console.log('Action non reconnue:', action);
     }
-  }, [isMe, handleReplyMessage, handleForwardMessage, handleCopyMessage, handleViewMedia, handleSaveMedia, handleShareMedia, handleStarMessage, handlePinMessage, handleDeleteMessage]);
+  }, [handleReplyMessage, handleForwardMessage, handleCopyMessage, handleStarMessage, handlePinMessage, handleDeleteMessage, handleViewMedia, handleSaveMedia, handleShareMedia]);
 
   // Gestion du long press sur mobile
   const handleLongPressStart = useCallback(() => {
     if (!isMobile) return;
     
     longPressTimer.current = setTimeout(() => {
-      showNativeContextMenu({ 
-        preventDefault: () => {}, 
-        clientX: 0, 
-        clientY: 0 
-      }, message);
+      // Positionner le menu au centre de l'écran sur mobile
+      const centerX = window.innerWidth / 2;
+      const centerY = window.innerHeight / 2;
+      
+      setContextMenu({
+        isOpen: true,
+        position: { x: centerX, y: centerY }
+      });
       
       // Vibration feedback si disponible
       if (navigator.vibrate) {
         navigator.vibrate(50);
       }
     }, 500);
-  }, [isMobile, showNativeContextMenu, message]);
+  }, [isMobile]);
 
   const handleLongPressEnd = useCallback(() => {
     if (longPressTimer.current) {
@@ -242,10 +272,10 @@ const MessageBubble = memo(function MessageBubble({ message, isFirstInGroup, isL
               borderTopRightRadius: isMe && isFirstInGroup ? 0 : 7.5,
               borderTopLeftRadius: !isMe && isFirstInGroup ? 0 : 7.5,
             }}
-          onContextMenu={(e) => showNativeContextMenu(e, message)}
-          role="article"
-          aria-label={`Message from ${isMe ? 'you' : message.senderName || 'contact'}`}
-        >
+            onContextMenu={(e) => openContextMenu(e, message)}
+            role="article"
+            aria-label={`Message from ${isMe ? 'you' : message.senderName || 'contact'}`}
+          >
           {/* Étoile pour les messages favoris */}
           {message.isStarred && (
             <div className="absolute -top-1 -right-1 bg-yellow-500 rounded-full p-0.5 z-10">
@@ -327,14 +357,27 @@ const MessageBubble = memo(function MessageBubble({ message, isFirstInGroup, isL
           <button 
             className={`absolute top-[8px] ${isMe ? '-left-[28px]' : '-right-[28px]'} 
               opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer p-1 rounded hover:bg-[#2a373f]`}
-            onClick={(e) => showNativeContextMenu(e, message)}
+            onClick={(e) => openContextMenu(e, message)}
             aria-label="Message options"
           >
             <FaAngleDown size={18} className="text-[#8696a0] hover:text-[#d1d7db]" />
-            </button>
-          )}
+          </button>
+        )}
       </div>
-        </div>
+
+      {/* Menu contextuel */}
+      <MessageContextMenu
+        isOpen={contextMenu.isOpen}
+        position={contextMenu.position}
+        message={message}
+        isMe={isMe}
+        onClose={closeContextMenu}
+        onAction={handleMenuAction}
+        onAddReaction={handleAddReaction}
+      />
+
+
+    </div>
   );
 }, (prevProps, nextProps) => {
   // Optimisation des re-renders
