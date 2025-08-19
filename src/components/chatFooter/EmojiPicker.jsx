@@ -80,70 +80,94 @@ export default function EmojiPicker({ isOpen, onClose, onEmojiSelect }) {
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50 p-4">
+    return (
+    <div className="fixed inset-0 bg-black/60 flex items-end justify-center z-50">
       <div 
         ref={pickerRef}
-        className="bg-[#202c33] rounded-t-lg shadow-2xl w-full max-w-md max-h-[400px] flex flex-col animate-[slideUp_0.2s_ease-out]"
+        className="bg-[#3C4043] rounded-t-2xl shadow-2xl w-full max-w-md max-h-[500px] flex flex-col animate-[slideUp_0.2s_ease-out] mx-4 mb-4"
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-3 border-b border-white/10">
-          <h3 className="text-white font-medium">Emojis</h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
-          >
-            ✕
-          </button>
+        {/* Onglets en haut */}
+        <div className="flex items-center border-b border-white/10">
+          <div className="flex-1 flex items-center justify-around py-3">
+            {['Emoji', 'GIFs', 'Stickers'].map((tab, index) => (
+              <button
+                key={tab}
+                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  index === 0 
+                    ? 'text-[#00a884] border-b-2 border-[#00a884]' 
+                    : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Search */}
-        <div className="p-3 border-b border-white/10">
+        {/* Barre de recherche */}
+        <div className="p-4 border-b border-white/10">
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
               type="text"
-              placeholder="Rechercher un emoji..."
+              placeholder="Search emojis"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#2a3942] text-white placeholder-gray-400 px-10 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00a884]"
+              className="w-full pl-10 pr-4 py-2 bg-[#2A2F32] text-white placeholder-gray-400 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#00a884] text-sm"
             />
           </div>
         </div>
 
-        {/* Categories */}
-        <div className="flex border-b border-white/10 overflow-x-auto">
+        {/* Section Recent */}
+        <div className="px-4 pt-3">
+          <h4 className="text-gray-400 text-xs font-medium mb-2 uppercase tracking-wide">Recent</h4>
+          <div className="grid grid-cols-8 gap-1 mb-4">
+            {(recentEmojis.length > 0 ? recentEmojis : EMOJI_DATA.recent).slice(0, 8).map((emoji, index) => (
+              <button
+                key={index}
+                onClick={() => handleEmojiClick(emoji)}
+                className="w-10 h-10 flex items-center justify-center text-2xl hover:bg-white/10 rounded-lg transition-colors"
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Section Smileys & people */}
+        <div className="px-4 pb-4 flex-1 overflow-hidden">
+          <h4 className="text-gray-400 text-xs font-medium mb-2 uppercase tracking-wide">Smileys & people</h4>
+          <div className="grid grid-cols-8 gap-1 max-h-48 overflow-y-auto">
+            {getFilteredEmojis().map((emoji, index) => (
+              <button
+                key={index}
+                onClick={() => handleEmojiClick(emoji)}
+                className="w-10 h-10 flex items-center justify-center text-2xl hover:bg-white/10 rounded-lg transition-colors"
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Barre d'icônes en bas */}
+        <div className="flex items-center justify-around py-3 border-t border-white/10">
           {EMOJI_CATEGORIES.map((category) => {
             const IconComponent = category.icon;
             return (
               <button
                 key={category.id}
                 onClick={() => setActiveCategory(category.id)}
-                className={`flex-shrink-0 p-3 transition-colors ${
+                className={`p-2 rounded-lg transition-colors ${
                   activeCategory === category.id
-                    ? 'text-[#00a884] border-b-2 border-[#00a884]'
+                    ? 'text-[#00a884]'
                     : 'text-gray-400 hover:text-white'
                 }`}
               >
-                                 <IconComponent size={16} />
+                <IconComponent size={18} />
               </button>
             );
           })}
-        </div>
-
-        {/* Emojis Grid */}
-        <div className="flex-1 overflow-y-auto p-3">
-          <div className="grid grid-cols-8 gap-2">
-            {getFilteredEmojis().map((emoji, index) => (
-                             <button
-                 key={index}
-                 onClick={() => handleEmojiClick(emoji)}
-                 className="w-8 h-8 flex items-center justify-center text-xl hover:bg-white/10 rounded-lg transition-colors"
-               >
-                 {emoji}
-               </button>
-            ))}
-          </div>
         </div>
       </div>
     </div>

@@ -98,98 +98,93 @@ export default function VoiceRecorder({ isRecording, onStartRecording, onStopRec
     onCancelRecording();
   };
 
-  if (!isRecording && !audioBlob) return null;
+    if (!isRecording && !audioBlob) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50 p-4">
-      <div className="bg-[#202c33] rounded-t-lg shadow-2xl w-full max-w-md animate-[slideUp_0.2s_ease-out]">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-white/10">
-          <h3 className="text-white font-medium">
-            {audioBlob ? 'Message vocal' : 'Enregistrement en cours...'}
-          </h3>
+    <>
+      {isRecording && !audioBlob && (
+        // Barre d'enregistrement rouge style WhatsApp
+        <div className="absolute bottom-0 left-0 right-0 bg-red-500 text-white p-3 flex items-center justify-between animate-[slideUp_0.2s_ease-out] z-50">
+          {/* Bouton Supprimer */}
           <button
             onClick={handleCancelRecording}
-            className="text-gray-400 hover:text-white transition-colors"
+            className="p-2 hover:bg-red-600 rounded-full transition-colors"
           >
-            ✕
+            <Trash2 size={20} className="text-white" />
           </button>
+          
+          {/* Indicateur d'enregistrement et timer */}
+          <div className="flex items-center gap-3 flex-1 justify-center">
+            <div className="w-3 h-3 bg-white rounded-full animate-pulse"></div>
+            <span className="text-white font-mono text-lg font-medium">
+              {formatTime(recordingTime)}
+            </span>
+          </div>
+          
+          {/* Bouton Pause/Arrêt et Envoyer */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={stopRecording}
+              className="p-2 hover:bg-red-600 rounded-full transition-colors"
+            >
+              <Square size={20} className="text-white" />
+            </button>
+            <button
+              onClick={stopRecording}
+              className="p-2 bg-green-500 hover:bg-green-600 rounded-full transition-colors"
+            >
+              <Send size={20} className="text-white" />
+            </button>
+          </div>
         </div>
-
-                 {/* Content */}
-         <div className="p-6">
-           {!audioBlob ? (
-             // Enregistrement en cours
-             <div className="text-center">
-               <div className="w-16 h-16 bg-red-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
-                 <Mic size={24} className="text-white" />
-               </div>
-               <p className="text-white text-base font-medium mb-2">
-                 {formatTime(recordingTime)}
-               </p>
-               <p className="text-gray-400 text-xs">
-                 Relâchez pour envoyer, glissez pour annuler
-               </p>
-               
-               {/* Contrôles d'enregistrement */}
-               <div className="flex items-center justify-center gap-3 mt-4">
-                 <button
-                   onClick={handleCancelRecording}
-                   className="p-2 bg-gray-600 hover:bg-gray-700 rounded-full transition-colors"
-                 >
-                   <Trash2 size={16} className="text-white" />
-                 </button>
-                 
-                 <button
-                   onClick={stopRecording}
-                   className="p-3 bg-red-500 hover:bg-red-600 rounded-full transition-colors"
-                 >
-                   <Square size={20} className="text-white" />
-                 </button>
-               </div>
-             </div>
-           ) : (
-                         // Aperçu audio
-             <div className="text-center">
-               <div className="w-16 h-16 bg-[#00a884] rounded-full flex items-center justify-center mx-auto mb-4">
-                 <Mic size={24} className="text-white" />
-               </div>
-               
-               {audioUrl && (
-                 <audio 
-                   controls 
-                   className="w-full mb-3"
-                   src={audioUrl}
-                 >
-                   Votre navigateur ne supporte pas l'élément audio.
-                 </audio>
-               )}
-               
-               <p className="text-white text-xs mb-3">
-                 Durée: {formatTime(recordingTime)}
-               </p>
-               
-               {/* Contrôles d'envoi */}
-               <div className="flex items-center justify-center gap-3">
-                 <button
-                   onClick={handleCancelRecording}
-                   className="px-4 py-1.5 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors text-sm"
-                 >
-                   Annuler
-                 </button>
-                 
-                 <button
-                   onClick={handleSendRecording}
-                   className="px-4 py-1.5 bg-[#00a884] hover:bg-[#00a884]/80 text-white rounded-lg transition-colors flex items-center gap-1.5 text-sm"
-                 >
-                   <Send size={14} />
-                   Envoyer
-                 </button>
-               </div>
-             </div>
-          )}
+      )}
+      
+      {audioBlob && (
+        // Modal d'aperçu audio
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#3C4043] rounded-2xl shadow-2xl w-full max-w-sm animate-[slideUp_0.2s_ease-out]">
+            <div className="p-6">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-[#00a884] rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Mic size={24} className="text-white" />
+                </div>
+                
+                {audioUrl && (
+                  <audio 
+                    controls 
+                    className="w-full mb-4 rounded-lg"
+                    src={audioUrl}
+                  >
+                    Votre navigateur ne supporte pas l'élément audio.
+                  </audio>
+                )}
+                
+                <p className="text-white text-sm mb-6">
+                  Durée: {formatTime(recordingTime)}
+                </p>
+                
+                {/* Contrôles d'envoi */}
+                <div className="flex items-center justify-center gap-4">
+                  <button
+                    onClick={handleCancelRecording}
+                    className="px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors"
+                  >
+                    Annuler
+                  </button>
+                  
+                  <button
+                    onClick={handleSendRecording}
+                    className="px-6 py-2 bg-[#00a884] hover:bg-[#00a884]/80 text-white rounded-lg transition-colors flex items-center gap-2"
+                  >
+                    <Send size={16} />
+                    Envoyer
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      )}
+    </>
   );
 }
