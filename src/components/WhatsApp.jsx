@@ -3,26 +3,64 @@
 import { useState, useEffect } from 'react';
 import Titlebar from './Titlebar';
 import Sidebar from './Sidebar';
-import ChatList from './ChatList';
-import ChatHeader from './ChatHeader';
-import ChatBody from './chatBody/ChatBody';
-import ChatFooter from './ChatFooter';
+import ChatList from './chat/ChatList';
+import ChatHeader from './chat/chatHeader/ChatHeader';
+import ChatBody from './chat/chatBody/ChatBody';
+import ChatFooter from './chat/chatFooter/ChatFooter';
+import Splitter from './Splitter';
+import StarredMessages from './chat/StarredMessages';
 import { useAppContext } from '@/context/AppContext';
+import CallPanel from './calls/CallPanel';
+import CallScreen from './calls/CallScreen';
+import { useEventManager } from '@/hooks/useEventManager';
+import ClientOnly from './ClientOnly';
 
 export default function WhatsApp() {
   const [isClient, setIsClient] = useState(false);
+  const [chatListWidth, setChatListWidth] = useState(300); // Largeur initiale pour 25%
+  
+  // Initialiser le gestionnaire d'événements seulement côté client
+  const eventManager = useEventManager();
+  
   const { 
     selectedChat, 
-    messages, 
     sendMessage, 
     selectChat,
     loading,
-    error 
+    error,
+    activeTab,
+    setActiveTab
   } = useAppContext();
 
   useEffect(() => {
     setIsClient(true);
-  }, []);
+    
+    // Calculer la largeur initiale basée sur 25% de la largeur de l'écran
+    const calculateInitialWidth = () => {
+      const screenWidth = window.innerWidth;
+      const sidebarWidth = 48; // Largeur de la sidebar
+      const availableWidth = screenWidth - sidebarWidth;
+      const initialWidth = Math.max(200, Math.min(400, availableWidth * 0.25));
+      setChatListWidth(initialWidth);
+    };
+    
+    calculateInitialWidth();
+    window.addEventListener('resize', calculateInitialWidth);
+    
+    // Gestionnaire d'événements pour les appels
+    const handleStartCall = (event) => {
+      // Rediriger vers l'onglet "Appels"
+      setActiveTab('calls');
+    };
+    
+    // Écouter les événements d'appels
+    window.addEventListener('start-call', handleStartCall);
+    
+    return () => {
+      window.removeEventListener('resize', calculateInitialWidth);
+      window.removeEventListener('start-call', handleStartCall);
+    };
+  }, [setActiveTab]);
 
   if (!isClient) {
     return null;
@@ -59,13 +97,21 @@ export default function WhatsApp() {
     selectChat(chat);
   };
 
-  const handleSendMessage = (text) => {
+  const handleSendMessage = (messageData) => {
     if (selectedChat) {
-      sendMessage(selectedChat.id, text);
+      // Si messageData est une chaîne (ancien format), la convertir
+      if (typeof messageData === 'string') {
+        sendMessage(selectedChat.id, messageData);
+      } else {
+        // Nouveau format avec replyTo
+        sendMessage(selectedChat.id, messageData.text, messageData.replyTo);
+      }
     }
   };
 
-  const currentMessages = selectedChat ? messages[selectedChat.id] || [] : [];
+  const handleSplitterResize = (newWidth) => {
+    setChatListWidth(newWidth);
+  };
 
   return (
     <div className="h-screen w-screen flex flex-col bg-[#202020] font-segoe overflow-hidden rounded-md">
@@ -77,25 +123,47 @@ export default function WhatsApp() {
         {/* Sidebar */}
         <Sidebar />
 
-        {/* Chat List */}
-        <ChatList
-          onChatSelect={handleChatSelect}
-          selectedChatId={selectedChat?.id}
+        {/* Chat List avec largeur fixe */}
+        <div 
+          className="ml-12 rounded-tl-xl flex-shrink-0 bg-[#2C2C2C] border-r border-neutral-800 chat-list-container"
+          style={{ width: `${chatListWidth}px` }}
+        >
+          {activeTab === 'chats' && (
+            <ChatList
+              onChatSelect={handleChatSelect}
+              selectedChatId={selectedChat?.id}
+            />
+          )}
+          {activeTab === 'calls' && <CallPanel />}
+          {activeTab === 'star' && <StarredMessages />}
+        </div>
+
+        {/* Splitter */}
+        <Splitter
+          onResize={handleSplitterResize}
+          minWidth={200}
+          maxWidth={400}
+          initialWidth={chatListWidth}
         />
 
-        {/* Chat Area */}
-        <div className="flex-1 flex flex-col">
-          <ChatHeader selectedChat={selectedChat} />
-          <ChatBody
-            selectedChat={selectedChat}
-            messages={currentMessages}
-          />
-          <ChatFooter
-            selectedChat={selectedChat}
-            onSendMessage={handleSendMessage}
-          />
+        {/* Chat Area - prend le reste de l'espace */}
+        <div className="flex-1 flex flex-col min-w-0 bg-[#0b0e11]">
+          {activeTab === 'chats' && (
+            <>
+              <ChatHeader selectedChat={selectedChat} />
+              <ChatBody selectedChat={selectedChat} />
+              <ChatFooter
+                selectedChat={selectedChat}
+                onSendMessage={handleSendMessage}
+              />
+            </>
+          )}
+          {activeTab === 'calls' && <CallScreen />}
+          {activeTab === 'star' && <StarredMessages />}
         </div>
       </div>
+
+
     </div>
   );
 }
