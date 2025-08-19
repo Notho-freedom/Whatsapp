@@ -3,12 +3,12 @@
 import { useState, useEffect } from 'react';
 import Titlebar from './Titlebar';
 import Sidebar from './Sidebar';
-import ChatList from './ChatList';
-import ChatHeader from './ChatHeader';
-import ChatBody from './chatBody/ChatBody';
-import ChatFooter from './ChatFooter';
+import ChatList from './chat/ChatList';
+import ChatHeader from './chat/chatHeader/ChatHeader';
+import ChatBody from './chat/chatBody/ChatBody';
+import ChatFooter from './chat/chatFooter/ChatFooter';
 import Splitter from './Splitter';
-import StarredMessages from './StarredMessages';
+import StarredMessages from './chat/StarredMessages';
 import { useAppContext } from '@/context/AppContext';
 import CallPanel from './calls/CallPanel';
 import CallScreen from './calls/CallScreen';
@@ -99,7 +99,13 @@ export default function WhatsApp() {
 
   const handleSendMessage = (messageData) => {
     if (selectedChat) {
-      sendMessage(selectedChat.id, messageData);
+      // Si messageData est une chaîne (ancien format), la convertir
+      if (typeof messageData === 'string') {
+        sendMessage(selectedChat.id, messageData);
+      } else {
+        // Nouveau format avec replyTo
+        sendMessage(selectedChat.id, messageData.text, messageData.replyTo);
+      }
     }
   };
 
