@@ -99,16 +99,7 @@ export default function WhatsApp() {
 
   const handleSendMessage = (messageData) => {
     if (selectedChat) {
-      // Si messageData est une chaîne (ancien format), la convertir
-      if (typeof messageData === 'string') {
-        sendMessage(selectedChat.id, messageData);
-      } else if (messageData.type === 'audio') {
-        // Message vocal
-        sendMessage(selectedChat.id, messageData);
-      } else {
-        // Nouveau format avec replyTo
-        sendMessage(selectedChat.id, messageData.text, messageData.replyTo);
-      }
+      sendMessage(selectedChat.id, messageData);
     }
   };
 

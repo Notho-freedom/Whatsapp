@@ -220,28 +220,28 @@ const MessageBubble = memo(function MessageBubble({ message, isFirstInGroup, isL
   }, []);
 
   return (
-    <div 
-      className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-[2px] group`}
-      ref={messageRef}
+      <div 
+        className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-[2px] group`}
+        ref={messageRef}
       onTouchStart={handleLongPressStart}
       onTouchEnd={handleLongPressEnd}
       onTouchMove={handleLongPressEnd}
       onTouchCancel={handleLongPressEnd}
-    >
+      >
       <div className="relative flex items-start max-w-[75%] md:max-w-[80%]">
-        {/* Message tail pour le premier message d'un groupe */}
-        {isFirstInGroup && (
-          <div className={`wa-message-tail ${isMe ? 'wa-message-tail-self' : 'wa-message-tail-others'}`} />
-        )}
+          {/* Message tail pour le premier message d'un groupe */}
+          {isFirstInGroup && (
+            <div className={`wa-message-tail ${isMe ? 'wa-message-tail-self' : 'wa-message-tail-others'}`} />
+          )}
 
-        {/* Message bubble */}
-        <div
-          className={`wa-message-bubble ${isMe ? 'wa-message-bubble-self' : 'wa-message-bubble-others'} 
+          {/* Message bubble */}
+          <div
+            className={`wa-message-bubble ${isMe ? 'wa-message-bubble-self' : 'wa-message-bubble-others'} 
             hover:shadow-lg transition-shadow cursor-pointer relative`}
-          style={{
-            borderTopRightRadius: isMe && isFirstInGroup ? 0 : 7.5,
-            borderTopLeftRadius: !isMe && isFirstInGroup ? 0 : 7.5,
-          }}
+            style={{
+              borderTopRightRadius: isMe && isFirstInGroup ? 0 : 7.5,
+              borderTopLeftRadius: !isMe && isFirstInGroup ? 0 : 7.5,
+            }}
           onContextMenu={(e) => showNativeContextMenu(e, message)}
           role="article"
           aria-label={`Message from ${isMe ? 'you' : message.senderName || 'contact'}`}
@@ -253,74 +253,74 @@ const MessageBubble = memo(function MessageBubble({ message, isFirstInGroup, isL
             </div>
           )}
 
-          {/* Message forwarded label */}
-          {message.forwarded && (
+            {/* Message forwarded label */}
+            {message.forwarded && (
             <div className="text-[#8696a0] text-[12px] sm:text-[13px] mb-[2px]">
-              Forwarded
-            </div>
-          )}
+                Forwarded
+              </div>
+            )}
 
-          {/* Reply */}
-          {message.replyTo && (
-            <div 
+            {/* Reply */}
+            {message.replyTo && (
+              <div 
               className="mb-[3px] p-[5px] sm:p-[6px] rounded-[7.5px] border-l-[4px] cursor-pointer hover:opacity-80 transition-opacity"
-              style={{
-                backgroundColor: isMe ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.06)',
-                borderColor: isMe ? '#06cf9c' : '#8696a0'
-              }}
+                style={{
+                  backgroundColor: isMe ? 'rgba(255, 255, 255, 0.08)' : 'rgba(255, 255, 255, 0.06)',
+                  borderColor: isMe ? '#06cf9c' : '#8696a0'
+                }}
               role="blockquote"
-            >
+              >
               <div className="text-[12px] sm:text-[13px] font-medium mb-[2px]" style={{ color: isMe ? '#06cf9c' : '#53bdeb' }}>
                 {message.replyTo.sender === 'me' ? 'You' : message.replyTo.senderName || 'Unknown'}
-              </div>
+                </div>
               <div className="text-[#d1d7db] text-[13px] sm:text-[14px] line-clamp-3">
                 {message.replyTo.text || (message.replyTo.media ? 'Media' : 'Message')}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Media */}
+            {/* Media */}
           {message.media && message.media.length > 0 && (
             <MediaGroup media={message.media} isMe={isMe} isMobile={isMobile} />
           )}
 
-          {/* Link preview */}
-          {message.link && <PreviewLink link={message.link} />}
+            {/* Link preview */}
+            {message.link && <PreviewLink link={message.link} />}
 
-          {/* Text message */}
-          {message.text && (
-            <div className="wa-message-text">
-              <span>{message.text}</span>
-              {/* Spacer for metadata */}
-              <span className="inline-block" style={{ width: message.edited ? '85px' : '74px' }}></span>
-            </div>
-          )}
+            {/* Text message */}
+            {message.text && (
+              <div className="wa-message-text">
+                <span>{message.text}</span>
+                {/* Spacer for metadata */}
+                <span className="inline-block" style={{ width: message.edited ? '85px' : '74px' }}></span>
+              </div>
+            )}
 
-          {/* Message metadata (time + status) */}
-          <div className="wa-message-meta">
+            {/* Message metadata (time + status) */}
+            <div className="wa-message-meta">
             {message.edited && <span className="text-[10px] sm:text-[11px] mr-1">edited</span>}
             <span className="wa-message-time">{message.time || 'now'}</span>
-            {isMe && (
+              {isMe && (
               <span className="wa-message-status ml-1" aria-label={message.read ? 'Read' : 'Delivered'}>
-                {message.read ? (
+                  {message.read ? (
                   <FaCheckDouble className="text-[#53bdeb]" style={{ width: isMobile ? '14px' : '16px', height: isMobile ? '10px' : '11px' }} />
-                ) : (
+                  ) : (
                   <FaCheckDouble className="text-[#8b9a9f]" style={{ width: isMobile ? '14px' : '16px', height: isMobile ? '10px' : '11px' }} />
-                )}
-              </span>
-            )}
-          </div>
+                  )}
+                </span>
+              )}
+            </div>
 
-          {/* Reactions */}
-          {message.reactions && message.reactions.length > 0 && (
+            {/* Reactions */}
+            {message.reactions && message.reactions.length > 0 && (
             <ReactionBar 
               reactions={message.reactions} 
               isMobile={isMobile}
               onAddReaction={handleAddReaction}
               onRemoveReaction={handleRemoveReaction}
             />
-          )}
-        </div>
+            )}
+          </div>
 
         {/* Options chevron on hover - Desktop only */}
         {!isMobile && (
@@ -331,10 +331,10 @@ const MessageBubble = memo(function MessageBubble({ message, isFirstInGroup, isL
             aria-label="Message options"
           >
             <FaAngleDown size={18} className="text-[#8696a0] hover:text-[#d1d7db]" />
-          </button>
-        )}
+            </button>
+          )}
       </div>
-    </div>
+        </div>
   );
 }, (prevProps, nextProps) => {
   // Optimisation des re-renders

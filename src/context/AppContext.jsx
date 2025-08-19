@@ -326,6 +326,26 @@ export function AppProvider({ children }) {
     };
   }, [generateMessageId]);
 
+  const createAudioMessage = useCallback((chatId, sender, audioData, options = {}) => {
+    const isMe = sender === 'me';
+    return {
+      id: generateMessageId(chatId, 'audio'),
+      sender,
+      senderName: options.senderName,
+      type: 'audio',
+      audio: {
+        url: audioData.url,
+        duration: audioData.duration,
+        waveform: audioData.waveform || []
+      },
+      time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+      date: new Date().toLocaleDateString('fr-FR'),
+      read: isMe ? false : undefined,
+      reactions: options.reactions || [],
+      ...options
+    };
+  }, [generateMessageId]);
+
   // Génération de messages initiaux intelligente
   const generateInitialMessages = useCallback((user) => {
     const messages = [];
@@ -446,42 +466,39 @@ export function AppProvider({ children }) {
   }, []);
 
   // Méthodes métier optimisées
-  const sendMessage = useCallback(async (chatId, content, replyTo = null) => {
-    // Gérer les différents types de contenu
-    if (typeof content === 'string') {
-      // Message texte
-      if (!content.trim()) return;
+  const sendMessage = useCallback(async (chatId, messageData, replyTo = null) => {
+    let message;
+    let lastMessageText;
 
-      const message = createTextMessage(chatId, 'me', content.trim(), {
-        replyTo: replyTo
+    if (typeof messageData === 'string') {
+      // Message texte simple
+      if (!messageData.trim()) return;
+      message = createTextMessage(chatId, 'me', messageData.trim(), {
+        replyTo: replyTo || state.replyTo
       });
-      actions.addMessage(chatId, message);
-
-      // Mettre à jour le dernier message de l'utilisateur
-      actions.updateLastMessage(chatId, {
-        text: content.trim(),
-        type: 'text'
-      });
-    } else if (content && content.type === 'audio') {
+      lastMessageText = messageData.trim();
+    } else if (messageData.type === 'audio') {
       // Message vocal
-      const message = createMediaMessage(chatId, 'me', 'audio', {
-        audio: content.audio,
-        duration: content.duration || 0,
-        replyTo: replyTo
+      message = createAudioMessage(chatId, 'me', messageData, {
+        replyTo: replyTo || state.replyTo
       });
-      actions.addMessage(chatId, message);
-
-      // Mettre à jour le dernier message de l'utilisateur
-      actions.updateLastMessage(chatId, {
-        text: 'Voice message',
-        type: 'audio',
-        duration: content.duration || 0
+      lastMessageText = '🎵 Voice message';
+    } else if (messageData.text) {
+      // Message avec objet (pour les réponses)
+      message = createTextMessage(chatId, 'me', messageData.text, {
+        replyTo: messageData.replyTo || replyTo || state.replyTo
       });
+      lastMessageText = messageData.text;
     } else {
-      // Autres types de messages
-      console.warn('Type de message non supporté:', content);
       return;
     }
+
+    actions.addMessage(chatId, message);
+    actions.updateLastMessage(chatId, {
+      text: lastMessageText,
+      type: message.type || 'text'
+    });
+    actions.clearReplyTo();
 
     // Simuler une réponse après un délai
     setTimeout(() => {
@@ -501,7 +518,7 @@ export function AppProvider({ children }) {
         type: 'text'
       });
     }, 1000 + Math.random() * 2000);
-  }, [createTextMessage, createMediaMessage, getRandomMessageText, actions, state.users]);
+  }, [createTextMessage, createAudioMessage, getRandomMessageText, actions, state.users, state.replyTo]);
 
   const selectChat = useCallback((chat) => {
     actions.setSelectedChat(chat);
@@ -548,7 +565,7 @@ export function AppProvider({ children }) {
         if (!response.ok) {
           throw new Error('Erreur lors du chargement des utilisateurs');
         }
-
+      
         // Transformer les données pour correspondre à notre structure
         const transformedUsers = data.results.map((user, index) => ({
           id: user.login.uuid,
@@ -591,20 +608,20 @@ export function AppProvider({ children }) {
   }, []); // Exécuter seulement au montage
 
   // Fonctions utilitaires pour les données initiales
-  function getRandomStatus() {
-    const statuses = [
-      'Online',
-      'Last seen 2 minutes ago',
-      'Last seen 1 hour ago',
-      'Last seen today at 2:30 PM',
-      'Last seen yesterday at 6:45 PM',
-      'Last seen 2 days ago'
-    ];
-    return statuses[Math.floor(Math.random() * statuses.length)];
-  }
+function getRandomStatus() {
+  const statuses = [
+    'Online',
+    'Last seen 2 minutes ago',
+    'Last seen 1 hour ago',
+    'Last seen today at 2:30 PM',
+    'Last seen yesterday at 6:45 PM',
+    'Last seen 2 days ago'
+  ];
+  return statuses[Math.floor(Math.random() * statuses.length)];
+}
 
-  function getRandomLastMessage() {
-    const messages = [
+function getRandomLastMessage() {
+  const messages = [
       { text: 'reacted 👍 to your status', type: 'reaction' },
       { text: 'Hey, how are you?', type: 'text' },
       { text: 'Thank you very much!', type: 'text' },
@@ -620,9 +637,9 @@ export function AppProvider({ children }) {
       { text: 'Audio file', type: 'audio', duration: '3:12' },
       { text: 'Location shared', type: 'location' },
       { text: 'Sticker', type: 'sticker' }
-    ];
-    return messages[Math.floor(Math.random() * messages.length)];
-  }
+  ];
+  return messages[Math.floor(Math.random() * messages.length)];
+}
 
   function getRandomTime() {
     const now = new Date();
