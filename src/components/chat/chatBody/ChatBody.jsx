@@ -93,12 +93,18 @@ const ChatBody = memo(function ChatBody({ selectedChat }) {
   const groupedMessages = groupMessagesByDate(chatMessages);
 
   return (
-    <section 
-      className="flex-1 flex flex-col relative overflow-hidden" 
-      style={{ backgroundColor: 'var(--wa-conversation-panel-background)' }}
-      role="main"
-      aria-label="Chat messages"
-    >
+<section 
+  className="flex-1 flex flex-col relative overflow-hidden" 
+  style={{
+    backgroundColor: 'var(--wa-conversation-panel-background)',
+    backgroundImage: 'url(o.png)',
+    backgroundRepeat: 'repeat',   // mosaïque
+    backgroundSize: 'auto',       // ou "contain" pour garder la taille originale
+  }}
+  role="main"
+  aria-label="Chat messages"
+>
+
       {/* Background pattern */}
       <div className="absolute inset-0 wa-chat-background pointer-events-none" aria-hidden="true" />
       

@@ -352,18 +352,18 @@
   --wa-drawer-background: #111b21;
   --wa-background-stripe: #005242;
   --wa-chat-bubble-self: #005c4b;
-  --wa-chat-bubble-others: #1f2c33;
+  --wa-chat-bubble-others: #353535;
   --wa-primary-strong: #e9edef;
   --wa-primary: #d1d7db;
   --wa-secondary: #8696a0;
   --wa-secondary-lighter: #667781;
-  --wa-system-message-bg: #1f2c34;
-  --wa-system-message-text: #8696a0;
+  --wa-system-message-bg: #1e1e1f;
+  --wa-system-message-text: #c9cdcf;
   --wa-highlight: #00a884;
   --wa-icon: #aebac1;
   --wa-bubble-meta: #8b9a9f;
   --wa-outgoing-background: #005c4b;
-  --wa-incoming-background: #1f2c33;
+  --wa-incoming-background: #313131;
   --wa-conversation-panel-background: #0a1014;
   --wa-border-default: #222d34;
   --wa-border-strong: #2a373f;
@@ -479,7 +479,7 @@ body {
   }
   
   .wa-message-bubble-others {
-    background-color: var(--wa-chat-bubble-others);
+    background-color: #313131;
     border-top-left-radius: 0;
   }
   
