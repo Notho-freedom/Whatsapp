@@ -12,12 +12,15 @@ import StarredMessages from './chat/StarredMessages';
 import { useAppContext } from '@/context/AppContext';
 import CallPanel from './calls/CallPanel';
 import CallScreen from './calls/CallScreen';
+import StatusPanel from './chat/StatusPanel';
+import StatusView from './chat/StatusView';
 import { useEventManager } from '@/hooks/useEventManager';
 import ClientOnly from './ClientOnly';
 
 export default function WhatsApp() {
   const [isClient, setIsClient] = useState(false);
   const [chatListWidth, setChatListWidth] = useState(300); // Largeur initiale pour 25%
+  const [selectedStatus, setSelectedStatus] = useState(null); // État pour le statut sélectionné
   
   // Initialiser le gestionnaire d'événements seulement côté client
   const eventManager = useEventManager();
@@ -97,6 +100,10 @@ export default function WhatsApp() {
     selectChat(chat);
   };
 
+  const handleStatusSelect = (status) => {
+    setSelectedStatus(status);
+  };
+
   const handleSendMessage = (messageData) => {
     if (selectedChat) {
       // Si messageData est une chaîne (ancien format), la convertir
@@ -136,6 +143,12 @@ export default function WhatsApp() {
           )}
           {activeTab === 'calls' && <CallPanel />}
           {activeTab === 'star' && <StarredMessages />}
+          {activeTab === 'status' && (
+            <StatusPanel 
+              onStatusSelect={handleStatusSelect}
+              selectedStatus={selectedStatus}
+            />
+          )}
         </div>
 
         {/* Splitter */}
@@ -159,6 +172,7 @@ export default function WhatsApp() {
             </>
           )}
           {activeTab === 'calls' && <CallScreen />}
+          {activeTab === 'status' && <StatusView selectedStatus={selectedStatus} />}
           {activeTab === 'star' && <StarredMessages />}
         </div>
       </div>
