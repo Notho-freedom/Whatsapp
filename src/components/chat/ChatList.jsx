@@ -6,7 +6,7 @@ import { useAppContext } from '@/context/AppContext';
 import StatusCircle from '../StatusCircle';
 import Lenis from '@studio-freight/lenis';
 
-export default function ChatList({ onChatSelect, selectedChatId }) {
+export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect }) {
   const [isClient, setIsClient] = useState(false);
   const { filteredUsers, searchQuery, setSearchQuery } = useAppContext();
   const scrollRef = useRef(null);
@@ -191,13 +191,28 @@ export default function ChatList({ onChatSelect, selectedChatId }) {
                 }`}
               >
                 {/* Avatar avec cercles de statuts */}
-                <StatusCircle statusCircles={chat.statusCircles} size="default">
-                  <img
-                    src={chat.avatar}
-                    alt={`${chat.name} profile picture`}
-                    className="w-full h-full rounded-full object-cover"
-                  />
-                </StatusCircle>
+                <div 
+                  className="relative"
+                  onClick={(e) => {
+                    e.stopPropagation(); // Empêcher le clic sur le chat
+                    if (chat.statuses && chat.statuses.length > 0 && onStatusSelect) {
+                      // Naviguer vers les statuts de cet utilisateur
+                      onStatusSelect({
+                        ...chat.statuses[0],
+                        userId: chat.id,
+                        user: chat
+                      });
+                    }
+                  }}
+                >
+                  <StatusCircle statusCircles={chat.statusCircles} size="default">
+                    <img
+                      src={chat.avatar}
+                      alt={`${chat.name} profile picture`}
+                      className="w-full h-full rounded-full object-cover"
+                    />
+                  </StatusCircle>
+                </div>
 
                 {/* Chat Info */}
                 <div className="flex-1 min-w-0">
