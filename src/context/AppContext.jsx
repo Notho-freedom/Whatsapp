@@ -23,7 +23,13 @@ const ACTIONS = {
   SET_REPLY_TO: 'SET_REPLY_TO',
   CLEAR_REPLY_TO: 'CLEAR_REPLY_TO',
   TOGGLE_MESSAGE_STAR: 'TOGGLE_MESSAGE_STAR',
-  TOGGLE_CHAT_PIN: 'TOGGLE_CHAT_PIN'
+  TOGGLE_CHAT_PIN: 'TOGGLE_CHAT_PIN',
+  // Nouvelles actions pour les statuts
+  SET_STATUSES: 'SET_STATUSES',
+  ADD_STATUS: 'ADD_STATUS',
+  UPDATE_STATUS: 'UPDATE_STATUS',
+  DELETE_STATUS: 'DELETE_STATUS',
+  MARK_STATUS_VIEWED: 'MARK_STATUS_VIEWED'
 };
 
 // État initial
@@ -36,7 +42,9 @@ const initialState = {
   searchQuery: '',
   sidebarOpen: true,
   activeTab: 'chats',
-  replyTo: null // État pour le message auquel on répond
+  replyTo: null, // État pour le message auquel on répond
+  statuses: [], // Nouvelle propriété pour stocker les statuts
+  viewedStatuses: [] // Nouvelle propriété pour stocker les statuts déjà vus
 };
 
 // Reducer pour gérer les actions
@@ -231,6 +239,29 @@ function appReducer(state, action) {
         )
       };
     
+    // Nouvelles actions pour les statuts
+    case ACTIONS.SET_STATUSES:
+      return { ...state, statuses: action.payload };
+    case ACTIONS.ADD_STATUS:
+      return { ...state, statuses: [...state.statuses, action.payload] };
+    case ACTIONS.UPDATE_STATUS:
+      return {
+        ...state,
+        statuses: state.statuses.map(status =>
+          status.id === action.payload.id ? { ...status, ...action.payload.updates } : status
+        )
+      };
+    case ACTIONS.DELETE_STATUS:
+      return {
+        ...state,
+        statuses: state.statuses.filter(status => status.id !== action.payload)
+      };
+    case ACTIONS.MARK_STATUS_VIEWED:
+      return {
+        ...state,
+        viewedStatuses: [...state.viewedStatuses, action.payload]
+      };
+    
     default:
       return state;
   }
@@ -273,7 +304,13 @@ export function AppProvider({ children }) {
     setReplyTo: (replyTo) => dispatch({ type: ACTIONS.SET_REPLY_TO, payload: replyTo }),
     clearReplyTo: () => dispatch({ type: ACTIONS.CLEAR_REPLY_TO }),
     toggleMessageStar: (chatId, messageId) => dispatch({ type: ACTIONS.TOGGLE_MESSAGE_STAR, payload: { chatId, messageId } }),
-    toggleChatPin: (chatId) => dispatch({ type: ACTIONS.TOGGLE_CHAT_PIN, payload: { chatId } })
+    toggleChatPin: (chatId) => dispatch({ type: ACTIONS.TOGGLE_CHAT_PIN, payload: { chatId } }),
+    // Nouvelles actions pour les statuts
+    setStatuses: (statuses) => dispatch({ type: ACTIONS.SET_STATUSES, payload: statuses }),
+    addStatus: (status) => dispatch({ type: ACTIONS.ADD_STATUS, payload: status }),
+    updateStatus: (id, updates) => dispatch({ type: ACTIONS.UPDATE_STATUS, payload: { id, updates } }),
+    deleteStatus: (id) => dispatch({ type: ACTIONS.DELETE_STATUS, payload: id }),
+    markStatusViewed: (id) => dispatch({ type: ACTIONS.MARK_STATUS_VIEWED, payload: id })
   }), []);
 
   // Fonctions utilitaires pour générer des messages
@@ -504,6 +541,41 @@ export function AppProvider({ children }) {
     actions.toggleChatPin(chatId);
   }, [actions]);
 
+  // Nouvelles fonctions pour gérer les statuts
+  const getUserStatuses = useCallback((userId) => {
+    return state.statuses.filter(status => status.userId === userId);
+  }, [state.statuses]);
+
+  const getUserStatusCircles = useCallback((userId) => {
+    const user = state.users.find(u => u.id === userId);
+    return user?.statusCircles || null;
+  }, [state.users]);
+
+  const markStatusAsViewed = useCallback((statusId) => {
+    actions.markStatusViewed(statusId);
+    // Mettre à jour le statut dans la liste
+    actions.updateStatus(statusId, { isViewed: true });
+  }, [actions]);
+
+  const addUserStatus = useCallback((userId, statusData) => {
+    const user = state.users.find(u => u.id === userId);
+    if (!user) return;
+
+    const newStatus = {
+      id: `status_${userId}_${Date.now()}`,
+      userId: userId,
+      userName: user.name,
+      ...statusData,
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      isViewed: false,
+      viewCount: 0,
+      reactions: {}
+    };
+
+    actions.addStatus(newStatus);
+  }, [actions, state.users]);
+
   // Filtrage intelligent des utilisateurs
   const filteredUsers = useMemo(() => {
     return state.users.filter(user =>
@@ -527,25 +599,33 @@ export function AppProvider({ children }) {
         }
       
         // Transformer les données pour correspondre à notre structure
-        const transformedUsers = data.results.map((user, index) => ({
-          id: user.login.uuid,
-          name: Math.random() > 0.95 ? '+'+user.phone : `${user.name.first} ${user.name.last}`,
-          avatar: user.picture.medium,
-          status: getRandomStatus(),
-          lastMessage: getRandomLastMessage(),
-          lastMessageTime: getRandomTime(),
-          unreadCount: Math.floor(Math.random() * 5),
-          online: Math.random() > 0.7,
-          phone: user.phone,
-          email: user.email,
-          isMuted: Math.random() > 0.7,
-          isPinned: Math.random() > 0.9,
-          isArchived: Math.random() > 0.5,
-          isStarred: Math.random() > 0.5,
-          isUnread: Math.random() > 0.5,
-          isTyping: Math.random() > 0.8,
-          isRead: Math.random() > 0.5,
-        }));
+        const transformedUsers = data.results.map((user, index) => {
+          const userName = Math.random() > 0.95 ? '+'+user.phone : `${user.name.first} ${user.name.last}`;
+          const userStatuses = generateUserStatuses(user.login.uuid, userName);
+          
+          return {
+            id: user.login.uuid,
+            name: userName,
+            avatar: user.picture.medium,
+            status: getRandomStatus(),
+            lastMessage: getRandomLastMessage(),
+            lastMessageTime: getRandomTime(),
+            unreadCount: Math.floor(Math.random() * 5),
+            online: Math.random() > 0.7,
+            phone: user.phone,
+            email: user.email,
+            isMuted: Math.random() > 0.7,
+            isPinned: Math.random() > 0.9,
+            isArchived: Math.random() > 0.5,
+            isStarred: Math.random() > 0.5,
+            isUnread: Math.random() > 0.5,
+            isTyping: Math.random() > 0.8,
+            isRead: Math.random() > 0.5,
+            // Nouvelles propriétés pour les statuts
+            statuses: userStatuses,
+            statusCircles: generateStatusCircles(userStatuses)
+          };
+        });
 
         actions.setUsers(transformedUsers);
         
@@ -555,6 +635,10 @@ export function AppProvider({ children }) {
           initialMessages[user.id] = generateInitialMessages(user);
         });
         actions.setMessages(initialMessages);
+        
+        // Stocker tous les statuts dans le contexte
+        const allStatuses = transformedUsers.flatMap(user => user.statuses);
+        actions.setStatuses(allStatuses);
         
       } catch (error) {
         console.error('Erreur lors du chargement des utilisateurs:', error);
@@ -578,6 +662,122 @@ function getRandomStatus() {
     'Last seen 2 days ago'
   ];
   return statuses[Math.floor(Math.random() * statuses.length)];
+}
+
+// Fonctions pour les statuts
+function generateUserStatuses(userId, userName) {
+  const statusTypes = [
+    {
+      type: 'image',
+      content: 'Photo de vacances à la plage',
+      preview: '🏖️',
+      time: 'Just now'
+    },
+    {
+      type: 'video',
+      content: 'Vidéo de mon chat qui dort',
+      preview: '🐱',
+      time: 'Today, 2:28 PM'
+    },
+    {
+      type: 'text',
+      content: 'Super journée aujourd\'hui ! ☀️',
+      preview: '☀️',
+      time: '8 minutes ago'
+    },
+    {
+      type: 'image',
+      content: 'Nouveau restaurant testé hier soir',
+      preview: '🍽️',
+      time: 'Today, 1:15 PM'
+    },
+    {
+      type: 'audio',
+      content: 'Message vocal - 0:23',
+      preview: '🎵',
+      time: 'Today, 12:30 PM'
+    },
+    {
+      type: 'text',
+      content: 'En route pour le travail 🚗',
+      preview: '🚗',
+      time: 'Today, 11:45 AM'
+    },
+    {
+      type: 'image',
+      content: 'Mon nouveau bureau installé',
+      preview: '💻',
+      time: 'Today, 10:20 AM'
+    },
+    {
+      type: 'text',
+      content: 'Bon matin tout le monde ! 🌅',
+      preview: '🌅',
+      time: 'Today, 9:15 AM'
+    },
+    {
+      type: 'video',
+      content: 'Tutoriel de cuisine - 2:15',
+      preview: '👨‍🍳',
+      time: 'Today, 8:30 AM'
+    }
+  ];
+
+  // Générer entre 1 et 4 statuts par utilisateur
+  const numberOfStatuses = Math.floor(Math.random() * 4) + 1;
+  const userStatuses = [];
+
+  for (let i = 0; i < numberOfStatuses; i++) {
+    const statusData = statusTypes[i] || statusTypes[0];
+    const status = {
+      id: `status_${userId}_${i}_${Date.now()}`,
+      userId: userId,
+      userName: userName,
+      type: statusData.type,
+      content: statusData.content,
+      preview: statusData.preview,
+      time: statusData.time,
+      createdAt: new Date(Date.now() - Math.random() * 24 * 60 * 60 * 1000).toISOString(),
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      isPublic: Math.random() > 0.3,
+      viewCount: Math.floor(Math.random() * 50) + 1,
+      reactions: generateRandomReactions(),
+      isViewed: Math.random() > 0.7 // 30% de chance d'être déjà vu
+    };
+    userStatuses.push(status);
+  }
+
+  return userStatuses;
+}
+
+function generateRandomReactions() {
+  const possibleReactions = ['👍', '❤️', '😊', '😮', '😢', '🙏', '😂', '😍', '🤔', '👏'];
+  const count = Math.floor(Math.random() * 4) + 1;
+  const reactions = {};
+  
+  for (let i = 0; i < count; i++) {
+    const reaction = possibleReactions[Math.floor(Math.random() * possibleReactions.length)];
+    reactions[reaction] = Math.floor(Math.random() * 10) + 1;
+  }
+  
+  return reactions;
+}
+
+// Fonction pour générer les cercles avec segments
+function generateStatusCircles(statuses) {
+  if (!statuses || statuses.length === 0) return null;
+  
+  const totalStatuses = statuses.length;
+  const viewedStatuses = statuses.filter(s => s.isViewed).length;
+  const unviewedStatuses = totalStatuses - viewedStatuses;
+  
+  return {
+    total: totalStatuses,
+    viewed: viewedStatuses,
+    unviewed: unviewedStatuses,
+    segments: totalStatuses,
+    hasUnviewed: unviewedStatuses > 0
+  };
 }
 
 function getRandomLastMessage() {
@@ -614,20 +814,53 @@ function getRandomLastMessage() {
   }
 
   const value = useMemo(() => ({
+    // État
     ...state,
-    ...actions,
+    
+    // Actions
+    setLoading: actions.setLoading,
+    setUsers: actions.setUsers,
+    setSelectedChat: actions.setSelectedChat,
+    addMessage: actions.addMessage,
+    updateMessage: actions.updateMessage,
+    deleteMessage: actions.deleteMessage,
+    setMessages: actions.setMessages,
+    setError: actions.setError,
+    updateUserStatus: actions.updateUserStatus,
+    updateLastMessage: actions.updateLastMessage,
+    setSearchQuery: actions.setSearchQuery,
+    toggleSidebar: actions.toggleSidebar,
+    setActiveTab: actions.setActiveTab,
+    markMessagesRead: actions.markMessagesRead,
+    addReaction: actions.addReaction,
+    removeReaction: actions.removeReaction,
+    setReplyTo: actions.setReplyTo,
+    clearReplyTo: actions.clearReplyTo,
+    toggleMessageStar: actions.toggleMessageStar,
+    toggleChatPin: actions.toggleChatPin,
+    // Nouvelles actions pour les statuts
+    setStatuses: actions.setStatuses,
+    addStatus: actions.addStatus,
+    updateStatus: actions.updateStatus,
+    deleteStatus: actions.deleteStatus,
+    markStatusViewed: actions.markStatusViewed,
+    
+    // Méthodes métier
     sendMessage,
     selectChat,
     addReactionToMessage,
     removeReactionFromMessage,
-    deleteMessage,
+    deleteMessage: deleteMessage,
     toggleMessageStar,
     toggleChatPin,
-    filteredUsers,
-    // Fonctions utilitaires exposées
-    createTextMessage,
-    createMediaMessage,
-    createSystemMessage
+    // Nouvelles méthodes pour les statuts
+    getUserStatuses,
+    getUserStatusCircles,
+    markStatusAsViewed,
+    addUserStatus,
+    
+    // Données calculées
+    filteredUsers
   }), [
     state,
     actions,
