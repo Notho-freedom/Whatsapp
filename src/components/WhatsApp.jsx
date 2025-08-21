@@ -12,8 +12,8 @@ import StarredMessages from './chat/StarredMessages';
 import { useAppContext } from '@/context/AppContext';
 import CallPanel from './calls/CallPanel';
 import CallScreen from './calls/CallScreen';
-import StatusPanel from './chat/StatusPanel';
-import StatusView from './chat/StatusView';
+import StatusPanel from './status/StatusPanel';
+import StatusView from './status/StatusView';
 import { useEventManager } from '@/hooks/useEventManager';
 import ClientOnly from './ClientOnly';
 
@@ -189,7 +189,7 @@ export default function WhatsApp() {
         {/* Splitter */}
         <Splitter
           onResize={handleSplitterResize}
-          minWidth={200}
+          minWidth={270}
           maxWidth={400}
           initialWidth={chatListWidth}
         />

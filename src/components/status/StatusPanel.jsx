@@ -65,17 +65,16 @@ export default function StatusPanel({ onStatusSelect, selectedStatus }) {
   };
 
   return (
-    <div className="h-full bg-[#2C2C2C] border-r border-neutral-800 flex flex-col">
+    <div className="h-full bg-[#2C2C2C] flex flex-col rounded-tl-xl">
       {/* Header */}
-      <div className="p-4 border-b border-neutral-800">
-        <h2 className="text-white text-lg font-semibold">Status</h2>
+      <div className="p-4">
+        <h2 className="text-white text-[20px] font-semibold">Status</h2>
       </div>
 
       {/* Contenu défilable */}
       <div className="flex-1 overflow-y-auto">
         {/* My status */}
-        <div className="p-4 border-b border-neutral-800">
-          <h3 className="text-gray-400 text-sm font-medium mb-3">My status</h3>
+        <div className="pl-5 pr-1">
           <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-neutral-700/50 cursor-pointer transition-colors">
             <div className="relative">
               <img
@@ -83,15 +82,11 @@ export default function StatusPanel({ onStatusSelect, selectedStatus }) {
                 alt="My status"
                 className="w-12 h-12 rounded-full"
               />
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-[#1DAA61] rounded-full border-2 border-[#2C2C2C] flex items-center justify-center">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-white">
-                  <path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>
-                </svg>
-              </div>
+              
             </div>
             <div className="flex-1">
-              <p className="text-white font-medium">Add to my status</p>
-              <p className="text-sm text-gray-400">Tap to add status update</p>
+              <p className="text-white text-sm font-semibold">My status</p>
+              <p className="text-sm text-gray-300">No updates</p>
             </div>
           </div>
         </div>

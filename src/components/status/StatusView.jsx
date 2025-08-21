@@ -348,7 +348,7 @@ export default function StatusView({ selectedStatus, onNextUser }) {
         </div>
       ) : (
         // Vue par défaut
-        <div className="flex-1 bg-whatsapp-chat-bg flex flex-col h-full">
+        <div className="flex-1 bg-[#2C2C2C] flex flex-col h-full">
           <div className="absolute inset-0 wa-chat-background pointer-events-none" aria-hidden="true" />
           
           <div className="flex-1 flex flex-col items-center justify-center relative z-10">
@@ -363,7 +363,7 @@ export default function StatusView({ selectedStatus, onNextUser }) {
           
           <div className="pb-12 flex items-center justify-center gap-2 relative z-10">
             <FaLock size={10} className="text-neutral-500" />
-            <p className="text-sm text-neutral-500">End-to-end encrypted.</p>
+            <p className="text-sm text-neutral-500"> Status updates are end-to-end encrypted.</p>
           </div>
         </div>
       )}
