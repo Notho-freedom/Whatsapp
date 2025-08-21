@@ -1,14 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { FaLock, FaWhatsapp, FaPause, FaPlay, FaVolumeUp, FaVolumeMute, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { useAppContext } from '@/context/AppContext';
 
-export default function StatusView({ selectedStatus }) {
+export default function StatusView({ selectedStatus, onNextUser }) {
   const { users, getUserStatuses, markStatusAsViewed } = useAppContext();
   const [currentStatusIndex, setCurrentStatusIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const intervalRef = useRef(null);
+  const startTimeRef = useRef(null);
   
   // Trouver l'utilisateur correspondant au statut sélectionné
   const selectedUser = users.find(user => user.id === selectedStatus?.userId);
@@ -16,6 +19,22 @@ export default function StatusView({ selectedStatus }) {
   // Récupérer tous les statuts de l'utilisateur
   const userStatuses = selectedUser ? getUserStatuses(selectedUser.id) : [];
   const currentStatus = userStatuses[currentStatusIndex];
+
+  // Durées selon le type de statut (en millisecondes)
+  const getStatusDuration = useCallback((status) => {
+    switch (status?.type) {
+      case 'text': return 5000; // 5 secondes pour le texte
+      case 'image': return 7000; // 7 secondes pour les images
+      case 'video': return 15000; // 15 secondes pour les vidéos
+      default: return 5000;
+    }
+  }, []);
+
+  // Réinitialiser la progression quand on change de statut
+  useEffect(() => {
+    setProgress(0);
+    startTimeRef.current = Date.now();
+  }, [currentStatusIndex, selectedStatus]);
 
   // Marquer le statut comme vu quand il est sélectionné
   useEffect(() => {
@@ -25,17 +44,80 @@ export default function StatusView({ selectedStatus }) {
   }, [selectedStatus, markStatusAsViewed]);
 
   // Navigation entre les statuts
-  const goToNextStatus = () => {
+  const goToNextStatus = useCallback(() => {
     if (currentStatusIndex < userStatuses.length - 1) {
       setCurrentStatusIndex(currentStatusIndex + 1);
+    } else {
+      // Tous les statuts de cet utilisateur sont terminés, passer au suivant
+      if (onNextUser) {
+        onNextUser();
+      }
     }
-  };
+  }, [currentStatusIndex, userStatuses.length, onNextUser]);
 
-  const goToPrevStatus = () => {
+  const goToPrevStatus = useCallback(() => {
     if (currentStatusIndex > 0) {
       setCurrentStatusIndex(currentStatusIndex - 1);
     }
-  };
+  }, [currentStatusIndex]);
+
+  // Démarrer/arrêter la progression automatique
+  const startProgress = useCallback(() => {
+    if (!currentStatus || !isPlaying) return;
+    
+    const duration = getStatusDuration(currentStatus);
+    startTimeRef.current = Date.now() - (progress * duration / 100);
+    
+    intervalRef.current = setInterval(() => {
+      const elapsed = Date.now() - startTimeRef.current;
+      const newProgress = Math.min((elapsed / duration) * 100, 100);
+      
+      setProgress(newProgress);
+      
+      if (newProgress >= 100) {
+        clearInterval(intervalRef.current);
+        // Attendre un peu avant de passer au suivant
+        setTimeout(() => {
+          goToNextStatus();
+        }, 100);
+      }
+    }, 50); // Mise à jour toutes les 50ms pour une progression fluide
+  }, [currentStatus, isPlaying, progress, goToNextStatus, getStatusDuration]);
+
+  const stopProgress = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  }, []);
+
+  // Gérer play/pause
+  const togglePlayPause = useCallback(() => {
+    setIsPlaying(!isPlaying);
+  }, [isPlaying]);
+
+  // Effet pour gérer la progression automatique
+  useEffect(() => {
+    if (isPlaying && currentStatus) {
+      startProgress();
+    } else {
+      stopProgress();
+    }
+
+    // Cleanup à la désactivation du composant
+    return () => {
+      stopProgress();
+    };
+  }, [isPlaying, currentStatus, startProgress, stopProgress]);
+
+  // Cleanup des intervals au démontage
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, []);
 
   // Fonction pour obtenir le fond selon le type de statut
   const getStatusBackground = (status) => {
@@ -78,13 +160,15 @@ export default function StatusView({ selectedStatus }) {
               {userStatuses.map((_, index) => (
                 <div 
                   key={index} 
-                  className="flex-1 h-0.5 bg-white/30 rounded-full overflow-hidden"
+                  className="flex-1 h-0.5 bg-white/30 rounded-full overflow-hidden cursor-pointer"
+                  onClick={() => setCurrentStatusIndex(index)}
                 >
                   <div 
-                    className={`h-full bg-white transition-all duration-300 ${
-                      index < currentStatusIndex ? 'w-full' : 
-                      index === currentStatusIndex ? 'w-1/2' : 'w-0'
-                    }`}
+                    className="h-full bg-white transition-all duration-100"
+                    style={{
+                      width: index < currentStatusIndex ? '100%' : 
+                             index === currentStatusIndex ? `${progress}%` : '0%'
+                    }}
                   />
                 </div>
               ))}
@@ -106,7 +190,7 @@ export default function StatusView({ selectedStatus }) {
               {(currentStatus.type === 'video' || currentStatus.type === 'audio') && (
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => setIsPlaying(!isPlaying)}
+                    onClick={togglePlayPause}
                     className="p-2 rounded-full bg-black/20 text-white hover:bg-black/30 transition-colors"
                   >
                     {isPlaying ? <FaPause size={12} /> : <FaPlay size={12} />}
@@ -213,7 +297,7 @@ export default function StatusView({ selectedStatus }) {
                   {!isPlaying && (
                     <div className="absolute inset-0 flex items-center justify-center">
                       <button
-                        onClick={() => setIsPlaying(true)}
+                        onClick={togglePlayPause}
                         className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center text-white hover:bg-white/30 transition-colors"
                       >
                         <FaPlay size={20} />
