@@ -32,7 +32,9 @@ export default function WhatsApp() {
     loading,
     error,
     activeTab,
-    setActiveTab
+    setActiveTab,
+    users,
+    getUserStatuses
   } = useAppContext();
 
   useEffect(() => {
@@ -104,6 +106,30 @@ export default function WhatsApp() {
     setSelectedStatus(status);
   };
 
+  // Fonction pour passer au prochain utilisateur avec des statuts
+  const handleNextUser = () => {
+    if (!selectedStatus) return;
+    
+    const usersWithStatuses = users.filter(user => 
+      user.statuses && user.statuses.length > 0
+    );
+    
+    const currentUserIndex = usersWithStatuses.findIndex(user => 
+      user.id === selectedStatus.userId
+    );
+    
+    if (currentUserIndex < usersWithStatuses.length - 1) {
+      const nextUser = usersWithStatuses[currentUserIndex + 1];
+      const nextUserStatuses = getUserStatuses(nextUser.id);
+      if (nextUserStatuses.length > 0) {
+        handleStatusSelect({
+          ...nextUserStatuses[0],
+          user: nextUser
+        });
+      }
+    }
+  };
+
   const handleSendMessage = (messageData) => {
     if (selectedChat) {
       // Si messageData est une chaîne (ancien format), la convertir
@@ -172,7 +198,7 @@ export default function WhatsApp() {
             </>
           )}
           {activeTab === 'calls' && <CallScreen />}
-          {activeTab === 'status' && <StatusView selectedStatus={selectedStatus} />}
+          {activeTab === 'status' && <StatusView selectedStatus={selectedStatus} onNextUser={handleNextUser} />}
           {activeTab === 'star' && <StarredMessages />}
         </div>
       </div>
