@@ -130,6 +130,14 @@ export default function WhatsApp() {
     }
   };
 
+  // Fonction pour naviguer vers les statuts depuis la chatlist
+  const handleStatusFromChatList = (statusData) => {
+    // Changer vers l'onglet status
+    setActiveTab('status');
+    // Sélectionner le statut
+    handleStatusSelect(statusData);
+  };
+
   const handleSendMessage = (messageData) => {
     if (selectedChat) {
       // Si messageData est une chaîne (ancien format), la convertir
@@ -165,6 +173,7 @@ export default function WhatsApp() {
             <ChatList
               onChatSelect={handleChatSelect}
               selectedChatId={selectedChat?.id}
+              onStatusSelect={handleStatusFromChatList}
             />
           )}
           {activeTab === 'calls' && <CallPanel />}
