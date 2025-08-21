@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { LucideEdit, Pin, BellOff, Star, Search, Mic, Video, Image, FileText, Link, Music, MapPinMinus, SmileIcon } from 'lucide-react';
 import { useAppContext } from '@/context/AppContext';
+import StatusCircle from '../StatusCircle';
 import Lenis from '@studio-freight/lenis';
 
 export default function ChatList({ onChatSelect, selectedChatId }) {
@@ -189,14 +190,14 @@ export default function ChatList({ onChatSelect, selectedChatId }) {
                   selectedChatId === chat.id ? 'bg-neutral-700/50' : ''
                 }`}
               >
-                {/* Avatar */}
-                <div className="relative">
+                {/* Avatar avec cercles de statuts */}
+                <StatusCircle statusCircles={chat.statusCircles} size="default">
                   <img
                     src={chat.avatar}
                     alt={`${chat.name} profile picture`}
-                    className={`w-12 h-12 rounded-full object-cover ${chat.online ? 'border-2 border-[#1DAA61] p-[1px]' : ''}`}
+                    className="w-full h-full rounded-full object-cover"
                   />
-                </div>
+                </StatusCircle>
 
                 {/* Chat Info */}
                 <div className="flex-1 min-w-0">
