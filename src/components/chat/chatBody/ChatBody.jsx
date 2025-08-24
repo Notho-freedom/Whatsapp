@@ -4,7 +4,7 @@ import SystemMessage from './SystemMessage';
 import { useEffect, useRef, useState, useCallback, memo } from 'react';
 import { useAppContext } from '@/context/AppContext';
 
-const ChatBody = memo(function ChatBody({ selectedChat }) {
+const ChatBody = memo(function ChatBody({ selectedChat, currentUser }) {
   const scrollRef = useRef(null);
   const [isMobile, setIsMobile] = useState(false);
   const [autoScroll, setAutoScroll] = useState(true);
@@ -159,6 +159,7 @@ const ChatBody = memo(function ChatBody({ selectedChat }) {
                       isFirstInGroup={isFirstInGroup}
                       isLastInGroup={isLastInGroup}
                       isMobile={isMobile}
+                      currentUser={currentUser}
                     />
                   );
                 })}

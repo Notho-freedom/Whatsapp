@@ -18,13 +18,12 @@ import { useEventManager } from '@/hooks/useEventManager';
 import ClientOnly from './ClientOnly';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 import GoogleAuth from './GoogleAuth';
-import WelcomeScreen from './WelcomeScreen';
 
 export default function WhatsApp() {
   const [isClient, setIsClient] = useState(false);
   const [chatListWidth, setChatListWidth] = useState(300); // Largeur initiale pour 25%
   const [selectedStatus, setSelectedStatus] = useState(null); // État pour le statut sélectionné
-  const [showWelcome, setShowWelcome] = useState(false); // État pour l'écran de bienvenue
+
   
   // Initialiser le gestionnaire d'événements seulement côté client
   const eventManager = useEventManager();
@@ -74,12 +73,7 @@ export default function WhatsApp() {
     };
   }, [setActiveTab]);
 
-  // Effet pour afficher l'écran de bienvenue après la connexion
-  useEffect(() => {
-    if (isAuthenticated && user && !showWelcome) {
-      setShowWelcome(true);
-    }
-  }, [isAuthenticated, user, showWelcome]);
+
 
   if (!isClient) {
     return null;
@@ -208,7 +202,7 @@ export default function WhatsApp() {
       {/* Main Content */}
       <div className="flex-1 flex min-h-0">
         {/* Sidebar */}
-        <Sidebar />
+        <Sidebar currentUser={user} />
 
         {/* Chat List avec largeur fixe */}
         <div 
@@ -220,6 +214,7 @@ export default function WhatsApp() {
               onChatSelect={handleChatSelect}
               selectedChatId={selectedChat?.id}
               onStatusSelect={handleStatusFromChatList}
+              currentUser={user}
             />
           )}
           {activeTab === 'calls' && <CallPanel />}
@@ -245,10 +240,11 @@ export default function WhatsApp() {
           {activeTab === 'chats' && (
             <>
               <ChatHeader selectedChat={selectedChat} />
-              <ChatBody selectedChat={selectedChat} />
+              <ChatBody selectedChat={selectedChat} currentUser={user} />
               <ChatFooter
                 selectedChat={selectedChat}
                 onSendMessage={handleSendMessage}
+                currentUser={user}
               />
             </>
           )}
@@ -258,10 +254,7 @@ export default function WhatsApp() {
         </div>
       </div>
 
-      {/* Écran de bienvenue après connexion */}
-      {showWelcome && (
-        <WelcomeScreen onContinue={() => setShowWelcome(false)} />
-      )}
+      
 
     </div>
   );

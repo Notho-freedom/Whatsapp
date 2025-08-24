@@ -3,7 +3,7 @@ import { useAppContext } from '@/context/AppContext';
 import { useState, useMemo } from 'react';
 import { FaWhatsapp } from 'react-icons/fa';
 
-export default function Sidebar() {
+export default function Sidebar({ currentUser }) {
   const { activeTab, setActiveTab, messages } = useAppContext();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -152,20 +152,28 @@ export default function Sidebar() {
             <div className="w-[90%] self-center border-t border-neutral-700 my-1 px-0.5" />
 
             <SidebarButton tab="settings" icon={Settings} label="Settings" />
-            <div className="flex items-center relative">
+                            <div className="flex items-center relative">
                   {isActive('profile') && <ActiveIndicator />}
                   <button
                     aria-label="Profile"
                     className="relative flex items-center w-full px-2 py-1.5 rounded hover:bg-whatsapp-dark-700/50"
                     onClick={() => handleTabClick('profile')}
                   >
-                    <div className="w-6 h-6 rounded-full bg-neutral-700/95 flex items-center justify-center overflow-hidden">
-                      <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                      </svg>
-                    </div>
+                    {currentUser ? (
+                      <img
+                        src={currentUser.picture}
+                        alt={currentUser.name}
+                        className="w-6 h-6 rounded-full border border-white/20"
+                      />
+                    ) : (
+                      <div className="w-6 h-6 rounded-full bg-neutral-700/95 flex items-center justify-center overflow-hidden">
+                        <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    )}
                   </button>
-            </div>
+                </div>
           </nav>
         </div>
       </div>
@@ -206,12 +214,22 @@ export default function Sidebar() {
                     className="relative flex items-center w-full px-2 py-1.5 rounded hover:bg-whatsapp-dark-700/50"
                     onClick={() => handleTabClick('profile')}
                   >
-                    <div className="w-6 h-6 rounded-full bg-neutral-700/95 flex items-center justify-center overflow-hidden">
-                      <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                      </svg>
-                    </div>
-                    <span className="ml-3 text-white text-sm">Profile</span>
+                    {currentUser ? (
+                      <img
+                        src={currentUser.picture}
+                        alt={currentUser.name}
+                        className="w-6 h-6 rounded-full border border-white/20"
+                      />
+                    ) : (
+                      <div className="w-6 h-6 rounded-full bg-neutral-700/95 flex items-center justify-center overflow-hidden">
+                        <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                    )}
+                    <span className="ml-3 text-white text-sm">
+                      {currentUser ? currentUser.name : 'Profile'}
+                    </span>
                   </button>
                 </div>
               </nav>

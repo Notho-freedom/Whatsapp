@@ -9,7 +9,7 @@ import { downloadMedia, viewMedia, shareMedia } from '@/utils/electronUtils';
 import { showSuccess, showError, showInfo } from '@/utils/nativeNotificationUtils';
 import { useMessageContextMenu } from '@/hooks/useNativeContextMenu';
 
-const MessageBubble = memo(function MessageBubble({ message, isFirstInGroup, isLastInGroup, isMobile }) {
+const MessageBubble = memo(function MessageBubble({ message, isFirstInGroup, isLastInGroup, isMobile, currentUser }) {
   const isMe = message.sender === 'me';
   const messageRef = useRef(null);
   const longPressTimer = useRef(null);
@@ -19,11 +19,10 @@ const MessageBubble = memo(function MessageBubble({ message, isFirstInGroup, isL
   // Récupérer les informations de l'utilisateur pour l'avatar
   const getUserInfo = useCallback(() => {
     if (isMe) {
-      // Pour l'utilisateur actuel, on pourrait avoir un utilisateur connecté
-      // Pour l'instant, on utilise des informations par défaut
+      // Pour l'utilisateur actuel, utiliser l'utilisateur connecté
       return {
-        name: 'Me',
-        avatar: null // Utilisera l'avatar par défaut
+        name: currentUser?.name || 'Me',
+        avatar: currentUser?.picture || null
       };
     } else {
       // Pour les autres utilisateurs, récupérer depuis la liste des utilisateurs
@@ -42,7 +41,7 @@ const MessageBubble = memo(function MessageBubble({ message, isFirstInGroup, isL
         avatar: null
       };
     }
-  }, [isMe, selectedChat, users, message.senderName]);
+  }, [isMe, selectedChat, users, message.senderName, currentUser]);
 
   // Gestionnaires d'actions avec notifications améliorées
   const handleReplyMessage = useCallback(async (messageData) => {

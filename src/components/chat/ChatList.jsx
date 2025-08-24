@@ -6,10 +6,13 @@ import { useAppContext } from '@/context/AppContext';
 import StatusCircle from '../StatusCircle';
 import Lenis from '@studio-freight/lenis';
 import { useChatContextMenu } from '@/hooks/useNativeContextMenu';
+import { useGoogleContacts } from '@/hooks/useGoogleContacts';
 
-export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect }) {
+export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect, currentUser }) {
   const [isClient, setIsClient] = useState(false);
+  const [showContacts, setShowContacts] = useState(false);
   const { filteredUsers, searchQuery, setSearchQuery } = useAppContext();
+  const { contacts, isLoading: contactsLoading, error: contactsError } = useGoogleContacts();
   const scrollRef = useRef(null);
   
   // Hook pour les menus contextuels natifs d'Electron
@@ -116,9 +119,32 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect 
       <div className="pl-4 pt-4 pr-2 mb-4">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-white font-semibold text-xl font-segoe">
-            Chats
+            {showContacts ? 'Contacts' : 'Chats'}
           </h2>
           <div className="flex items-center gap-2">
+            <button
+              aria-label="Toggle contacts"
+              className={`p-2 rounded-md transition-colors ${
+                showContacts 
+                  ? 'bg-[#1DAA61] text-white' 
+                  : 'hover:bg-whatsapp-dark-700 text-gray-200'
+              }`}
+              onClick={() => setShowContacts(!showContacts)}
+              title={showContacts ? 'Voir les chats' : 'Voir les contacts'}
+            >
+              <svg 
+                width="16" 
+                height="16" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor"
+              >
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" strokeWidth="2" strokeLinecap="round"/>
+                <circle cx="9" cy="7" r="4" strokeWidth="2"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87" strokeWidth="2" strokeLinecap="round"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+            </button>
             <button
               aria-label="New chat"
               className="p-2 rounded-md hover:bg-whatsapp-dark-700 transition-colors"
@@ -162,7 +188,7 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect 
           
           <input 
             className="w-full max-h-8 bg-[#3D3D3D] text-white placeholder-gray-200 placeholder:text-sm py-2 pl-8 pr-3 rounded-[0.30rem] border-b border-white/50 backdrop-blur-lg focus:outline-none focus:ring-none focus:border-b-2 focus:border-[#1DAA61] focus:bg-[#202020]" 
-            placeholder="Search or start a new chat" 
+            placeholder={showContacts ? "Rechercher des contacts" : "Search or start a new chat"} 
             type="text"
             onChange={handleSearchChange}
             value={searchQuery}
@@ -174,12 +200,79 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect 
       {/* Chat List avec Lenis */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-1 chat-list">
         <div>
-          {sortedUsers.length === 0 ? (
-            <div className="p-4 text-center text-gray-400">
-              <p>Aucune conversation trouvée</p>
-            </div>
+          {showContacts ? (
+            // Mode Contacts
+            contactsLoading ? (
+              <div className="p-4 text-center text-gray-400">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#1DAA61] mx-auto mb-2"></div>
+                <p>Chargement des contacts...</p>
+              </div>
+            ) : contactsError ? (
+              <div className="p-4 text-center text-gray-400">
+                <div className="text-red-400 text-6xl mb-4">⚠️</div>
+                <p className="text-red-300 mb-2">Erreur lors du chargement des contacts</p>
+                <p className="text-sm text-gray-500">Utilisation de contacts de démonstration</p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="mt-3 px-4 py-2 bg-[#1DAA61] text-white rounded-lg hover:bg-[#1DAA61]/80 transition-colors"
+                >
+                  Réessayer
+                </button>
+              </div>
+            ) : contacts && contacts.length > 0 ? (
+              contacts.map((contact) => (
+                <div
+                  key={contact.id}
+                  onClick={() => {
+                    // Créer un nouveau chat avec ce contact
+                    const newChat = {
+                      id: `contact-${contact.id}`,
+                      name: contact.displayName || contact.name || 'Contact sans nom',
+                      avatar: contact.photos?.[0]?.url || '/default-avatar.png',
+                      isNewContact: true,
+                      contact: contact
+                    };
+                    onChatSelect(newChat);
+                  }}
+                  className="flex items-center gap-3 p-2 mt-1 cursor-pointer rounded-lg hover:bg-neutral-700/50 transition-colors"
+                >
+                  {/* Avatar du contact */}
+                  <div className="relative">
+                    <img
+                      src={contact.photos?.[0]?.url || '/default-avatar.png'}
+                      alt={`${contact.displayName || contact.name} profile picture`}
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+                  </div>
+
+                  {/* Info du contact */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-white font-semibold text-sm font-segoe truncate">
+                        {contact.displayName || contact.name || 'Contact sans nom'}
+                      </h3>
+                    </div>
+                    <div className="flex items-center mt-1">
+                      <p className="text-sm text-gray-300 truncate">
+                        {contact.phones?.[0]?.value || contact.emails?.[0]?.value || 'Aucune information'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="p-4 text-center text-gray-400">
+                <p>Aucun contact trouvé</p>
+              </div>
+            )
           ) : (
-            sortedUsers.map((chat) => (
+            // Mode Chats
+            sortedUsers.length === 0 ? (
+              <div className="p-4 text-center text-gray-400">
+                <p>Aucune conversation trouvée</p>
+              </div>
+            ) : (
+              sortedUsers.map((chat) => (
               <div
                 key={chat.id}
                 onClick={() => {
@@ -269,7 +362,8 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect 
                 </div>
               </div>
             ))
-          )}
+          )
+        )}
         </div>
       </div>
     </div>

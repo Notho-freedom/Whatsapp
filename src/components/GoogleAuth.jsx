@@ -21,10 +21,10 @@ export default function GoogleAuth() {
       // Initialiser le client Google
       return new Promise((resolve, reject) => {
         if (window.google && window.google.accounts) {
-          const client = window.google.accounts.oauth2.initTokenClient({
-            client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || 'your-google-client-id.apps.googleusercontent.com',
-            scope: 'email profile https://www.googleapis.com/auth/contacts.readonly',
-                         callback: (response) => {
+                      const client = window.google.accounts.oauth2.initTokenClient({
+              client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '425288140548-qi3u0acra5jnitnr2d2ac4m3gdcg35eq.apps.googleusercontent.com',
+              scope: 'https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/contacts.readonly',
+              callback: (response) => {
                // Le callback sera géré par le composant
                if (response.error) {
                  setError(`Erreur d'authentification: ${response.error}`);
@@ -82,14 +82,15 @@ export default function GoogleAuth() {
   // Valider un token Google
   const validateGoogleToken = async (token) => {
     try {
-      const response = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${token}`);
+      // Utiliser notre API route pour éviter le CORS
+      const response = await fetch(`/api/google/validate?token=${encodeURIComponent(token)}`);
       if (response.ok) {
         const data = await response.json();
         return {
-          id: data.sub,
-          email: data.email,
-          name: data.name,
-          picture: data.picture,
+          id: data.user.id,
+          email: data.user.email,
+          name: data.user.name,
+          picture: data.user.picture,
           token: token
         };
       }
@@ -191,11 +192,18 @@ export default function GoogleAuth() {
 
   // Récupérer les informations utilisateur avec le token
   const getUserInfo = async (accessToken) => {
-    const response = await fetch(`https://www.googleapis.com/oauth2/v3/userinfo?access_token=${accessToken}`);
+    // Utiliser notre API route de validation qui retourne déjà les infos utilisateur
+    const response = await fetch(`/api/google/validate?token=${encodeURIComponent(accessToken)}`);
     if (!response.ok) {
       throw new Error('Impossible de récupérer les informations utilisateur');
     }
-    return response.json();
+    const data = await response.json();
+    return {
+      sub: data.user.id,
+      email: data.user.email,
+      name: data.user.name,
+      picture: data.user.picture
+    };
   };
 
   // Tenter l'enregistrement Google (même logique que la connexion)
