@@ -2,9 +2,11 @@ import { Video, Phone, Search, MoreVertical } from 'lucide-react';
 import { useState } from 'react';
 import UserProfilePopup from './UserProfilePopup';
 import { useUserContextMenu } from '@/hooks/useNativeContextMenu';
+import { useTheme } from '@/utils/themeManager';
 
 export default function ChatHeader({ selectedChat }) {
   const [isProfilePopupOpen, setIsProfilePopupOpen] = useState(false);
+  const { getThemeStyles } = useTheme();
   
   // Hook pour les menus contextuels natifs d'Electron
   const nativeUserMenu = useUserContextMenu((actionId, data) => {
@@ -51,7 +53,13 @@ export default function ChatHeader({ selectedChat }) {
   };
 
   return (
-    <header className="flex items-center justify-between px-4 py-3 w-full bg-[#2C2C2C] border-r border-neutral-900">
+    <header 
+      className="flex items-center justify-between px-4 py-3 w-full border-r"
+      style={{
+        ...getThemeStyles('chatHeader.background', { backgroundColor: '#2C2C2C' }),
+        ...getThemeStyles('chatHeader.border.right', { borderRightColor: '#171717' })
+      }}
+    >
       <div className="flex items-center gap-3 p-[1px]">
         <button
           onClick={handleAvatarClick}
@@ -76,10 +84,16 @@ export default function ChatHeader({ selectedChat }) {
           />
         </button>
         <div>
-          <p className="font-semibold text-white text-sm font-segoe">
+          <p 
+            className="font-semibold text-sm font-segoe"
+            style={getThemeStyles('chatHeader.text.name', { color: '#ffffff' })}
+          >
             {selectedChat.name}
           </p>
-          <p className="text-xs text-gray-300">
+          <p 
+            className="text-xs"
+            style={getThemeStyles('chatHeader.text.status', { color: '#d1d5db' })}
+          >
             {selectedChat.status || 'last seen today at 6:39 PM'}
           </p>
         </div>
@@ -87,12 +101,25 @@ export default function ChatHeader({ selectedChat }) {
       
       <div className="flex items-center gap-2">
         {/* Groupe vidéo/audio avec style joint */}
-        <div className="flex gap-0 items-center bg-neutral-700/50 border border-neutral-700 backdrop-blur-sm rounded-md">
+        <div 
+          className="flex gap-0 items-center backdrop-blur-sm rounded-md"
+          style={{
+            ...getThemeStyles('chatHeader.buttons.group.background', { backgroundColor: 'rgba(64, 64, 64, 0.5)' }),
+            ...getThemeStyles('chatHeader.buttons.group.border', { border: '1px solid #404040' })
+          }}
+        >
           
           <button 
             aria-label="Video call" 
             type="button"
-            className="px-3.5 py-2.5 transition-colors flex items-center justify-center hover:bg-white/10"
+            className="px-3.5 py-2.5 transition-colors flex items-center justify-center"
+            style={getThemeStyles('chatHeader.buttons.text', { color: '#ffffff' })}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = getThemeStyles('chatHeader.buttons.hover', { backgroundColor: 'rgba(255, 255, 255, 0.1)' }).backgroundColor;
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = 'transparent';
+            }}
             onClick={() => {
               // Démarrer un appel vidéo
               window.dispatchEvent(new CustomEvent('start-call', { 
@@ -115,15 +142,25 @@ export default function ChatHeader({ selectedChat }) {
               }));
             }}
           >
-            <Video size={19} className="text-white" />
+            <Video size={19} style={getThemeStyles('chatHeader.buttons.icon.primary', { color: '#ffffff' })} />
           </button>
 
-          <div className="w-px h-6 rounded-full bg-neutral-700"></div>
+          <div 
+            className="w-px h-6 rounded-full"
+            style={getThemeStyles('chatHeader.buttons.separator', { backgroundColor: '#404040' })}
+          ></div>
 
           <button 
             aria-label="Voice call" 
             type="button"
-            className="px-3.5 py-2.5 transition-colors flex items-center justify-center hover:bg-white/10"
+            className="px-3.5 py-2.5 transition-colors flex items-center justify-center"
+            style={getThemeStyles('chatHeader.buttons.text', { color: '#ffffff' })}
+            onMouseEnter={(e) => {
+              e.target.style.backgroundColor = getThemeStyles('chatHeader.buttons.hover', { backgroundColor: 'rgba(255, 255, 255, 0.1)' }).backgroundColor;
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.backgroundColor = 'transparent';
+            }}
             onClick={() => {
               // Démarrer un appel vocal
               window.dispatchEvent(new CustomEvent('start-call', { 
@@ -146,7 +183,7 @@ export default function ChatHeader({ selectedChat }) {
               }));
             }}
             >
-            <Phone size={19} className="text-white rotate-135" />
+            <Phone size={19} style={getThemeStyles('chatHeader.buttons.icon.primary', { color: '#ffffff' })} />
           </button>
 
         </div>
@@ -155,7 +192,14 @@ export default function ChatHeader({ selectedChat }) {
         <button 
           aria-label="Search" 
           type="button"
-          className="p-2 rounded-md hover:bg-white/10 transition-colors flex items-center justify-center"
+          className="p-2 rounded-md transition-colors flex items-center justify-center"
+          style={getThemeStyles('chatHeader.buttons.text', { color: '#ffffff' })}
+          onMouseEnter={(e) => {
+            e.target.style.backgroundColor = getThemeStyles('chatHeader.buttons.hover', { backgroundColor: 'rgba(255, 255, 255, 0.1)' }).backgroundColor;
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.backgroundColor = 'transparent';
+          }}
           onClick={() => {
             // Ouvrir la recherche dans le chat
             window.dispatchEvent(new CustomEvent('search-chat', { 
@@ -177,14 +221,21 @@ export default function ChatHeader({ selectedChat }) {
             }));
           }}
         >
-          <Search size={16} className="text-gray-300 rotate-90" />
+          <Search size={16} className="rotate-90" style={getThemeStyles('chatHeader.buttons.icon.secondary', { color: '#d1d5db' })} />
         </button>
         
         {/* Bouton menu (plus d'options) */}
         <button 
           aria-label="More options" 
           type="button"
-          className="p-2 rounded-md hover:bg-white/10 transition-colors flex items-center justify-center"
+          className="p-2 rounded-md transition-colors flex items-center justify-center"
+          style={getThemeStyles('chatHeader.buttons.text', { color: '#ffffff' })}
+          onMouseEnter={(e) => {
+            e.target.style.backgroundColor = getThemeStyles('chatHeader.buttons.hover', { backgroundColor: 'rgba(255, 255, 255, 0.1)' }).backgroundColor;
+          }}
+          onMouseLeave={(e) => {
+            e.target.style.backgroundColor = 'transparent';
+          }}
           onClick={() => {
             // Ouvrir le menu des options du chat
             window.dispatchEvent(new CustomEvent('open-chat-menu', { 
@@ -206,7 +257,7 @@ export default function ChatHeader({ selectedChat }) {
             }));
           }}
         >
-          <MoreVertical size={16} className="text-gray-300" />
+          <MoreVertical size={16} style={getThemeStyles('chatHeader.buttons.icon.secondary', { color: '#d1d5db' })} />
         </button>
       </div>
 
