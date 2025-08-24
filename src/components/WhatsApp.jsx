@@ -243,7 +243,7 @@ export default function WhatsApp() {
         />
 
         {/* Chat Area - prend le reste de l'espace */}
-        <div className="flex-1 flex min-w-0 bg-[#0b0e11]">
+        <div className="flex-1 flex flex-col min-w-0 bg-[#0b0e11]">
           {activeTab === 'chats' && (
             <>
               <ChatHeader selectedChat={selectedChat} />
