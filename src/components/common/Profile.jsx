@@ -78,9 +78,9 @@ export default function Profile({ activeTab = 'overview' }) {
   }
 
   return (
-    <div className="h-full flex-1 overflow-y-auto bg-[#0b1419]">
+    <div className="h-full flex-1 overflow-y-auto bg-[#2c2c2c]">
       {activeTab === 'overview' && (
-        <div className="p-6 bg-[#0b1419]">
+        <div className="p-6 bg-[#2c2c2c]">
           {/* Profile Header */}
           <div className="text-center mb-6">
             <div className="relative inline-block mb-3">
@@ -331,7 +331,7 @@ export default function Profile({ activeTab = 'overview' }) {
 
       {/* Placeholder pour les autres onglets */}
       {activeTab !== 'overview' && (
-        <div className="p-6 bg-[#0b1419] flex items-center justify-center h-full">
+        <div className="p-6 bg-[#2c2c2c] flex items-center justify-center h-full">
           <div className="text-center text-gray-400">
             <p className="text-lg mb-2">Onglet {activeTab}</p>
             <p className="text-sm">Contenu en cours de développement</p>
