@@ -13,7 +13,35 @@ const MessageBubble = memo(function MessageBubble({ message, isFirstInGroup, isL
   const messageRef = useRef(null);
   const longPressTimer = useRef(null);
   const [contextMenu, setContextMenu] = useState({ isOpen: false, position: null });
-  const { addReactionToMessage, removeReactionFromMessage, deleteMessage, selectedChat, setReplyTo, toggleMessageStar, toggleChatPin } = useAppContext();
+  const { addReactionToMessage, removeReactionFromMessage, deleteMessage, selectedChat, setReplyTo, toggleMessageStar, toggleChatPin, users } = useAppContext();
+
+  // Récupérer les informations de l'utilisateur pour l'avatar
+  const getUserInfo = useCallback(() => {
+    if (isMe) {
+      // Pour l'utilisateur actuel, on pourrait avoir un utilisateur connecté
+      // Pour l'instant, on utilise des informations par défaut
+      return {
+        name: 'Me',
+        avatar: null // Utilisera l'avatar par défaut
+      };
+    } else {
+      // Pour les autres utilisateurs, récupérer depuis la liste des utilisateurs
+      if (selectedChat && users.length > 0) {
+        const user = users.find(u => u.id === selectedChat.id);
+        if (user) {
+          return {
+            name: user.name,
+            avatar: user.avatar
+          };
+        }
+      }
+      // Fallback si pas d'utilisateur trouvé
+      return {
+        name: message.senderName || 'Contact',
+        avatar: null
+      };
+    }
+  }, [isMe, selectedChat, users, message.senderName]);
 
   // Gestionnaires d'actions avec notifications améliorées
   const handleReplyMessage = useCallback(async (messageData) => {
@@ -316,6 +344,7 @@ const MessageBubble = memo(function MessageBubble({ message, isFirstInGroup, isL
               isMe={isMe} 
               isMobile={isMobile}
               messageId={message.id}
+              userInfo={getUserInfo()}
               onAudioStateChange={(audioState) => {
                 // Ici on pourrait mettre à jour l'état global des messages audio
                 console.log('Audio state changed:', audioState);
