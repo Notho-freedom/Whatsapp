@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { useAppContext } from '@/context/AppContext';
-import StatusCircle from '../StatusCircle';
+import { useAppContext } from '@/context';
+import { StatusCircle } from '@/components/ui';
 
 export default function StatusPanel({ onStatusSelect, selectedStatus }) {
   const { users, getUserStatuses, getUserStatusCircles } = useAppContext();

@@ -4,5 +4,31 @@
     "react/no-unescaped-entities": "off",
     "react/display-name": "off",
     "@next/next/no-img-element": "off"
+  },
+  "settings": {
+    "import/resolver": {
+      "alias": {
+        "map": [
+          ["@", "./src"],
+          ["@/components", "./src/components"],
+          ["@/auth", "./src/components/auth"],
+          ["@/layout", "./src/components/layout"],
+          ["@/common", "./src/components/common"],
+          ["@/ui", "./src/components/ui"],
+          ["@/chat", "./src/components/chat"],
+          ["@/status", "./src/components/status"],
+          ["@/calls", "./src/components/calls"],
+          ["@/features", "./src/features"],
+          ["@/hooks", "./src/hooks"],
+          ["@/utils", "./src/utils"],
+          ["@/context", "./src/context"],
+          ["@/types", "./src/types"],
+          ["@/constants", "./src/constants"],
+          ["@/styles", "./src/styles"],
+          ["@/app", "./src/app"]
+        ],
+        "extensions": [".js", ".jsx", ".ts", ".tsx"]
+      }
+    }
   }
 }

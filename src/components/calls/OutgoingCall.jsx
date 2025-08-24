@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { Phone, Video, PhoneOff, Volume2, VolumeX } from "lucide-react";
 

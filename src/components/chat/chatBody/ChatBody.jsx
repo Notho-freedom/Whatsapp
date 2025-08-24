@@ -1,8 +1,10 @@
+'use client';
+
 import { FaLock, FaWhatsapp } from 'react-icons/fa';
 import MessageBubble from './MessageBubble';
 import SystemMessage from './SystemMessage';
 import { useEffect, useRef, useState, useCallback, memo } from 'react';
-import { useAppContext } from '@/context/AppContext';
+import { useAppContext } from '@/context';
 
 const ChatBody = memo(function ChatBody({ selectedChat, currentUser }) {
   const scrollRef = useRef(null);

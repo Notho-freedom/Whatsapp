@@ -1,6 +1,5 @@
-import NativeNotificationDemo from '@/components/NativeNotificationDemo';
-import GoogleAuthDemo from '@/components/GoogleAuthDemo';
-import GoogleContactsManager from '@/components/GoogleContactsManager';
+import { NativeNotificationDemo } from '@/features';
+import { GoogleAuthDemo, GoogleContactsManager } from '@/components/auth';
 
 export default function DemoPage() {
   return (

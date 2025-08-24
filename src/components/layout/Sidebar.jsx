@@ -1,8 +1,10 @@
+'use client';
+
 import { Menu, MessageCircle, Phone, CircleCheckBigIcon, Star, Archive, Settings, CircleDivide, CircleDashedIcon, LucideMessageCircleDashed, CircleSlashed, CircleDashed, CircleDotDashed, CircleGauge, CircleOffIcon, MessageCircleReply, MessageCircleMore, MessageCircleWarningIcon, LucideMessageCircle, CirclePlayIcon } from 'lucide-react';
-import { useAppContext } from '@/context/AppContext';
+import { useAppContext } from '@/context';
 import { useState, useMemo, useEffect } from 'react';
 import { FaWhatsapp } from 'react-icons/fa';
-import Profile from './Profile';
+import { Profile } from '@/components/common';
 
 export default function Sidebar({ currentUser }) {
   const { activeTab, setActiveTab, messages } = useAppContext();

@@ -1,7 +1,9 @@
+'use client';
+
 import { Video, Phone, Search, MoreVertical } from 'lucide-react';
 import { useState } from 'react';
 import UserProfilePopup from './UserProfilePopup';
-import { useUserContextMenu } from '@/hooks/useNativeContextMenu';
+import { useUserContextMenu } from '@/hooks';
 
 export default function ChatHeader({ selectedChat }) {
   const [isProfilePopupOpen, setIsProfilePopupOpen] = useState(false);

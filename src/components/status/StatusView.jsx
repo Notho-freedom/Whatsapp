@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { FaLock, FaWhatsapp, FaPause, FaPlay, FaVolumeUp, FaVolumeMute, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
-import { useAppContext } from '@/context/AppContext';
+import { useAppContext } from '@/context';
 
 export default function StatusView({ selectedStatus, onNextUser }) {
   const { users, getUserStatuses, markStatusAsViewed } = useAppContext();

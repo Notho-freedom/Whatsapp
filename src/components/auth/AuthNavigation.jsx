@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { useGoogleAuth } from '@/hooks/useGoogleAuth';
+import { useGoogleAuth } from '@/hooks';
 
 export default function AuthNavigation() {
   const { user, isAuthenticated, logout } = useGoogleAuth();

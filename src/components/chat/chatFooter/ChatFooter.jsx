@@ -1,6 +1,8 @@
+'use client';
+
 import { Smile, Paperclip, Mic, Send } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { useAppContext } from '@/context/AppContext';
+import { useAppContext } from '@/context';
 import ReplyCap from '../chatBody/ReplyCap';
 import AttachmentMenu from './AttachmentMenu';
 import EmojiPicker from './EmojiPicker';

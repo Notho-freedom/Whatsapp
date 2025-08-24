@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { Phone, Video, Mic, MicOff, Volume2, VolumeX, MessageSquare, MoreVertical, PhoneOff, Camera, CameraOff, FlipCamera, ScreenShare, Users, Settings } from "lucide-react";
 import { MdFlipCameraIos } from 'react-icons/md';

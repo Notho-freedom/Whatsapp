@@ -1,6 +1,8 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { Search, Phone, Video, Link2, Keypad, MoreVertical, PhoneCall, Settings, ArrowUpRight, ArrowDownLeft, X } from "lucide-react";
-import { useAppContext } from '@/context/AppContext';
+import { useAppContext } from '@/context';
 import { MdKeyboard, MdVideocam } from 'react-icons/md';
 
 export default function CallPanel() {

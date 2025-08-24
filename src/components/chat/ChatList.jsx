@@ -2,11 +2,11 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { LucideEdit, Pin, BellOff, Star, Search, Mic, Video, Image, FileText, Link, Music, MapPinMinus, SmileIcon } from 'lucide-react';
-import { useAppContext } from '@/context/AppContext';
-import StatusCircle from '../StatusCircle';
+import { useAppContext } from '@/context';
+import { StatusCircle } from '@/components/ui';
 import Lenis from '@studio-freight/lenis';
-import { useChatContextMenu } from '@/hooks/useNativeContextMenu';
-import { useGoogleContacts } from '@/hooks/useGoogleContacts';
+import { useChatContextMenu } from '@/hooks';
+import { useGoogleContacts } from '@/hooks';
 
 export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect, currentUser }) {
   const [isClient, setIsClient] = useState(false);
