@@ -146,7 +146,7 @@ export default function CallScreen() {
       <div className="grid grid-cols-3 gap-6 max-w-md">
         {/* Voice Call */}
         <button 
-          className="flex flex-col items-center gap-3 p-6 hover:bg-[#3D3D3D] rounded-xl transition-colors group"
+          className="flex flex-col items-center gap-3 p-6 hover:bg-neutral-700/50 rounded-xl transition-colors group"
           onClick={() => handleCreateCall('voice')}
         >
           <div className="w-16 h-16 bg-[#3D3D3D] rounded-full flex items-center justify-center group-hover:bg-[#4D4D4D] transition-colors">
@@ -160,7 +160,7 @@ export default function CallScreen() {
 
         {/* Video Call */}
         <button 
-          className="flex flex-col items-center gap-3 p-6 hover:bg-[#3D3D3D] rounded-xl transition-colors group"
+          className="flex flex-col items-center gap-3 p-6 hover:bg-neutral-700/50 rounded-xl transition-colors group"
           onClick={() => handleCreateCall('video')}
         >
           <div className="w-16 h-16 bg-[#3D3D3D] rounded-full flex items-center justify-center group-hover:bg-[#4D4D4D] transition-colors">
@@ -174,7 +174,7 @@ export default function CallScreen() {
 
         {/* Call Link */}
         <button 
-          className="flex flex-col items-center gap-3 p-6 hover:bg-[#3D3D3D] rounded-xl transition-colors group"
+          className="flex flex-col items-center gap-3 p-6 hover:bg-neutral-700/50 rounded-xl transition-colors group"
           onClick={handleCreateCallLink}
         >
           <div className="w-16 h-16 bg-[#3D3D3D] rounded-full flex items-center justify-center group-hover:bg-[#4D4D4D] transition-colors">
@@ -191,7 +191,7 @@ export default function CallScreen() {
       <div className="mt-12 max-w-md w-full">
         <div className="grid grid-cols-2 gap-4">
           <button 
-            className="flex items-center gap-3 p-4 hover:bg-[#3D3D3D] rounded-lg transition-colors"
+            className="flex items-center gap-3 p-4 hover:bg-neutral-700/50 rounded-lg transition-colors"
             onClick={handleOpenKeypad}
           >
             <div className="w-10 h-10 bg-[#3D3D3D] rounded-full flex items-center justify-center">

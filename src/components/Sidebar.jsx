@@ -73,7 +73,7 @@ export default function Sidebar() {
         }
       });
     });
-    return count;
+    return count===0 ? null : count;
   }, [messages]);
 
   const isActive = (tab) => activeTab === tab;

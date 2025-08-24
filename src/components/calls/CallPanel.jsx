@@ -126,11 +126,11 @@ export default function CallPanel() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-[#0b0e11]">
+    <div className="h-full flex flex-col bg-[#2C2C2C] rounded-tl-xl">
       {/* Header */}
-       <div className="flex items-center justify-between px-3 py-2 border-b border-neutral-800 bg-[#2C2C2C]">
+       <div className="flex items-center justify-between px-4 py-4 border-b border-neutral-800">
          <div className="flex items-center gap-2">
-           <h2 className="text-base font-semibold text-white">Calls</h2>
+           <h2 className="text-white text-[20px] font-semibold">Calls</h2>
            <div className="flex items-center gap-1">
              <Phone size={14} className="text-gray-400" />
              <span className="text-[10px] text-gray-400">({recentCalls.length})</span>
@@ -161,23 +161,23 @@ export default function CallPanel() {
       </div>
 
              {/* Search Bar */}
-       <div className="px-3 py-2 border-b border-neutral-800">
+       <div className="px-4 py-2 border-b border-neutral-800">
          <div className="relative">
-           <Search size={14} className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-gray-400" />
+           <Search size={14} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
           <input
             type="text"
             placeholder="Search or start a new call"
              value={searchQuery}
              onChange={(e) => setSearchQuery(e.target.value)}
-             className="w-full bg-[#3D3D3D] text-white placeholder-gray-200 rounded pl-8 pr-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[#1DAA61]"
+             className="w-full bg-[#3D3D3D] text-white placeholder-gray-200 placeholder:text-sm rounded-[0.30rem] pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-none focus:border-b-2 focus:border-[#1DAA61] focus:bg-[#202020]"
           />
         </div>
       </div>
 
                            {/* Favorites Section */}
-        <div className="px-3 py-2 border-b border-neutral-800">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-xs font-medium text-gray-400">Favorites</h3>
+        <div className="px-4 py-2 border-b border-neutral-800">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-gray-400 text-sm font-medium">Favorites</h3>
             <button 
               className="text-[10px] text-[#1DAA61] hover:text-[#1DAA61]/80 transition-colors"
               onClick={() => {
@@ -214,7 +214,7 @@ export default function CallPanel() {
         </div>
 
                {/* Quick Actions */}
-        <div className="px-3 py-2 border-b border-neutral-800">
+        <div className="px-4 py-2 border-b border-neutral-800">
          <div className="grid grid-cols-3 gap-2">
            <button 
              className="flex flex-col items-center gap-1.5 p-2 hover:bg-[#3D3D3D] rounded transition-colors"
@@ -266,8 +266,8 @@ export default function CallPanel() {
 
              {/* Recent Calls */}
       <div className="flex-1 overflow-y-auto">
-         <div className="px-3 py-1.5">
-           <h3 className="text-xs font-medium text-gray-400 mb-1.5">Recent</h3>
+         <div className="px-4 py-2">
+           <h3 className="text-gray-400 text-sm font-medium mb-3">Recent</h3>
          </div>
         
                                      {filteredCalls.length === 0 ? (
@@ -279,11 +279,11 @@ export default function CallPanel() {
                <p className="text-[#8696a0] text-xs">Your call history will appear here</p>
              </div>
          ) : (
-           <div className="space-y-0.5">
+                        <div className="space-y-0.5">
              {filteredCalls.map((call) => (
                                <div 
                    key={call.id}
-                   className="flex items-center justify-between px-3 py-2 hover:bg-[#3D3D3D] cursor-pointer transition-colors"
+                   className="flex items-center justify-between px-4 py-3 hover:bg-neutral-700/50 cursor-pointer transition-colors rounded-lg mx-2"
                    onClick={() => handleCallHistory(call)}
                  >
                  {/* User Info */}
@@ -354,7 +354,7 @@ export default function CallPanel() {
       </div>
 
              {/* Footer Actions */}
-       <div className="px-3 py-2 border-t border-neutral-800 bg-[#2C2C2C]">
+       <div className="px-4 py-2 border-t border-neutral-800">
          <div className="flex items-center justify-between">
            <button 
              className="flex items-center gap-1.5 text-[#8696a0] hover:text-[#e9edef] transition-colors"
