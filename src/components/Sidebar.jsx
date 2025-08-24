@@ -2,6 +2,7 @@ import { Menu, MessageCircle, Phone, CircleCheckBigIcon, Star, Archive, Settings
 import { useAppContext } from '@/context/AppContext';
 import { useState, useMemo, useEffect } from 'react';
 import { FaWhatsapp } from 'react-icons/fa';
+import Profile from './Profile';
 
 export default function Sidebar({ currentUser }) {
   const { activeTab, setActiveTab, messages } = useAppContext();
