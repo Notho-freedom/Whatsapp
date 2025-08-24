@@ -216,25 +216,25 @@ function AudioMessage({ audio, isMe, isMobile, messageId, onAudioStart, onAudioS
   }, [duration, progress, fmt]);
 
   return (
-    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} mb-2 items-end gap-2`}>
+    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} items-end gap-2`}>
       <audio ref={audioRef} src={audio.url} preload="metadata" />
 
       {/* Bulle */}
-      <div className={`${bubbleColor} rounded-lg px-3 py-2 max-w-[320px]  ${isMobile ? 'max-w-[260px]' : ''} `}>
+      <div className={`rounded-lg py-2 max-w-[320px]  ${isMobile ? 'max-w-[260px]' : ''} `}>
         <div className="flex items-center gap-3">
           {/* Pastille lecture/pause */}
           <button
-            className="flex-shrink-0 w-[36px] h-[36px] rounded-full bg-[rgba(11,20,26,0.8)] flex items-center justify-center hover:opacity-90"
+            className="flex-shrink-0 w-[36px] h-[36px] rounded-full flex items-center justify-center hover:opacity-90 bg-transparent"
             onClick={togglePlay}
             aria-label={isPlaying ? 'Pause' : 'Lire'}
           >
-            {isPlaying ? <FaPause size={14} className="text-white" /> : <FaPlay size={14} className="text-white ml-0.5" />}
+            {isPlaying ? <FaPause size={14} className="text-[#00a884]" /> : <FaPlay size={14} className="text-[#00a884]" />}
           </button>
 
           {/* Waveform cliquable */}
           <div
             ref={containerRef}
-            className="flex items-center gap-[1px] h-5 flex-1 relative cursor-pointer select-none"
+            className="flex w-full items-center gap-[1px] h-5 flex-1 relative cursor-pointer select-none"
             onClick={onWaveClick}
             onMouseMove={onWaveMove}
             onMouseLeave={onWaveLeave}
@@ -268,6 +268,7 @@ function AudioMessage({ audio, isMe, isMobile, messageId, onAudioStart, onAudioS
           >
             {rate}x
           </button>
+          
 
           {/* Download */}
           {audio.url && (
@@ -281,14 +282,15 @@ function AudioMessage({ audio, isMe, isMobile, messageId, onAudioStart, onAudioS
             </a>
           )}
         </div>
+        <span className="text-[10px] text-white/70 min-w-[55px] left-5 absolute bottom-0">{timeLabel}</span>
 
 
 
       </div>
 
       {/* Avatar avec micro (optionnel) */}
-      <div className="relative flex-shrink-0">
-        <div className={`${isMobile ? 'w-[32px] h-[32px]' : 'w-[30px] h-[30px]'} rounded-full overflow-hidden`}>
+      <div className="relative flex-shrink-0 absolute bottom-2 -right-1 ">
+        <div className={`${isMobile ? 'w-[32px] h-[32px]' : 'w-[36px] h-[36px]'} rounded-full overflow-hidden`}>
           <img
             src={`https://ui-avatars.com/api/?name=${isMe ? 'Me' : 'Contact'}&background=${isMe ? '005c4b' : '6a7175'}&color=fff&size=40`}
             alt=""
