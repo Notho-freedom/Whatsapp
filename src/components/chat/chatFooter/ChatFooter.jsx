@@ -5,7 +5,7 @@ import ReplyCap from '../chatBody/ReplyCap';
 import AttachmentMenu from './AttachmentMenu';
 import EmojiPicker from './EmojiPicker';
 
-export default function ChatFooter({ selectedChat, onSendMessage }) {
+export default function ChatFooter({ selectedChat, onSendMessage, currentUser }) {
   const [message, setMessage] = useState('');
   const [isClient, setIsClient] = useState(false);
   const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false);
