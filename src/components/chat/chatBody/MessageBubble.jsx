@@ -1,4 +1,4 @@
-import { FaCheck, FaCheckDouble, FaAngleDown, FaReply, FaStar, FaThumbtack, FaTrash, FaCopy, FaForward, FaDownload, FaShare, FaEye } from 'react-icons/fa';
+import { FaCheck, FaCheckDouble, FaAngleDown, FaReply, FaStar, FaThumbtack, FaTrash, FaCopy, FaForward, FaDownload, FaShare, FaEye, FaEllipsisH, FaSmile, FaSmileWink, FaSmileBeam, FaRegSmileBeam } from 'react-icons/fa';
 import MediaGroup from './MediaGroup';
 import PreviewLink from './PreviewLink';
 import ReactionBar from './ReactionBar';
@@ -393,12 +393,13 @@ const MessageBubble = memo(function MessageBubble({ message, isFirstInGroup, isL
         {/* Options chevron on hover - Desktop only */}
         {!isMobile && (
           <button 
-            className={`absolute top-[8px] ${isMe ? '-left-[28px]' : '-right-[28px]'} 
-              opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer p-1 rounded hover:bg-[#2a373f]`}
+            className={`absolute flex items-center p-1.5 gap-1 rounded-full top-[8px] ${isMe ? '-left-[25%]' : '-right-[25%]'} 
+              opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer p-1 text-xs bg-neutral-900/50 hover:bg-neutral-900/70`}
             onClick={(e) => openContextMenu(e, message)}
             aria-label="Message options"
           >
-            <FaAngleDown size={18} className="text-[#8696a0] hover:text-[#d1d7db]" />
+            <FaAngleDown size={16} className="" />
+            <FaSmile size={16} className="" />
           </button>
         )}
       </div>
