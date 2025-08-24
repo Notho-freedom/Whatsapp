@@ -16,35 +16,28 @@ export default function Titlebar() {
         <span className="tracking-wide text-white font-segoe">
           WhatsApp
         </span>
-        {isAuthenticated && user && (
-          <div className="flex items-center space-x-2 ml-4">
-            <img
-              src={user.picture}
-              alt={user.name}
-              className="w-5 h-5 rounded-full border border-white/20"
-            />
-            <span className="text-white/80 text-xs">
-              {user.name}
-            </span>
-          </div>
-        )}
       </div>
+
+      {/* Zone centrale : utilisateur connecté */}
+      {isAuthenticated && user && (
+        <div className="absolute left-1/2 transform -translate-x-1/2 flex items-center space-x-2">
+          <div className="h-2 w-2 bg-green-500 rounded-full"></div>
+          <img
+            src={user.picture}
+            alt={user.name}
+            className="w-5 h-5 rounded-full border border-white/20"
+          />
+          <span className="text-white/80 text-xs">
+            {user.name}
+          </span>
+        </div>
+      )}
 
       {/* Zone droite : pas draggable */}
       <div
         className="flex items-center text-[10px] top-0 absolute right-0"
         style={{ WebkitAppRegion: 'no-drag' }} // <- on exclut les boutons
       >
-        {isAuthenticated && (
-          <button
-            onClick={logout}
-            aria-label="Déconnexion"
-            className="flex items-center justify-center w-12 h-8 transition-colors hover:bg-red-600/80 text-xs"
-            title="Se déconnecter"
-          >
-            🚪
-          </button>
-        )}
         <button
           aria-label="Minimize"
           className="flex items-center justify-center w-12 h-8 transition-colors hover:bg-whatsapp-dark-700/80"

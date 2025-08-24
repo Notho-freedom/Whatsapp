@@ -152,7 +152,7 @@ export default function Profile({ activeTab = 'overview' }) {
           <div className="space-y-0 bg-neutral-800/50 rounded-md p-3 mb-4">
             {/* About/Status */}
             <div className="flex items-center justify-between py-3 border-b border-neutral-700">
-              <span className="text-gray-300 text-sm">À propos</span>
+              <span className="text-gray-300 text-sm text-nowrap mr-2">À propos</span>
               <div className="flex items-center gap-2">
                 {isEditingAbout ? (
                   <div className="flex items-center gap-2">

@@ -123,37 +123,13 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect,
           </h2>
           <div className="flex items-center gap-2">
             <button
-              aria-label="Toggle contacts"
+              aria-label="New chat"
               className={`p-2 rounded-md transition-colors ${
                 showContacts 
-                  ? 'bg-[#1DAA61] text-white' 
+                  ? 'bg-whatsapp-dark-700 text-white' 
                   : 'hover:bg-whatsapp-dark-700 text-gray-200'
               }`}
               onClick={() => setShowContacts(!showContacts)}
-              title={showContacts ? 'Voir les chats' : 'Voir les contacts'}
-            >
-              <svg 
-                width="16" 
-                height="16" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor"
-              >
-                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" strokeWidth="2" strokeLinecap="round"/>
-                <circle cx="9" cy="7" r="4" strokeWidth="2"/>
-                <path d="M23 21v-2a4 4 0 0 0-3-3.87" strokeWidth="2" strokeLinecap="round"/>
-                <path d="M16 3.13a4 4 0 0 1 0 7.75" strokeWidth="2" strokeLinecap="round"/>
-              </svg>
-            </button>
-            <button
-              aria-label="New chat"
-              className="p-2 rounded-md hover:bg-whatsapp-dark-700 transition-colors"
-              onClick={() => {
-                // Ouvrir la création d'un nouveau chat
-                window.dispatchEvent(new CustomEvent('new-chat', { 
-                  detail: { action: 'create' } 
-                }));
-              }}
             >
               <LucideEdit size={16} className="text-gray-200" />
             </button>
