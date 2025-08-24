@@ -16,14 +16,21 @@ import StatusPanel from './status/StatusPanel';
 import StatusView from './status/StatusView';
 import { useEventManager } from '@/hooks/useEventManager';
 import ClientOnly from './ClientOnly';
+import { useGoogleAuth } from '@/hooks/useGoogleAuth';
+import GoogleAuth from './GoogleAuth';
+import WelcomeScreen from './WelcomeScreen';
 
 export default function WhatsApp() {
   const [isClient, setIsClient] = useState(false);
   const [chatListWidth, setChatListWidth] = useState(300); // Largeur initiale pour 25%
   const [selectedStatus, setSelectedStatus] = useState(null); // État pour le statut sélectionné
+  const [showWelcome, setShowWelcome] = useState(false); // État pour l'écran de bienvenue
   
   // Initialiser le gestionnaire d'événements seulement côté client
   const eventManager = useEventManager();
+  
+  // Hook d'authentification Google
+  const { user, isAuthenticated, isLoading: authLoading } = useGoogleAuth();
   
   const { 
     selectedChat, 
@@ -67,8 +74,47 @@ export default function WhatsApp() {
     };
   }, [setActiveTab]);
 
+  // Effet pour afficher l'écran de bienvenue après la connexion
+  useEffect(() => {
+    if (isAuthenticated && user && !showWelcome) {
+      setShowWelcome(true);
+    }
+  }, [isAuthenticated, user, showWelcome]);
+
   if (!isClient) {
     return null;
+  }
+
+  // Afficher l'authentification Google si l'utilisateur n'est pas connecté
+  if (!isAuthenticated && !authLoading) {
+    return (
+      <div className="h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
+        <div className="max-w-md w-full">
+          <div className="text-center mb-8">
+            <div className="text-6xl mb-4">💬</div>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">
+              WhatsApp Clone
+            </h1>
+            <p className="text-gray-600">
+              Connectez-vous pour commencer à discuter
+            </p>
+          </div>
+          <GoogleAuth />
+        </div>
+      </div>
+    );
+  }
+
+  // Afficher le chargement de l'authentification
+  if (authLoading) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Vérification de l'authentification...</p>
+        </div>
+      </div>
+    );
   }
 
   if (loading) {
@@ -212,6 +258,10 @@ export default function WhatsApp() {
         </div>
       </div>
 
+      {/* Écran de bienvenue après connexion */}
+      {showWelcome && (
+        <WelcomeScreen onContinue={() => setShowWelcome(false)} />
+      )}
 
     </div>
   );

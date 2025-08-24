@@ -2,12 +2,10 @@ import { Menu, MessageCircle, Phone, CircleCheckBigIcon, Star, Archive, Settings
 import { useAppContext } from '@/context/AppContext';
 import { useState, useMemo } from 'react';
 import { FaWhatsapp } from 'react-icons/fa';
-import { useTheme } from '@/utils/themeManager';
 
 export default function Sidebar() {
   const { activeTab, setActiveTab, messages } = useAppContext();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const { getThemeStyles } = useTheme();
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   
@@ -80,118 +78,63 @@ export default function Sidebar() {
 
   const isActive = (tab) => activeTab === tab;
   const ActiveIndicator = () => (
-    <div 
-      className="h-4 w-[3px] rounded-lg absolute left-0"
-      style={getThemeStyles('sidebar.indicator.active', { backgroundColor: '#1DAA61' })}
-    />
+    <div className="h-4 w-[3px] bg-[#1DAA61] rounded-lg absolute left-0" />
   );
 
-  const SidebarButton = ({ tab, icon: Icon, label, badgeCount, badgeColor = 'bg-[#1DAA61]', status = false }) => {
-    // Déterminer la couleur du badge basée sur le thème
-    const getBadgeStyles = () => {
-      if (badgeColor === 'bg-[#1DAA61]') {
-        return getThemeStyles('sidebar.badges.green', { backgroundColor: '#1DAA61' });
-      } else if (badgeColor === 'bg-[#FF99A4]') {
-        return getThemeStyles('sidebar.badges.pink', { backgroundColor: '#FF99A4' });
-      }
-      return {};
-    };
-
-    const getBadgeTextStyles = () => {
-      if (badgeColor === 'bg-[#1DAA61]') {
-        return getThemeStyles('sidebar.badges.text.green', { color: '#0a0a0a' });
-      } else if (badgeColor === 'bg-[#FF99A4]') {
-        return getThemeStyles('sidebar.badges.text.pink', { color: '#000000' });
-      }
-      return {};
-    };
-
-    return (
-      <div className="flex items-center relative">
-        {isActive(tab) && <ActiveIndicator />}
-        <button
-          aria-label={label}
-          className={`relative flex items-center ${
-            isSidebarOpen 
-              ? 'w-full px-2 py-1.5 rounded' 
-              : 'w-[38px] justify-center rounded-[4px]'
-          } transition-colors h-9`}
-          style={{
-            ...(isActive(tab) 
-              ? getThemeStyles('sidebar.buttons.background.active', { backgroundColor: 'rgba(68, 68, 68, 0.5)' })
-              : getThemeStyles('sidebar.buttons.background.default', { backgroundColor: 'transparent' })
-            )
-          }}
-          onMouseEnter={(e) => {
-            e.target.style.backgroundColor = getThemeStyles('sidebar.buttons.background.hover', { backgroundColor: 'rgba(68, 68, 68, 0.5)' }).backgroundColor;
-          }}
-          onMouseLeave={(e) => {
-            e.target.style.backgroundColor = isActive(tab) 
-              ? getThemeStyles('sidebar.buttons.background.active', { backgroundColor: 'rgba(68, 68, 68, 0.5)' }).backgroundColor
-              : getThemeStyles('sidebar.buttons.background.default', { backgroundColor: 'transparent' }).backgroundColor;
-          }}
-          onClick={() => handleTabClick(tab)}
-        >
-          {tab === 'status' ? (
-            <svg width="18" height="18" viewBox="0 0 24 24" className={`${isSidebarOpen ? 'ml-1' : ''} rotate-[38deg]`} style={getThemeStyles('sidebar.buttons.icon', { color: '#ffffff' })}>
-                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none" strokeDasharray="18 3"/>
-                  <circle cx="12" cy="12" r="4" stroke="white" strokeWidth="2" fill="none"/>
-            </svg>) 
-        : <Icon size={17} className={`${isSidebarOpen ? 'ml-1' : ''}`} style={getThemeStyles('sidebar.buttons.icon', { color: '#ffffff' })} />}
-          {isSidebarOpen ? (
-            <>
-              <span className="ml-3 text-sm" style={getThemeStyles('sidebar.buttons.text', { color: '#ffffff' })}>{label}</span>
-              {badgeCount && (
-                <span 
-                  className={`ml-auto text-[70%] font-semibold rounded-full ${status ? 'w-1.5 h-1.5' : 'w-4 h-4'} flex items-center justify-center`}
-                  style={{
-                    ...getBadgeStyles(),
-                    ...getBadgeTextStyles()
-                  }}
-                >
-                  {!status && badgeCount}
-                </span>
-              )}
-            </>
-          ) : (
-            badgeCount && (
-              <span 
-                className={`absolute text-[70%] font-semibold rounded-full ${status ? 'top-[5px] right-[6px] w-1.5 h-1.5' : ' top-[2px] right-[2px] w-3.5 h-3.5 p-2'} flex items-center justify-center`}
-                style={{
-                  ...getBadgeStyles(),
-                  ...getBadgeTextStyles()
-                }}
-              >
+  const SidebarButton = ({ tab, icon: Icon, label, badgeCount, badgeColor = 'bg-[#1DAA61]', status = false }) => (
+    <div className="flex items-center relative">
+      {isActive(tab) && <ActiveIndicator />}
+      <button
+        aria-label={label}
+        className={`relative flex items-center ${
+          isSidebarOpen 
+            ? 'w-full px-2 py-1.5 rounded hover:bg-whatsapp-dark-700/50' 
+            : 'w-[38px] justify-center rounded-[4px]'
+        } transition-colors h-9 ${isActive(tab) ? 'bg-whatsapp-dark-700/50' : ' hover:bg-whatsapp-dark-700/50'}`}
+        onClick={() => handleTabClick(tab)}
+      >
+        {tab === 'status' ? (
+          <svg width="18" height="18" viewBox="0 0 24 24" className={`${isSidebarOpen ? 'ml-1' : ''} text-white rotate-[38deg]`}>
+                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none" strokeDasharray="18 3"/>
+                <circle cx="12" cy="12" r="4" stroke="white" strokeWidth="2" fill="none"/>
+          </svg>) 
+    : <Icon size={17} className={`${isSidebarOpen ? 'ml-1' : ''} text-white`} />}
+        {isSidebarOpen ? (
+          <>
+            <span className="ml-3 text-white text-sm">{label}</span>
+            {badgeCount && (
+              <span className={`ml-auto ${badgeColor} text-[70%] font-semibold rounded-full ${status ? 'w-1.5 h-1.5' : 'w-4 h-4'} flex items-center justify-center ${
+                badgeColor === 'bg-[#FF99A4]' ? 'text-black' : 'text-whatsapp-dark-950'
+              }`}>
                 {!status && badgeCount}
               </span>
-            )
-          )}
-        </button>
-      </div>
-    );
-  };
+            )}
+          </>
+        ) : (
+          badgeCount && (
+            <span className={`absolute ${badgeColor} text-[70%] font-semibold rounded-full  ${status ? 'top-[5px] right-[6px] w-1.5 h-1.5' : ' top-[2px] right-[2px] w-3.5 h-3.5 p-2'} flex items-center justify-center ${
+              badgeColor === 'bg-[#FF99A4]' ? 'text-black' : 'text-whatsapp-dark-950'
+            }`}>
+              {!status && badgeCount}
+            </span>
+          )
+        )}
+      </button>
+    </div>
+  );
 
   return (
     <>
       {/* Version réduite toujours visible */}
-      <div 
-        className="fixed left-0 top-0 h-full w-8 min-w-[50px] z-30 flex flex-col"
-        style={getThemeStyles('sidebar.background.reduced', { backgroundColor: '#202020' })}
-      >
+      <div className="fixed left-0 top-0 h-full w-8 min-w-[50px] bg-[#202020] z-30 flex flex-col">
         
         <div className="py-6 flex flex-col flex-1 mt-7">
           <button
             aria-label="Toggle sidebar"
             onClick={toggleSidebar}
-            className="flex items-center justify-center self-center mb-3 rounded-md w-10 h-10 mx-auto"
-            onMouseEnter={(e) => {
-              e.target.style.backgroundColor = getThemeStyles('sidebar.buttons.background.hover', { backgroundColor: 'rgba(68, 68, 68, 0)' }).backgroundColor;
-            }}
-            onMouseLeave={(e) => {
-              e.target.style.backgroundColor = 'transparent';
-            }}
+            className="flex items-center justify-center self-center mb-3 rounded-md w-10 h-10 hover:bg-whatsapp-dark-700 mx-auto"
           >
-            <Menu size={27} className="p-1" style={getThemeStyles('sidebar.buttons.icon', { color: '#ffffff' })} />
+            <Menu size={27} className="text-white p-1" />
           </button>
           
           {/* Icônes du haut */}
@@ -206,31 +149,18 @@ export default function Sidebar() {
             <SidebarButton tab="star" icon={Star} label="Star" badgeCount={starredMessagesCount} />
             <SidebarButton tab="archive" icon={Archive} label="Archive" badgeCount={1} />
 
-            <div 
-              className="w-[90%] self-center border-t my-1 px-0.5"
-              style={getThemeStyles('sidebar.separator', { borderTopColor: '#404040' })}
-            />
+            <div className="w-[90%] self-center border-t border-neutral-700 my-1 px-0.5" />
 
             <SidebarButton tab="settings" icon={Settings} label="Settings" />
             <div className="flex items-center relative">
                   {isActive('profile') && <ActiveIndicator />}
                   <button
                     aria-label="Profile"
-                    className="relative flex items-center w-full px-2 py-1.5 rounded"
-                    style={getThemeStyles('sidebar.buttons.text', { color: '#ffffff' })}
-                    onMouseEnter={(e) => {
-                      e.target.style.backgroundColor = getThemeStyles('sidebar.buttons.background.hover', { backgroundColor: 'rgba(68, 68, 68, 0.5)' }).backgroundColor;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.backgroundColor = 'transparent';
-                    }}
+                    className="relative flex items-center w-full px-2 py-1.5 rounded hover:bg-whatsapp-dark-700/50"
                     onClick={() => handleTabClick('profile')}
                   >
-                    <div 
-                      className="w-6 h-6 rounded-full flex items-center justify-center overflow-hidden"
-                      style={getThemeStyles('sidebar.profile.avatar', { backgroundColor: 'rgba(64, 64, 64, 0.95)' })}
-                    >
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" style={getThemeStyles('sidebar.profile.icon', { color: '#9ca3af' })}>
+                    <div className="w-6 h-6 rounded-full bg-neutral-700/95 flex items-center justify-center overflow-hidden">
+                      <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                       </svg>
                     </div>
@@ -245,25 +175,14 @@ export default function Sidebar() {
         <>
           
           {/* Panneau latéral */}
-          <div 
-            className="fixed rounded-r-lg left-0 top-0 h-full w-54 min-w-[235px] z-50 border-r flex flex-col backdrop-blur-xl"
-            style={{
-              ...getThemeStyles('sidebar.background.extended', { backgroundColor: 'rgba(44, 44, 44, 0.8)' }),
-              ...getThemeStyles('sidebar.border.right', { borderRightColor: '#404040' }),
-              backdropFilter: `blur(${getThemeStyles('sidebar.background.backdrop', { backdropFilter: '30px' })})`
-            }}
-          >
+          <div className="fixed rounded-r-lg left-0 top-0 h-full w-54 min-w-[235px] bg-[#2C2C2C]/80 backdrop-blur-[30px] z-50 border-r border-neutral-700 flex flex-col">
             
             <div className="py-6 flex flex-col flex-1 relative mt-7">
               <button
                 aria-label="Toggle sidebar"
                 onClick={toggleSidebar}
-                className="flex items-center justify-center px-1 mb-3 rounded-md w-10 h-10 ml-1"
-                style={{
-                  ...getThemeStyles('sidebar.buttons.background.default', { backgroundColor: 'transparent' }),
-                }}
-              >
-                <Menu size={27} className="p-1" style={getThemeStyles('sidebar.buttons.icon', { color: '#ffffff' })} />
+                className="flex items-center justify-center px-1 mb-3 rounded-md w-10 h-10 hover:bg-whatsapp-dark-700/50 ml-1">
+                <Menu size={27} className="text-white p-1" />
               </button>
 
               <nav className="flex flex-col px-1 space-y-1">
@@ -276,10 +195,7 @@ export default function Sidebar() {
                 <SidebarButton tab="star" icon={Star} label="Starred messages" badgeCount={starredMessagesCount} />
                 <SidebarButton tab="archive" icon={Archive} label="Archived chats" badgeCount={1} />
                 
-                <div 
-                  className="w-full border-t my-1 px-0.5"
-                  style={getThemeStyles('sidebar.separator', { borderTopColor: '#404040' })}
-                />
+                <div className="w-full border-t border-neutral-700 my-1 px-0.5" />
 
                 <SidebarButton tab="settings" icon={Settings} label="Settings" />
                 
@@ -287,25 +203,15 @@ export default function Sidebar() {
                   {isActive('profile') && <ActiveIndicator />}
                   <button
                     aria-label="Profile"
-                    className="relative flex items-center w-full px-2 py-1.5 rounded"
-                    style={getThemeStyles('sidebar.buttons.text', { color: '#ffffff' })}
-                    onMouseEnter={(e) => {
-                      e.target.style.backgroundColor = getThemeStyles('sidebar.buttons.background.hover', { backgroundColor: 'rgba(68, 68, 68, 0.5)' }).backgroundColor;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.target.style.backgroundColor = 'transparent';
-                    }}
+                    className="relative flex items-center w-full px-2 py-1.5 rounded hover:bg-whatsapp-dark-700/50"
                     onClick={() => handleTabClick('profile')}
                   >
-                    <div 
-                      className="w-6 h-6 rounded-full flex items-center justify-center overflow-hidden"
-                      style={getThemeStyles('sidebar.profile.avatar', { backgroundColor: 'rgba(68, 68, 68, 0.5)' })}
-                    >
-                      <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" style={getThemeStyles('sidebar.profile.icon', { color: '#9ca3af' })}>
+                    <div className="w-6 h-6 rounded-full bg-neutral-700/95 flex items-center justify-center overflow-hidden">
+                      <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                       </svg>
                     </div>
-                    <span className="ml-3 text-sm" style={getThemeStyles('sidebar.buttons.text', { color: '#ffffff' })}>Profile</span>
+                    <span className="ml-3 text-white text-sm">Profile</span>
                   </button>
                 </div>
               </nav>
