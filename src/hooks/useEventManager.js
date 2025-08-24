@@ -1,5 +1,7 @@
+'use client';
+
 import { useEffect, useState, useCallback } from 'react';
-import eventManager from '@/utils/eventManager';
+import { eventManager } from '@/utils';
 
 /**
  * Hook personnalisé pour initialiser le gestionnaire d'événements

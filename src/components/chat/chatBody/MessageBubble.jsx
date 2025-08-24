@@ -1,13 +1,15 @@
+'use client';
+
 import { FaCheck, FaCheckDouble, FaAngleDown, FaReply, FaStar, FaThumbtack, FaTrash, FaCopy, FaForward, FaDownload, FaShare, FaEye, FaEllipsisH, FaSmile, FaSmileWink, FaSmileBeam, FaRegSmileBeam } from 'react-icons/fa';
 import MediaGroup from './MediaGroup';
 import PreviewLink from './PreviewLink';
 import ReactionBar from './ReactionBar';
 import MessageContextMenu from './MessageContextMenu';
 import { useState, useRef, useEffect, useCallback, memo } from 'react';
-import { useAppContext } from '@/context/AppContext';
-import { downloadMedia, viewMedia, shareMedia } from '@/utils/electronUtils';
-import { showSuccess, showError, showInfo } from '@/utils/nativeNotificationUtils';
-import { useMessageContextMenu } from '@/hooks/useNativeContextMenu';
+import { useAppContext } from '@/context';
+import { downloadMedia, viewMedia, shareMedia } from '@/utils';
+import { showSuccess, showError, showInfo } from '@/utils';
+import { useMessageContextMenu } from '@/hooks';
 
 const MessageBubble = memo(function MessageBubble({ message, isFirstInGroup, isLastInGroup, isMobile, currentUser }) {
   const isMe = message.sender === 'me';

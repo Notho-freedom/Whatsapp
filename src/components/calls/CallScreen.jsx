@@ -1,6 +1,8 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { Video, Link2, Keypad, Phone, UserPlus, Settings, Search, Clock, Star, MoreVertical, PhoneCall, VideoCall, PhoneOff } from "lucide-react";
-import { useAppContext } from '@/context/AppContext';
+import { useAppContext } from '@/context';
 import CallManager from './CallManager';
 import { MdKeyboard, MdVideocam } from 'react-icons/md';
 

@@ -16,8 +16,7 @@ import {
   Pencil,  // For Personalization
   HardDrive, // For Storage
   Keyboard, // For Shortcuts
-  HelpCircle, // For Help
-  Separator
+  HelpCircle // For Help
 } from 'lucide-react';
 
 const ProfilePanel = ({ activeTab, onTabChange }) => {
@@ -30,7 +29,7 @@ const ProfilePanel = ({ activeTab, onTabChange }) => {
     { id: 'encryption', label: 'Chiffrement', icon: Shield },
     { id: 'groups', label: 'Groupes', icon: Users },
     //separateur
-    { id: 'separator', label: '', icon: Separator },
+    { id: 'separator' },
     { id: 'general', label: 'General', icon: Monitor },
     { id: 'account', label: 'Account', icon: Key },
     { id: 'chats', label: 'Chats', icon: MessageCircle },
@@ -39,7 +38,7 @@ const ProfilePanel = ({ activeTab, onTabChange }) => {
     { id: 'personalization', label: 'Personalization', icon: Pencil },
     { id: 'storage', label: 'Storage', icon: HardDrive },
     { id: 'shortcuts', label: 'Shortcuts', icon: Keyboard },
-    { id: 'separator', label: '', icon: Separator },
+    { id: 'separator' },
     { id: 'help', label: 'Help', icon: HelpCircle },
   ];
   return (
@@ -54,9 +53,9 @@ const ProfilePanel = ({ activeTab, onTabChange }) => {
 
       {/* Navigation des onglets */}
       <nav className="p-1.5">
-        {tabs.map((tab) => {
+        {tabs.map((tab, index) => {
           if (tab.id === 'separator') {
-            return <div className="w-[90%] mx-auto h-px bg-neutral-700/50 my-2"></div>;
+            return <div key={`separator-${index}`} className="w-[90%] mx-auto h-px bg-neutral-700/50 my-2"></div>;
           }
           const IconComponent = tab.icon;
           return (

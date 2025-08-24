@@ -1,6 +1,8 @@
+'use client';
+
 import React from 'react';
 import GoogleAuth from './GoogleAuth';
-import { useGoogleAuth } from '@/hooks/useGoogleAuth';
+import { useGoogleAuth } from '@/hooks';
 
 export default function GoogleAuthDemo() {
   const {

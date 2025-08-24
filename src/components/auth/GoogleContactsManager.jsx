@@ -1,5 +1,7 @@
+'use client';
+
 import React, { useState } from 'react';
-import { useGoogleContacts } from '@/hooks/useGoogleContacts';
+import { useGoogleContacts } from '@/hooks';
 import { Search, RefreshCw, Download, Users, Mail, Phone, Building, Star, Clock, Filter } from 'lucide-react';
 
 export default function GoogleContactsManager() {

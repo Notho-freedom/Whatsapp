@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import ActiveCall from './ActiveCall';
 import IncomingCall from './IncomingCall';

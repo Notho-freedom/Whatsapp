@@ -1,5 +1,7 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
-import { useGoogleAuth } from '@/hooks/useGoogleAuth';
+import { useGoogleAuth } from '@/hooks';
 
 export default function WelcomeScreen({ onContinue }) {
   const { user } = useGoogleAuth();

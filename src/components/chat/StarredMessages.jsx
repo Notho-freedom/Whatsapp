@@ -1,6 +1,8 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { FaStar, FaTimes } from 'react-icons/fa';
-import { useAppContext } from '@/context/AppContext';
+import { useAppContext } from '@/context';
 import MessageBubble from './chatBody/MessageBubble';
 
 export default function StarredMessages() {

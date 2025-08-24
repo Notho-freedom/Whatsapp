@@ -1,4 +1,4 @@
-import WhatsApp from '@/components/WhatsApp';
+import { WhatsApp } from '@/components';
 
 export default function Home() {
   return (

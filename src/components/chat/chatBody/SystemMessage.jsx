@@ -1,3 +1,5 @@
+'use client';
+
 import { FaLock, FaPhone, FaVideo } from 'react-icons/fa';
 import { MdCallReceived, MdCallMade, MdCallMissed } from 'react-icons/md';
 import { useState, useEffect } from 'react';

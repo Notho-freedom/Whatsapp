@@ -1,6 +1,6 @@
 import { Minus, Square, X } from 'lucide-react';
 import { FaWhatsapp } from 'react-icons/fa';
-import { useGoogleAuth } from '@/hooks/useGoogleAuth';
+import { useGoogleAuth } from '@/hooks';
 
 export default function Titlebar() {
   const { user, isAuthenticated, logout } = useGoogleAuth();

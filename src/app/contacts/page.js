@@ -1,4 +1,4 @@
-import GoogleContactsManager from '@/components/GoogleContactsManager';
+import { GoogleContactsManager } from '@/components/auth';
 
 export default function ContactsPage() {
   return (

@@ -1,6 +1,8 @@
+'use client';
+
 import { useState, useEffect, useCallback } from 'react';
 import { useGoogleAuth } from './useGoogleAuth';
-import googleContactsService from '@/utils/googleContactsService';
+import { googleContactsService } from '@/utils';
 
 export function useGoogleContacts() {
   const { user, isAuthenticated } = useGoogleAuth();

@@ -1,31 +1,62 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Titlebar from './Titlebar';
-import Sidebar from './Sidebar';
-import ChatList from './chat/ChatList';
-import ChatHeader from './chat/chatHeader/ChatHeader';
-import ChatBody from './chat/chatBody/ChatBody';
-import ChatFooter from './chat/chatFooter/ChatFooter';
-import Splitter from './Splitter';
-import StarredMessages from './chat/StarredMessages';
-import { useAppContext } from '@/context/AppContext';
-import CallPanel from './calls/CallPanel';
-import CallScreen from './calls/CallScreen';
-import StatusPanel from './status/StatusPanel';
-import StatusView from './status/StatusView';
-import { useEventManager } from '@/hooks/useEventManager';
-import ClientOnly from './ClientOnly';
-import { useGoogleAuth } from '@/hooks/useGoogleAuth';
-import GoogleAuth from './GoogleAuth';
-import Profile from './Profile';
-import ProfilePanel from './ProfilePanel';
+import React from 'react';
+import { 
+  Titlebar, 
+  Sidebar, 
+  Splitter 
+} from '@/components/layout';
+import { 
+  Profile, 
+  ProfilePanel, 
+  WelcomeScreen,
+  ClientOnly,
+  Notification 
+} from '@/components/common';
+import { 
+  StatusCircle, 
+  Message 
+} from '@/components/ui';
+import { 
+  GoogleAuth, 
+  GoogleAuthDemo, 
+  AuthNavigation, 
+  GoogleContactsManager 
+} from '@/components/auth';
+import { 
+  ChatList, 
+  StarredMessages 
+} from '@/components/chat';
+import { 
+  ChatHeader,
+  ChatBody,
+  ChatFooter
+} from '@/components/chat';
+import { 
+  StatusPanel, 
+  StatusView 
+} from '@/components/status';
+import { 
+  ActiveCall, 
+  CallManager, 
+  CallPanel, 
+  CallScreen, 
+  CallWaiting, 
+  IncomingCall, 
+  OutgoingCall 
+} from '@/components/calls';
+import { 
+  NativeNotificationDemo, 
+  NativeContextMenuDemo 
+} from '@/features';
+import { useAppContext } from '@/context';
+import { useGoogleAuth, useEventManager } from '@/hooks';
 
 export default function WhatsApp() {
-  const [isClient, setIsClient] = useState(false);
-  const [chatListWidth, setChatListWidth] = useState(300); // Largeur initiale pour 25%
-  const [selectedStatus, setSelectedStatus] = useState(null); // État pour le statut sélectionné
-  const [profileActiveTab, setProfileActiveTab] = useState('overview'); // État pour l'onglet actif du profil
+  const [isClient, setIsClient] = React.useState(false);
+  const [chatListWidth, setChatListWidth] = React.useState(300); // Largeur initiale pour 25%
+  const [selectedStatus, setSelectedStatus] = React.useState(null); // État pour le statut sélectionné
+  const [profileActiveTab, setProfileActiveTab] = React.useState('overview'); // État pour l'onglet actif du profil
 
   
   // Initialiser le gestionnaire d'événements seulement côté client
@@ -46,7 +77,7 @@ export default function WhatsApp() {
     getUserStatuses
   } = useAppContext();
 
-  useEffect(() => {
+  React.useEffect(() => {
     setIsClient(true);
     
     // Calculer la largeur initiale basée sur 25% de la largeur de l'écran

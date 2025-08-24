@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
 import { 
   Edit3, 
@@ -14,7 +16,7 @@ import {
   Play,
   Music
 } from 'lucide-react';
-import { useGoogleAuth } from '@/hooks/useGoogleAuth';
+import { useGoogleAuth } from '@/hooks';
 
 export default function Profile({ activeTab = 'overview' }) {
   const { user, logout } = useGoogleAuth();

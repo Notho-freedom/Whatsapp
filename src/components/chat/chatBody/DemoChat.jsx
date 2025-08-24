@@ -1,7 +1,9 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import MessageBubble from './MessageBubble';
 import SystemMessage from './SystemMessage';
-import { useAppContext } from '@/context/AppContext';
+import { useAppContext } from '@/context';
 
 export default function DemoChat({ selectedChat, isMobile = false }) {
   const { messages } = useAppContext();

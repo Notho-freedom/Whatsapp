@@ -1,7 +1,9 @@
+'use client';
+
 import { FaPlay, FaPause, FaMicrophone, FaDownload } from 'react-icons/fa';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useAudioEventManager } from '@/hooks/useEventManager';
-import { useMediaContextMenu } from '@/hooks/useNativeContextMenu';
+import { useAudioEventManager } from '@/hooks';
+import { useMediaContextMenu } from '@/hooks';
 
 /**
  * Drop-in pour un rendu "voice message" quasi-identique à WhatsApp Desktop
@@ -24,11 +26,6 @@ export default function MediaGroup({ media = [], isMe = false, isMobile = false,
     // Ici vous pouvez ajouter la logique pour les actions de média
   });
   
-  if (!media.length) return null;
-
-  const isSingleMedia = media.length === 1;
-  const gridCols = media.length === 2 ? 'grid-cols-2' : media.length >= 3 ? 'grid-cols-3' : '';
-
   const handleAudioStart = useCallback((audioItem) => {
     if (audioItem.type === 'audio') {
       stopAllAudio();
@@ -36,6 +33,11 @@ export default function MediaGroup({ media = [], isMe = false, isMobile = false,
       onAudioStateChange?.({ isPlaying: true, currentTime: 0 });
     }
   }, [messageId, stopAllAudio, updateAudioState, onAudioStateChange]);
+
+  if (!media.length) return null;
+
+  const isSingleMedia = media.length === 1;
+  const gridCols = media.length === 2 ? 'grid-cols-2' : media.length >= 3 ? 'grid-cols-3' : '';
 
   return (
     <div className={`${!isSingleMedia && `grid gap-[2px] ${gridCols}`}`}>
