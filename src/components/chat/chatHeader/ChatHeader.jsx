@@ -1,9 +1,16 @@
 import { Video, Phone, Search, MoreVertical } from 'lucide-react';
 import { useState } from 'react';
 import UserProfilePopup from './UserProfilePopup';
+import { useUserContextMenu } from '@/hooks/useNativeContextMenu';
 
 export default function ChatHeader({ selectedChat }) {
   const [isProfilePopupOpen, setIsProfilePopupOpen] = useState(false);
+  
+  // Hook pour les menus contextuels natifs d'Electron
+  const nativeUserMenu = useUserContextMenu((actionId, data) => {
+    console.log('Action de menu contextuel d\'utilisateur:', actionId, data);
+    // Ici vous pouvez ajouter la logique pour les actions d'utilisateur
+  });
 
   if (!selectedChat) {
     return null;
@@ -50,6 +57,17 @@ export default function ChatHeader({ selectedChat }) {
           onClick={handleAvatarClick}
           className="hover:opacity-80 transition-opacity cursor-pointer"
           aria-label="Voir le profil"
+          onContextMenu={(e) => {
+            // Menu contextuel natif Electron pour l'utilisateur
+            if (nativeUserMenu.isElectron) {
+              nativeUserMenu.handleContextMenu(e, {
+                userId: selectedChat.id,
+                name: selectedChat.name,
+                avatar: selectedChat.avatar,
+                status: selectedChat.status
+              });
+            }
+          }}
         >
           <img 
             alt={`${selectedChat.name} profile picture`} 

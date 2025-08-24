@@ -1,6 +1,7 @@
 import { FaPlay, FaPause, FaMicrophone, FaDownload } from 'react-icons/fa';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAudioEventManager } from '@/hooks/useEventManager';
+import { useMediaContextMenu } from '@/hooks/useNativeContextMenu';
 
 /**
  * Drop-in pour un rendu "voice message" quasi-identique à WhatsApp Desktop
@@ -16,6 +17,13 @@ import { useAudioEventManager } from '@/hooks/useEventManager';
 
 export default function MediaGroup({ media = [], isMe = false, isMobile = false, messageId, onAudioStateChange, userInfo = null }) {
   const { updateAudioState, getAudioState, stopAllAudio } = useAudioEventManager();
+  
+  // Hook pour les menus contextuels natifs d'Electron
+  const nativeMediaMenu = useMediaContextMenu((actionId, data) => {
+    console.log('Action de menu contextuel de média:', actionId, data);
+    // Ici vous pouvez ajouter la logique pour les actions de média
+  });
+  
   if (!media.length) return null;
 
   const isSingleMedia = media.length === 1;
@@ -54,7 +62,15 @@ export default function MediaGroup({ media = [], isMe = false, isMobile = false,
 
 function ImageItem({ item, isSingleMedia, isMobile }) {
   return (
-    <div className="relative overflow-hidden bg-[#0b0e11]">
+    <div 
+      className="relative overflow-hidden bg-[#0b0e11]"
+      onContextMenu={(e) => {
+        // Menu contextuel natif Electron pour les images
+        if (window.electronAPI) {
+          window.electronAPI.showContextMenu('media', [], e.clientX, e.clientY);
+        }
+      }}
+    >
       <img
         src={item.url}
         className={`w-full object-cover cursor-pointer ${
@@ -70,7 +86,15 @@ function ImageItem({ item, isSingleMedia, isMobile }) {
 
 function VideoItem({ item, isSingleMedia, isMobile }) {
   return (
-    <div className="relative overflow-hidden bg-[#0b0e11] group cursor-pointer">
+    <div 
+      className="relative overflow-hidden bg-[#0b0e11] group cursor-pointer"
+      onContextMenu={(e) => {
+        // Menu contextuel natif Electron pour les vidéos
+        if (window.electronAPI) {
+          window.electronAPI.showContextMenu('media', [], e.clientX, e.clientY);
+        }
+      }}
+    >
       <video
         src={item.url}
         className={`w-full object-cover ${

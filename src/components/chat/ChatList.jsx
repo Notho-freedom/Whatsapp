@@ -5,11 +5,18 @@ import { LucideEdit, Pin, BellOff, Star, Search, Mic, Video, Image, FileText, Li
 import { useAppContext } from '@/context/AppContext';
 import StatusCircle from '../StatusCircle';
 import Lenis from '@studio-freight/lenis';
+import { useChatContextMenu } from '@/hooks/useNativeContextMenu';
 
 export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect }) {
   const [isClient, setIsClient] = useState(false);
   const { filteredUsers, searchQuery, setSearchQuery } = useAppContext();
   const scrollRef = useRef(null);
+  
+  // Hook pour les menus contextuels natifs d'Electron
+  const nativeChatMenu = useChatContextMenu((actionId, data) => {
+    console.log('Action de menu contextuel de chat:', actionId, data);
+    // Ici vous pouvez ajouter la logique pour les actions de chat
+  });
 
   useEffect(() => {
     setIsClient(true);
@@ -189,6 +196,19 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect 
                 className={`flex items-center gap-3 p-2 mt-1 cursor-pointer rounded-lg hover:bg-neutral-700/50 transition-colors ${
                   selectedChatId === chat.id ? 'bg-neutral-700' : ''
                 }`}
+                onContextMenu={(e) => {
+                  // Menu contextuel natif Electron (priorité)
+                  if (nativeChatMenu.isElectron) {
+                    nativeChatMenu.handleContextMenu(e, {
+                      chatId: chat.id,
+                      name: chat.name,
+                      isPinned: chat.isPinned,
+                      isMuted: chat.isMuted,
+                      unreadCount: chat.unreadCount,
+                      lastMessage: chat.lastMessage
+                    });
+                  }
+                }}
               >
                 {/* Avatar avec cercles de statuts */}
                 <div 
