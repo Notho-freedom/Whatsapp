@@ -401,7 +401,19 @@ export function AppProvider({ children }) {
         if (mediaType < 0.4) {
           media = [{ type: 'image', url: `https://picsum.photos/seed/${user.id}${i}/400/300` }];
         } else if (mediaType < 0.7) {
-          media = [{ type: 'audio', duration: `${Math.floor(Math.random() * 3) + 1}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}` }];
+          // Message audio avec métadonnées complètes
+          const durationMinutes = Math.floor(Math.random() * 3) + 1;
+          const durationSeconds = Math.floor(Math.random() * 60);
+          const duration = `${durationMinutes}:${String(durationSeconds).padStart(2, '0')}`;
+          
+          media = [{ 
+            type: 'audio', 
+            duration: duration,
+            timestamp: timestamp.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+            waveform: Array.from({ length: 35 }, () => Math.random() * 0.7 + 0.3), // Forme d'onde simulée
+            size: `${Math.floor(Math.random() * 500) + 100} KB`,
+            quality: '128 kbps'
+          }];
         } else {
           media = [{ type: 'video', url: `https://picsum.photos/seed/video${user.id}${i}/400/300`, duration: `${Math.floor(Math.random() * 2) + 1}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}` }];
         }

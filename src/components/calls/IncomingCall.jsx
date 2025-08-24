@@ -69,9 +69,9 @@ export default function IncomingCall({ callData, onAccept, onDecline, onMessage 
   };
 
   return (
-    <div className="h-full flex flex-col bg-[#0b0e11]">
+    <div className="h-full flex flex-col bg-[#2C2C2C] rounded-tl-xl">
              {/* Call Header */}
-       <div className="flex items-center justify-between px-3 py-2 border-b border-neutral-800 bg-[#2C2C2C]">
+       <div className="flex items-center justify-between px-4 py-4 border-b border-neutral-800">
          <div className="flex items-center gap-2">
            <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center animate-pulse">
              <Phone size={12} className="text-white" />

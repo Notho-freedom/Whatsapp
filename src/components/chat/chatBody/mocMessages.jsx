@@ -112,7 +112,15 @@ const mocMessages = [
     sender: 'other',
     senderName: 'Wilfrid',
     media: [
-      { type: 'audio', url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', duration: '0:56' }
+      { 
+        type: 'audio', 
+        url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', 
+        duration: '0:56',
+        timestamp: '9:19 PM',
+        waveform: Array.from({ length: 35 }, () => Math.random() * 0.7 + 0.3),
+        size: '245 KB',
+        quality: '128 kbps'
+      }
     ],
     time: '9:19 PM',
     date: '7/30/2025',
@@ -205,6 +213,42 @@ const mocMessages = [
     text: "Quelqu'un est disponible ?",
     time: '9:17 PM',
     read: false,
+    date: 'TODAY',
+  },
+  {
+    id: 'm18',
+    sender: 'other',
+    senderName: 'Wilfrid',
+    media: [
+      { 
+        type: 'audio', 
+        url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3', 
+        duration: '1:23',
+        timestamp: '9:18 PM',
+        waveform: Array.from({ length: 35 }, () => Math.random() * 0.7 + 0.3),
+        size: '312 KB',
+        quality: '128 kbps'
+      }
+    ],
+    time: '9:18 PM',
+    date: 'TODAY',
+  },
+  {
+    id: 'm19',
+    sender: 'me',
+    media: [
+      { 
+        type: 'audio', 
+        url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3', 
+        duration: '0:45',
+        timestamp: '9:19 PM',
+        waveform: Array.from({ length: 35 }, () => Math.random() * 0.7 + 0.3),
+        size: '198 KB',
+        quality: '128 kbps'
+      }
+    ],
+    time: '9:19 PM',
+    read: true,
     date: 'TODAY',
   },
 ];

@@ -45,7 +45,7 @@ export default function WhatsApp() {
       const screenWidth = window.innerWidth;
       const sidebarWidth = 48; // Largeur de la sidebar
       const availableWidth = screenWidth - sidebarWidth;
-      const initialWidth = Math.max(200, Math.min(400, availableWidth * 0.25));
+      const initialWidth = Math.max(270, Math.min(400, availableWidth * 0.25));
       setChatListWidth(initialWidth);
     };
     
@@ -167,7 +167,7 @@ export default function WhatsApp() {
         {/* Chat List avec largeur fixe */}
         <div 
           className="ml-12 rounded-tl-xl flex-shrink-0 bg-[#2C2C2C] border-r border-neutral-800 chat-list-container"
-          style={{ width: `${chatListWidth}px` }}
+          style={{ width: `${chatListWidth}px`, minWidth: `270px` }}
         >
           {activeTab === 'chats' && (
             <ChatList

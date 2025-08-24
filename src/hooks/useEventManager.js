@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import eventManager from '@/utils/eventManager';
 
 /**
@@ -23,3 +23,27 @@ export function useEventManager() {
 
   return eventManager;
 }
+
+// Gestion des événements audio
+export const useAudioEventManager = () => {
+  const [audioStates, setAudioStates] = useState(new Map());
+  
+  const updateAudioState = useCallback((messageId, audioState) => {
+    setAudioStates(prev => new Map(prev).set(messageId, audioState));
+  });
+  
+  const getAudioState = useCallback((messageId) => {
+    return audioStates.get(messageId) || { isPlaying: false, currentTime: 0 };
+  });
+  
+  const stopAllAudio = useCallback(() => {
+    setAudioStates(new Map());
+  });
+  
+  return {
+    audioStates,
+    updateAudioState,
+    getAudioState,
+    stopAllAudio
+  };
+};

@@ -311,7 +311,16 @@ const MessageBubble = memo(function MessageBubble({ message, isFirstInGroup, isL
 
             {/* Media */}
           {message.media && message.media.length > 0 && (
-            <MediaGroup media={message.media} isMe={isMe} isMobile={isMobile} />
+            <MediaGroup 
+              media={message.media} 
+              isMe={isMe} 
+              isMobile={isMobile}
+              messageId={message.id}
+              onAudioStateChange={(audioState) => {
+                // Ici on pourrait mettre à jour l'état global des messages audio
+                console.log('Audio state changed:', audioState);
+              }}
+            />
           )}
 
             {/* Link preview */}

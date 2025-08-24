@@ -186,8 +186,8 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect 
                     } 
                   }));
                 }}
-                className={`flex items-center gap-3 p-4 cursor-pointer rounded-lg hover:bg-neutral-700/50 transition-colors ${
-                  selectedChatId === chat.id ? 'bg-neutral-700/50' : ''
+                className={`flex items-center gap-3 p-2 mt-1 cursor-pointer rounded-lg hover:bg-neutral-700/50 transition-colors ${
+                  selectedChatId === chat.id ? 'bg-neutral-700' : ''
                 }`}
               >
                 {/* Avatar avec cercles de statuts */}
@@ -209,7 +209,7 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect 
                     <img
                       src={chat.avatar}
                       alt={`${chat.name} profile picture`}
-                      className="w-full h-full rounded-full object-cover"
+                      className="w-full h-full p-0.5 rounded-full object-cover"
                     />
                   </StatusCircle>
                 </div>
