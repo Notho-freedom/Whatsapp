@@ -82,10 +82,31 @@ export default function GoogleAuth() {
   // Valider un token Google
   const validateGoogleToken = async (token) => {
     try {
-      // Utiliser notre API route pour éviter le CORS
-      const response = await fetch(`/api/google/validate?token=${encodeURIComponent(token)}`);
+      // Appel direct à l'endpoint Google userinfo pour avoir toutes les infos
+      const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
       if (response.ok) {
-        const data = await response.json();
+        const userInfo = await response.json();
+        console.log('Validation token - Informations utilisateur:', userInfo);
+        
+        return {
+          id: userInfo.sub,
+          email: userInfo.email,
+          name: userInfo.name,
+          picture: userInfo.picture,
+          token: token
+        };
+      }
+      
+      // Fallback vers notre API route si l'appel direct échoue
+      console.log('Fallback vers API route pour validation...');
+      const fallbackResponse = await fetch(`/api/google/validate?token=${encodeURIComponent(token)}`);
+      if (fallbackResponse.ok) {
+        const data = await fallbackResponse.json();
         return {
           id: data.user.id,
           email: data.user.email,
@@ -94,6 +115,7 @@ export default function GoogleAuth() {
           token: token
         };
       }
+      
       return null;
     } catch (error) {
       console.error('Erreur lors de la validation du token:', error);
@@ -160,8 +182,11 @@ export default function GoogleAuth() {
         throw new Error(response.error);
       }
 
+      console.log('Token reçu:', response.access_token);
+
       // Récupérer les informations utilisateur avec le token
       const userInfo = await getUserInfo(response.access_token);
+      console.log('Informations utilisateur récupérées:', userInfo);
       
       const userData = {
         id: userInfo.sub,
@@ -170,6 +195,8 @@ export default function GoogleAuth() {
         picture: userInfo.picture,
         token: response.access_token
       };
+
+      console.log('Données utilisateur finales:', userData);
 
       // Sauvegarder le token
       localStorage.setItem('googleAuthToken', response.access_token);
@@ -192,18 +219,45 @@ export default function GoogleAuth() {
 
   // Récupérer les informations utilisateur avec le token
   const getUserInfo = async (accessToken) => {
-    // Utiliser notre API route de validation qui retourne déjà les infos utilisateur
-    const response = await fetch(`/api/google/validate?token=${encodeURIComponent(accessToken)}`);
-    if (!response.ok) {
-      throw new Error('Impossible de récupérer les informations utilisateur');
+    try {
+      // Appel direct à l'endpoint Google userinfo pour avoir toutes les infos
+      const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Impossible de récupérer les informations utilisateur depuis Google');
+      }
+      
+      const userInfo = await response.json();
+      console.log('Informations complètes récupérées de Google:', userInfo);
+      
+      return {
+        sub: userInfo.sub,
+        email: userInfo.email,
+        name: userInfo.name,
+        picture: userInfo.picture
+      };
+    } catch (error) {
+      console.error('Erreur lors de la récupération des infos utilisateur:', error);
+      
+      // Fallback vers notre API route si l'appel direct échoue
+      console.log('Tentative de fallback vers notre API route...');
+      const fallbackResponse = await fetch(`/api/google/validate?token=${encodeURIComponent(accessToken)}`);
+      if (fallbackResponse.ok) {
+        const data = await fallbackResponse.json();
+        return {
+          sub: data.user.id,
+          email: data.user.email,
+          name: data.user.name,
+          picture: data.user.picture
+        };
+      }
+      
+      throw error;
     }
-    const data = await response.json();
-    return {
-      sub: data.user.id,
-      email: data.user.email,
-      name: data.user.name,
-      picture: data.user.picture
-    };
   };
 
   // Tenter l'enregistrement Google (même logique que la connexion)
