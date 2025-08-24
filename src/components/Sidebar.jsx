@@ -1,11 +1,20 @@
 import { Menu, MessageCircle, Phone, CircleCheckBigIcon, Star, Archive, Settings, CircleDivide, CircleDashedIcon, LucideMessageCircleDashed, CircleSlashed, CircleDashed, CircleDotDashed, CircleGauge, CircleOffIcon, MessageCircleReply, MessageCircleMore, MessageCircleWarningIcon, LucideMessageCircle, CirclePlayIcon } from 'lucide-react';
 import { useAppContext } from '@/context/AppContext';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { FaWhatsapp } from 'react-icons/fa';
 
 export default function Sidebar({ currentUser }) {
   const { activeTab, setActiveTab, messages } = useAppContext();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // Debug: afficher les informations de currentUser
+  useEffect(() => {
+    console.log('Sidebar - currentUser:', currentUser);
+    if (currentUser) {
+      console.log('Sidebar - Avatar URL:', currentUser.picture);
+      console.log('Sidebar - Nom:', currentUser.name);
+    }
+  }, [currentUser]);
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   

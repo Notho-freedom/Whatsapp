@@ -59,23 +59,50 @@ export function useGoogleAuth() {
         return;
       }
 
-      // Valider le token avec Google
-      const response = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${token}`);
+      // Appel direct à l'endpoint Google userinfo pour avoir toutes les infos
+      const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      
       if (response.ok) {
-        const data = await response.json();
+        const userInfo = await response.json();
+        console.log('Hook - Informations utilisateur récupérées:', userInfo);
+        
         const userData = {
-          id: data.sub,
-          email: data.email,
-          name: data.name,
-          picture: data.picture,
+          id: userInfo.sub,
+          email: userInfo.email,
+          name: userInfo.name,
+          picture: userInfo.picture,
           token: token
         };
         
         setUser(userData);
         setIsAuthenticated(true);
+        console.log('Utilisateur authentifié via hook:', userData);
       } else {
-        // Token invalide, le supprimer
-        localStorage.removeItem('googleAuthToken');
+        // Fallback vers notre API route
+        console.log('Fallback vers API route pour vérification...');
+        const fallbackResponse = await fetch(`/api/google/validate?token=${encodeURIComponent(token)}`);
+        if (fallbackResponse.ok) {
+          const data = await fallbackResponse.json();
+          const userData = {
+            id: data.user.id,
+            email: data.user.email,
+            name: data.user.name,
+            picture: data.user.picture,
+            token: token
+          };
+          
+          setUser(userData);
+          setIsAuthenticated(true);
+          console.log('Utilisateur authentifié via API route:', userData);
+        } else {
+          // Token invalide, le supprimer
+          localStorage.removeItem('googleAuthToken');
+          console.log('Token invalide, supprimé du localStorage');
+        }
       }
     } catch (error) {
       console.error('Erreur lors de la vérification du statut d\'authentification:', error);
@@ -87,8 +114,10 @@ export function useGoogleAuth() {
 
   // Déconnexion
   const logout = useCallback(() => {
-    if (window.googleAuth2) {
-      window.googleAuth2.signOut();
+    // Nettoyer le client Google si disponible
+    if (window.googleAuthClient) {
+      // La nouvelle API gère automatiquement la déconnexion
+      console.log('Client Google nettoyé');
     }
     
     localStorage.removeItem('googleAuthToken');
@@ -105,17 +134,24 @@ export function useGoogleAuth() {
     if (!user?.token) return;
 
     try {
-      const response = await fetch(`https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=${user.token}`);
+      // Appel direct à l'endpoint Google userinfo
+      const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+        headers: {
+          'Authorization': `Bearer ${user.token}`,
+        },
+      });
+      
       if (response.ok) {
-        const data = await response.json();
+        const userInfo = await response.json();
         const updatedUser = {
           ...user,
-          email: data.email,
-          name: data.name,
-          picture: data.picture
+          email: userInfo.email,
+          name: userInfo.name,
+          picture: userInfo.picture
         };
         
         setUser(updatedUser);
+        console.log('Informations utilisateur rafraîchies:', updatedUser);
       }
     } catch (error) {
       console.error('Erreur lors du rafraîchissement des informations utilisateur:', error);
