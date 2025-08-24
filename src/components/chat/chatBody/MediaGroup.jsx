@@ -11,9 +11,10 @@ import { useAudioEventManager } from '@/hooks/useEventManager';
  * - Téléchargement du fichier
  * - Stop auto des autres pistes via useAudioEventManager
  * - Accessibilité + mobile-friendly
+ * - Utilise de vrais avatars d'utilisateurs
  */
 
-export default function MediaGroup({ media = [], isMe = false, isMobile = false, messageId, onAudioStateChange }) {
+export default function MediaGroup({ media = [], isMe = false, isMobile = false, messageId, onAudioStateChange, userInfo = null }) {
   const { updateAudioState, getAudioState, stopAllAudio } = useAudioEventManager();
   if (!media.length) return null;
 
@@ -40,6 +41,7 @@ export default function MediaGroup({ media = [], isMe = false, isMobile = false,
             isMe={isMe}
             isMobile={isMobile}
             messageId={messageId}
+            userInfo={userInfo}
             onAudioStart={() => handleAudioStart(item)}
             onAudioStateChange={onAudioStateChange}
           />
@@ -91,7 +93,7 @@ function VideoItem({ item, isSingleMedia, isMobile }) {
   );
 }
 
-function AudioMessage({ audio, isMe, isMobile, messageId, onAudioStart, onAudioStateChange }) {
+function AudioMessage({ audio, isMe, isMobile, messageId, onAudioStart, onAudioStateChange, userInfo }) {
   const { updateAudioState, getAudioState } = useAudioEventManager();
   const audioRef = useRef(null);
   const containerRef = useRef(null);
@@ -215,6 +217,17 @@ function AudioMessage({ audio, isMe, isMobile, messageId, onAudioStart, onAudioS
     return `${fmt(cur)} / ${fmt(d)}`;
   }, [duration, progress, fmt]);
 
+  // Déterminer l'avatar à utiliser
+  const getAvatarSrc = () => {
+    if (isMe) {
+      // Pour l'utilisateur actuel, utiliser un avatar par défaut ou l'avatar de l'utilisateur connecté
+      return userInfo?.avatar || `https://ui-avatars.com/api/?name=Me&background=005c4b&color=fff&size=40`;
+    } else {
+      // Pour les autres utilisateurs, utiliser leur vrai avatar
+      return userInfo?.avatar || `https://ui-avatars.com/api/?name=${userInfo?.name || 'Contact'}&background=6a7175&color=fff&size=40`;
+    }
+  };
+
   return (
     <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} items-end gap-2`}>
       <audio ref={audioRef} src={audio.url} preload="metadata" />
@@ -292,9 +305,9 @@ function AudioMessage({ audio, isMe, isMobile, messageId, onAudioStart, onAudioS
       <div className="relative flex-shrink-0 absolute bottom-2 -right-1 ">
         <div className={`${isMobile ? 'w-[32px] h-[32px]' : 'w-[36px] h-[36px]'} rounded-full overflow-hidden`}>
           <img
-            src={`https://ui-avatars.com/api/?name=${isMe ? 'Me' : 'Contact'}&background=${isMe ? '005c4b' : '6a7175'}&color=fff&size=40`}
-            alt=""
-            className="w-full h-full"
+            src={getAvatarSrc()}
+            alt={userInfo?.name || (isMe ? 'Me' : 'Contact')}
+            className="w-full h-full object-cover"
           />
         </div>
         <div className={`absolute -bottom-1 -right-1 ${isMobile ? 'w-[12px] h-[12px]' : 'w-[14px] h-[14px]'} rounded-full bg-[#00a884] flex items-center justify-center border-2 border-white`}>
