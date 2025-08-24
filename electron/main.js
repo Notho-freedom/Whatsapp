@@ -383,7 +383,7 @@ ipcMain.handle('show-context-menu', async (event, menuType, customItems = [], x,
     // Afficher le menu à la position spécifiée ou à la position du curseur
     if (x !== undefined && y !== undefined) {
       menu.popup({ x: Math.round(x), y: Math.round(y) });
-    } else {
+  } else {
       menu.popup();
     }
     
@@ -621,18 +621,18 @@ ipcMain.handle('set-preferences', async (event, preferences) => {
 
 ipcMain.handle('open-file-dialog', async () => {
   try {
-    const result = await dialog.showOpenDialog(mainWindow, {
-      properties: ['openFile'],
-      filters: [
-        { name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif'] },
-        { name: 'Tous les fichiers', extensions: ['*'] }
-      ]
-    });
-    
-    if (!result.canceled && result.filePaths.length > 0) {
-      return result.filePaths[0];
-    }
-    return null;
+  const result = await dialog.showOpenDialog(mainWindow, {
+    properties: ['openFile'],
+    filters: [
+      { name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif'] },
+      { name: 'Tous les fichiers', extensions: ['*'] }
+    ]
+  });
+  
+  if (!result.canceled && result.filePaths.length > 0) {
+    return result.filePaths[0];
+  }
+  return null;
   } catch (error) {
     console.error('Erreur lors de l\'ouverture du dialogue de fichier:', error);
     return null;
@@ -641,18 +641,18 @@ ipcMain.handle('open-file-dialog', async () => {
 
 ipcMain.handle('save-file-dialog', async (event, data) => {
   try {
-    const result = await dialog.showSaveDialog(mainWindow, {
-      filters: [
-        { name: 'Fichiers texte', extensions: ['txt'] },
-        { name: 'Tous les fichiers', extensions: ['*'] }
-      ]
-    });
-    
-    if (!result.canceled) {
-      fs.writeFileSync(result.filePath, data);
-      return result.filePath;
-    }
-    return null;
+  const result = await dialog.showSaveDialog(mainWindow, {
+    filters: [
+      { name: 'Fichiers texte', extensions: ['txt'] },
+      { name: 'Tous les fichiers', extensions: ['*'] }
+    ]
+  });
+  
+  if (!result.canceled) {
+    fs.writeFileSync(result.filePath, data);
+    return result.filePath;
+  }
+  return null;
   } catch (error) {
     console.error('Erreur lors de la sauvegarde du fichier:', error);
     return null;
