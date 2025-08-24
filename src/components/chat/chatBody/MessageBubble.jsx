@@ -6,7 +6,7 @@ import MessageContextMenu from './MessageContextMenu';
 import { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { useAppContext } from '@/context/AppContext';
 import { downloadMedia, viewMedia, shareMedia } from '@/utils/electronUtils';
-import { showSuccess, showError, showInfo } from '@/utils/notificationUtils';
+import { showSuccess, showError, showInfo } from '@/utils/nativeNotificationUtils';
 import { useMessageContextMenu } from '@/hooks/useNativeContextMenu';
 
 const MessageBubble = memo(function MessageBubble({ message, isFirstInGroup, isLastInGroup, isMobile }) {

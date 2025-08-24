@@ -519,10 +519,72 @@ async function handleMediaShare(media) {
 }
 
 // Gestionnaires IPC pour la compatibilité
-ipcMain.handle('show-notification', async (event, title, body) => {
+ipcMain.handle('show-notification', async (event, title, body, options = {}) => {
   try {
-    new Notification({ title, body }).show();
-    return { success: true };
+    // Créer une notification native avec options avancées
+    const notification = new Notification({
+      title,
+      body,
+      icon: options.icon || undefined,
+      silent: options.silent || false,
+      timeoutType: options.timeout ? 'default' : 'never',
+      actions: options.actions || [],
+      closeButtonText: 'Fermer',
+      subtitle: options.subtitle || undefined,
+      urgency: options.urgency || 'normal' // 'low', 'normal', 'critical'
+    });
+
+    // Gérer les clics sur les actions
+    if (options.actions && options.actions.length > 0) {
+      notification.on('action', (event, index) => {
+        const action = options.actions[index];
+        if (action && action.action) {
+          // Émettre un événement pour informer le renderer
+          mainWindow.webContents.send('notification-action-clicked', {
+            action: action.action,
+            data: action.data || {}
+          });
+        }
+      });
+    }
+
+    // Gérer le clic sur la notification
+    notification.on('click', () => {
+      // Focus sur la fenêtre principale
+      if (mainWindow) {
+        mainWindow.focus();
+      }
+      
+      // Émettre un événement pour informer le renderer
+      mainWindow.webContents.send('notification-clicked', {
+        title,
+        body,
+        action: 'clicked'
+      });
+    });
+
+    // Gérer la fermeture de la notification
+    notification.on('close', () => {
+      // Émettre un événement pour informer le renderer
+      mainWindow.webContents.send('notification-closed', {
+        title,
+        body,
+        action: 'closed'
+      });
+    });
+
+    // Afficher la notification
+    notification.show();
+
+    // Auto-fermeture si un timeout est spécifié
+    if (options.timeout && typeof options.timeout === 'number') {
+      setTimeout(() => {
+        notification.close();
+      }, options.timeout);
+    }
+
+    console.log('Notification native affichée:', { title, body, options });
+    return { success: true, notificationId: Date.now() };
   } catch (error) {
     console.error('Erreur lors de l\'affichage de la notification:', error);
     return { success: false, error: error.message };
