@@ -122,19 +122,19 @@ const MessageContextMenu = ({
       color: 'text-blue-400'
     },
     {
-      id: 'forward',
-      label: 'Forward',
-      icon: FaForward,
-      action: () => onAction('forward', message),
-      color: 'text-blue-400'
-    },
-    {
       id: 'copy',
       label: 'Copy',
       icon: FaCopy,
       action: () => onAction('copy', message.text),
       color: 'text-gray-300',
       show: !!message.text
+    },
+    {
+      id: 'forward',
+      label: 'Forward',
+      icon: FaForward,
+      action: () => onAction('forward', message),
+      color: 'text-blue-400'
     },
     {
       id: 'star',
@@ -204,7 +204,7 @@ const MessageContextMenu = ({
   return (
     <div
       ref={menuRef}
-      className={`fixed z-[10000] bg-[#233138] border border-[#3a3f42] rounded-lg shadow-2xl backdrop-blur-sm
+      className={`fixed z-[10000] bg-[#2c2c2c] border border-[#3a3f42] rounded-lg shadow-2xl backdrop-blur-sm
         ${animationState === 'entering' ? 'animate-menu-enter' : ''}
         ${animationState === 'exiting' ? 'animate-menu-exit' : ''}
         ${animationState === 'entered' ? 'opacity-100 scale-100' : ''}
@@ -219,7 +219,7 @@ const MessageContextMenu = ({
       
 
                         {/* Actions principales */}
-                  <div className="p-1.5">
+                  <div className="p-2">
                     {allActions.map((action) => (
                       <button
                         key={action.id}
@@ -227,13 +227,13 @@ const MessageContextMenu = ({
                           action.action();
                           onClose();
                         }}
-                        className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-[#3a3f42] transition-colors group"
+                        className="w-full flex items-center gap-2 px-2 py-2 rounded-md hover:bg-[#3a3f42] transition-colors group"
                       >
                         <action.icon
                           size={14}
-                          className={`${action.color} group-hover:scale-110 transition-transform`}
+                          className={` group-hover:scale-110 transition-transform`}
                         />
-                        <span className="text-white text-xs">{action.label}</span>
+                        <span className="text-white text-sm">{action.label}</span>
                       </button>
                     ))}
                   </div>
@@ -242,7 +242,7 @@ const MessageContextMenu = ({
       <div className="border-t border-[#3a3f42] mx-2" />
 
                         {/* Section réactions */}
-                  <div className="p-1.5">
+                  <div className="p-2">
                     {/* Réactions rapides */}
                     <div className="flex items-center gap-1">
                       {reactionIcons.slice(0, 5).map((reaction, index) => (
