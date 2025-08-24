@@ -18,11 +18,14 @@ import { useEventManager } from '@/hooks/useEventManager';
 import ClientOnly from './ClientOnly';
 import { useGoogleAuth } from '@/hooks/useGoogleAuth';
 import GoogleAuth from './GoogleAuth';
+import Profile from './Profile';
+import ProfilePanel from './ProfilePanel';
 
 export default function WhatsApp() {
   const [isClient, setIsClient] = useState(false);
   const [chatListWidth, setChatListWidth] = useState(300); // Largeur initiale pour 25%
   const [selectedStatus, setSelectedStatus] = useState(null); // État pour le statut sélectionné
+  const [profileActiveTab, setProfileActiveTab] = useState('overview'); // État pour l'onglet actif du profil
 
   
   // Initialiser le gestionnaire d'événements seulement côté client
@@ -225,6 +228,10 @@ export default function WhatsApp() {
               selectedStatus={selectedStatus}
             />
           )}
+          {activeTab === 'profile' && <ProfilePanel 
+                activeTab={profileActiveTab} 
+                onTabChange={setProfileActiveTab} 
+              />}
         </div>
 
         {/* Splitter */}
@@ -236,7 +243,7 @@ export default function WhatsApp() {
         />
 
         {/* Chat Area - prend le reste de l'espace */}
-        <div className="flex-1 flex flex-col min-w-0 bg-[#0b0e11]">
+        <div className="flex-1 flex min-w-0 bg-[#0b0e11]">
           {activeTab === 'chats' && (
             <>
               <ChatHeader selectedChat={selectedChat} />
@@ -251,6 +258,7 @@ export default function WhatsApp() {
           {activeTab === 'calls' && <CallScreen />}
           {activeTab === 'status' && <StatusView selectedStatus={selectedStatus} onNextUser={handleNextUser} />}
           {activeTab === 'star' && <StarredMessages />}
+          {activeTab === 'profile' && <Profile activeTab={profileActiveTab} />}
         </div>
       </div>
 
