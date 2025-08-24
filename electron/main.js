@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, shell, ipcMain, dialog, Notification, protocol } = require('electron');
+const { app, BrowserWindow, Menu, shell, ipcMain, dialog, Notification, protocol, clipboard } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const isDev = true;
@@ -8,6 +8,250 @@ console.log('🔧 Mode de développement:', isDev);
 console.log('🔧 NODE_ENV:', process.env.NODE_ENV);
 
 let mainWindow;
+
+// Types de menus contextuels disponibles
+const CONTEXT_MENU_TYPES = {
+  MESSAGE: 'message',
+  CHAT: 'chat',
+  MEDIA: 'media',
+  USER: 'user',
+  GENERAL: 'general'
+};
+
+// Définitions des menus contextuels
+const contextMenus = {
+  [CONTEXT_MENU_TYPES.MESSAGE]: [
+    {
+      label: 'Répondre',
+      id: 'reply',
+      accelerator: 'CmdOrCtrl+R',
+      icon: '💬'
+    },
+    {
+      label: 'Transférer',
+      id: 'forward',
+      accelerator: 'CmdOrCtrl+Shift+F',
+      icon: '↗️'
+    },
+    { type: 'separator' },
+    {
+      label: 'Copier',
+      id: 'copy',
+      accelerator: 'CmdOrCtrl+C',
+      icon: '📋'
+    },
+    {
+      label: 'Sélectionner tout',
+      id: 'selectAll',
+      accelerator: 'CmdOrCtrl+A',
+      icon: '☑️'
+    },
+    { type: 'separator' },
+    {
+      label: 'Épingler',
+      id: 'pin',
+      icon: '📌'
+    },
+    {
+      label: 'Marquer comme important',
+      id: 'markImportant',
+      icon: '⭐'
+    },
+    { type: 'separator' },
+    {
+      label: 'Supprimer',
+      id: 'delete',
+      accelerator: 'Delete',
+      icon: '🗑️'
+    }
+  ],
+
+  [CONTEXT_MENU_TYPES.CHAT]: [
+    {
+      label: 'Nouveau message',
+      id: 'newMessage',
+      accelerator: 'CmdOrCtrl+N',
+      icon: '✏️'
+    },
+    {
+      label: 'Rechercher',
+      id: 'search',
+      accelerator: 'CmdOrCtrl+F',
+      icon: '🔍'
+    },
+    { type: 'separator' },
+    {
+      label: 'Épingler la conversation',
+      id: 'pinChat',
+      icon: '📌'
+    },
+    {
+      label: 'Marquer comme non lu',
+      id: 'markUnread',
+      icon: '🔴'
+    },
+    {
+      label: 'Archiver',
+      id: 'archive',
+      icon: '📁'
+    },
+    { type: 'separator' },
+    {
+      label: 'Supprimer la conversation',
+      id: 'deleteChat',
+      icon: '🗑️'
+    },
+    {
+      label: 'Bloquer',
+      id: 'block',
+      icon: '🚫'
+    }
+  ],
+
+  [CONTEXT_MENU_TYPES.MEDIA]: [
+    {
+      label: 'Ouvrir',
+      id: 'open',
+      accelerator: 'Enter',
+      icon: '👁️'
+    },
+    {
+      label: 'Télécharger',
+      id: 'download',
+      accelerator: 'CmdOrCtrl+S',
+      icon: '💾'
+    },
+    {
+      label: 'Partager',
+      id: 'share',
+      icon: '📤'
+    },
+    { type: 'separator' },
+    {
+      label: 'Copier le lien',
+      id: 'copyLink',
+      icon: '🔗'
+    },
+    {
+      label: 'Ouvrir dans le navigateur',
+      id: 'openInBrowser',
+      icon: '🌐'
+    },
+    { type: 'separator' },
+    {
+      label: 'Supprimer',
+      id: 'deleteMedia',
+      icon: '🗑️'
+    }
+  ],
+
+  [CONTEXT_MENU_TYPES.USER]: [
+    {
+      label: 'Voir le profil',
+      id: 'viewProfile',
+      icon: '👤'
+    },
+    {
+      label: 'Envoyer un message',
+      id: 'sendMessage',
+      icon: '💬'
+    },
+    {
+      label: 'Appeler',
+      id: 'call',
+      icon: '📞'
+    },
+    {
+      label: 'Appel vidéo',
+      id: 'videoCall',
+      icon: '📹'
+    },
+    { type: 'separator' },
+    {
+      label: 'Ajouter aux contacts',
+      id: 'addToContacts',
+      icon: '➕'
+    },
+    {
+      label: 'Bloquer',
+      id: 'blockUser',
+      icon: '🚫'
+    }
+  ],
+
+  [CONTEXT_MENU_TYPES.GENERAL]: [
+    {
+      label: 'Couper',
+      id: 'cut',
+      accelerator: 'CmdOrCtrl+X',
+      icon: '✂️'
+    },
+    {
+      label: 'Copier',
+      id: 'copy',
+      accelerator: 'CmdOrCtrl+C',
+      icon: '📋'
+    },
+    {
+      label: 'Coller',
+      id: 'paste',
+      accelerator: 'CmdOrCtrl+V',
+      icon: '📋'
+    },
+    { type: 'separator' },
+    {
+      label: 'Sélectionner tout',
+      id: 'selectAll',
+      accelerator: 'CmdOrCtrl+A',
+      icon: '☑️'
+    },
+    {
+      label: 'Annuler',
+      id: 'undo',
+      accelerator: 'CmdOrCtrl+Z',
+      icon: '↶'
+    },
+    {
+      label: 'Rétablir',
+      id: 'redo',
+      accelerator: 'CmdOrCtrl+Shift+Z',
+      icon: '↷'
+    }
+  ]
+};
+
+// Créer un menu contextuel natif
+function createContextMenu(menuType, customItems = []) {
+  const menuTemplate = contextMenus[menuType] || [];
+  
+  // Ajouter les éléments personnalisés
+  const fullTemplate = [...menuTemplate, ...customItems];
+  
+  // Convertir le template en menu Electron
+  const menu = Menu.buildFromTemplate(fullTemplate.map(item => {
+    if (item.type === 'separator') {
+      return { type: 'separator' };
+    }
+    
+    return {
+      label: item.label,
+      id: item.id,
+      accelerator: item.accelerator,
+      click: () => {
+        // Émettre l'action vers le processus de rendu
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('context-menu-action', {
+            actionId: item.id,
+            menuType: menuType,
+            timestamp: Date.now()
+          });
+        }
+      }
+    };
+  }));
+  
+  return menu;
+}
 
 function createWindow() {
   console.log('🚀 Création de la fenêtre Electron...');
@@ -82,6 +326,7 @@ function createWindow() {
     // En production, charger depuis les fichiers buildés
     mainWindow.loadFile(path.join(__dirname, '../out/index.html'));
   }
+  
   mainWindow.removeMenu();
   mainWindow.setMenuBarVisibility(false);
   mainWindow.setTitle('WhatsApp Clone');
@@ -99,374 +344,290 @@ function createWindow() {
 
   // Gérer la fermeture de la fenêtre
   mainWindow.on('closed', () => {
-    console.log('🔒 Fenêtre fermée');
     mainWindow = null;
   });
 
-  // Empêcher la navigation vers des URLs externes
-  mainWindow.webContents.on('will-navigate', (event, navigationUrl) => {
-    const parsedUrl = new URL(navigationUrl);
-    
-    if (parsedUrl.origin !== 'http://localhost:3000' && !isDev) {
-      event.preventDefault();
-      shell.openExternal(navigationUrl);
-    }
-  });
-
-  // Gérer les nouvelles fenêtres
-  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
-    return { action: 'deny' };
-  });
-
-  // Bloquer les requêtes 404 de manière plus efficace
-  mainWindow.webContents.session.webRequest.onBeforeRequest(
-    { urls: ['*://*/*'] },
-    (details, callback) => {
-      const url = details.url;
-      
-      // Bloquer les requêtes pour les images de drapeaux et socket.io
-      if (url.includes('/assets/images/flags/') || url.includes('socket.io')) {
-        console.log('🚫 Requête bloquée:', url);
-        callback({ cancel: true });
-      } else {
-        callback({ cancel: false });
+  // Gérer les raccourcis clavier globaux
+  mainWindow.webContents.on('before-input-event', (event, input) => {
+    // Raccourcis clavier globaux
+    if (input.control || input.meta) {
+      switch (input.key.toLowerCase()) {
+        case 'n':
+          // Nouveau chat
+          mainWindow.webContents.send('keyboard-shortcut', 'new-chat');
+          break;
+        case 'f':
+          // Recherche
+          mainWindow.webContents.send('keyboard-shortcut', 'search');
+          break;
+        case 'r':
+          // Répondre
+          mainWindow.webContents.send('keyboard-shortcut', 'reply');
+          break;
+        case 's':
+          // Sauvegarder
+          mainWindow.webContents.send('keyboard-shortcut', 'save');
+          break;
       }
     }
-  );
-
-  // Gérer les erreurs de chargement
-  mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
-    console.log('❌ Erreur de chargement:', errorDescription, 'pour', validatedURL);
-  });
-
-  // Créer le menu contextuel
-  const contextMenu = Menu.buildFromTemplate([
-    { role: 'undo', label: 'Annuler' },
-    { role: 'redo', label: 'Rétablir' },
-    { type: 'separator' },
-    { role: 'cut', label: 'Couper' },
-    { role: 'copy', label: 'Copier' },
-    { role: 'paste', label: 'Coller' },
-    { type: 'separator' },
-    { role: 'selectall', label: 'Tout sélectionner' }
-  ]);
-
-  // Appliquer le menu contextuel à la fenêtre
-  mainWindow.webContents.on('context-menu', (event, params) => {
-    contextMenu.popup({ window: mainWindow });
   });
 }
 
-// Créer le menu de l'application
-function createMenu() {
-  const template = [
-    {
-      label: 'Fichier',
-      submenu: [
-        {
-          label: 'Nouveau chat',
-          accelerator: 'CmdOrCtrl+N',
-          click: () => {
-            if (mainWindow) {
-              mainWindow.webContents.send('new-chat');
-            }
-          }
-        },
-        { type: 'separator' },
-        {
-          label: 'Quitter',
-          accelerator: process.platform === 'darwin' ? 'Cmd+Q' : 'Ctrl+Q',
-          click: () => {
-            app.quit();
-          }
-        }
-      ]
-    },
-    {
-      label: 'Édition',
-      submenu: [
-        { role: 'undo', label: 'Annuler' },
-        { role: 'redo', label: 'Rétablir' },
-        { type: 'separator' },
-        { role: 'cut', label: 'Couper' },
-        { role: 'copy', label: 'Copier' },
-        { role: 'paste', label: 'Coller' },
-        { role: 'selectall', label: 'Tout sélectionner' }
-      ]
-    },
-    {
-      label: 'Affichage',
-      submenu: [
-        { role: 'reload', label: 'Recharger' },
-        { role: 'forceReload', label: 'Forcer le rechargement' },
-        { role: 'toggleDevTools', label: 'Outils de développement' },
-        { type: 'separator' },
-        { role: 'resetZoom', label: 'Zoom normal' },
-        { role: 'zoomIn', label: 'Zoom avant' },
-        { role: 'zoomOut', label: 'Zoom arrière' },
-        { type: 'separator' },
-        { role: 'togglefullscreen', label: 'Plein écran' }
-      ]
-    },
-    {
-      label: 'Fenêtre',
-      submenu: [
-        { role: 'minimize', label: 'Réduire' },
-        { role: 'close', label: 'Fermer' }
-      ]
-    },
-    {
-      label: 'Aide',
-      submenu: [
-        {
-          label: 'À propos de WhatsApp Clone',
-          click: () => {
-            shell.openExternal('https://github.com/your-username/whatsapp-clone');
-          }
-        }
-      ]
-    }
-  ];
-
-  const menu = Menu.buildFromTemplate(template);
-  Menu.setApplicationMenu(menu);
-}
-
-// Gestionnaires IPC
-ipcMain.handle('show-notification', async (event, title, body) => {
-  if (Notification.isSupported()) {
-    new Notification({ title, body }).show();
-  }
-});
-
-ipcMain.handle('get-app-version', async () => {
-  return app.getVersion();
-});
-
-ipcMain.handle('get-platform', async () => {
-  return process.platform;
-});
-
-ipcMain.handle('minimize-window', async () => {
-  mainWindow.minimize();
-});
-
-ipcMain.handle('maximize-window', async () => {
-  if (mainWindow.isMaximized()) {
-    mainWindow.unmaximize();
-  } else {
-    mainWindow.maximize();
-  }
-});
-
-ipcMain.handle('close-window', async () => {
-  mainWindow.close();
-});
-
-ipcMain.handle('open-external', async (event, url) => {
-  await shell.openExternal(url);
-});
-
-// Nouveaux gestionnaires pour les menus contextuels et médias
-ipcMain.handle('show-context-menu', async (event, menuItems, x, y) => {
+// Gérer l'affichage des menus contextuels
+ipcMain.handle('show-context-menu', async (event, menuType, customItems = [], x, y) => {
   try {
-    console.log('Affichage du menu contextuel:', { menuItems, x, y });
+    console.log(`Affichage du menu contextuel: ${menuType}`);
     
-    // Créer le menu avec les items sérialisés
-    const menu = Menu.buildFromTemplate(menuItems);
+    const menu = createContextMenu(menuType, customItems);
     
-    // Utiliser une promesse avec timeout pour éviter le blocage
-    return new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        console.log('Timeout du menu contextuel');
-        resolve({ success: false, error: 'Timeout' });
-      }, 5000); // 5 secondes de timeout
-      
-      menu.popup({ x, y }, () => {
-        clearTimeout(timeout);
-        console.log('Menu contextuel fermé');
-        resolve({ success: true });
-      });
-      
-      // Gestion d'erreur
-      menu.on('menu-will-close', () => {
-        clearTimeout(timeout);
-        console.log('Menu contextuel fermé (will-close)');
-        resolve({ success: true });
-      });
-    });
+    // Afficher le menu à la position spécifiée ou à la position du curseur
+    if (x !== undefined && y !== undefined) {
+      menu.popup({ x: Math.round(x), y: Math.round(y) });
+    } else {
+      menu.popup();
+    }
+    
+    return { success: true };
   } catch (error) {
     console.error('Erreur lors de l\'affichage du menu contextuel:', error);
     return { success: false, error: error.message };
   }
 });
 
-// Gestionnaire pour exécuter les actions du menu contextuel
+// Gérer les actions des menus contextuels
 ipcMain.handle('execute-context-menu-action', async (event, actionId, actionData) => {
   try {
-    console.log('Exécution de l\'action:', actionId, actionData);
+    console.log(`Exécution de l'action: ${actionId}`, actionData);
     
     switch (actionId) {
-      case 'reply':
-        // Logique pour répondre au message
-        console.log('Action: Reply to message');
-        return { success: true, action: 'reply' };
-        
-      case 'forward':
-        // Logique pour transférer le message
-        console.log('Action: Forward message');
-        return { success: true, action: 'forward' };
-        
       case 'copy':
-        // Copier le texte dans le presse-papiers
-        if (actionData && actionData.text) {
-          require('electron').clipboard.writeText(actionData.text);
-          console.log('Action: Copy text to clipboard');
+        if (actionData.text) {
+          clipboard.writeText(actionData.text);
+          return { success: true, message: 'Texte copié' };
         }
-        return { success: true, action: 'copy' };
+        break;
         
-      case 'view-media':
-        // Ouvrir le média avec l'application par défaut
-        if (actionData && actionData.url) {
-          await shell.openExternal(actionData.url);
-          console.log('Action: View media');
+      case 'copyLink':
+        if (actionData.url) {
+          clipboard.writeText(actionData.url);
+          return { success: true, message: 'Lien copié' };
         }
-        return { success: true, action: 'view-media' };
+        break;
         
-      case 'save-media':
-        // Télécharger le média
-        console.log('Action: Save media');
-        return { success: true, action: 'save-media' };
+      case 'download':
+        if (actionData.media) {
+          return await handleMediaDownload(actionData.media);
+        }
+        break;
         
-      case 'share-media':
-        // Partager le média
-        console.log('Action: Share media');
-        return { success: true, action: 'share-media' };
+      case 'open':
+        if (actionData.media) {
+          return await handleMediaView(actionData.media);
+        }
+        break;
         
-      case 'star':
-        // Marquer comme favori
-        console.log('Action: Star message');
-        return { success: true, action: 'star' };
-        
-      case 'pin':
-        // Épingler le message
-        console.log('Action: Pin message');
-        return { success: true, action: 'pin' };
+      case 'share':
+        if (actionData.media) {
+          return await handleMediaShare(actionData.media);
+        }
+        break;
         
       case 'delete':
-        // Supprimer le message
-        console.log('Action: Delete message');
-        return { success: true, action: 'delete' };
+        // Logique de suppression
+        return { success: true, message: 'Élément supprimé' };
+        
+      case 'pin':
+        // Logique d'épinglage
+        return { success: true, message: 'Élément épinglé' };
         
       default:
-        console.log('Action inconnue:', actionId);
-        return { success: false, error: 'Action inconnue' };
+        // Action non reconnue, laisser le processus de rendu la gérer
+        return { success: true, actionId, actionData };
     }
+    
+    return { success: false, message: 'Action non supportée' };
   } catch (error) {
     console.error('Erreur lors de l\'exécution de l\'action:', error);
     return { success: false, error: error.message };
   }
 });
 
-ipcMain.handle('download-media', async (event, media) => {
+// Gérer le téléchargement de médias
+async function handleMediaDownload(media) {
   try {
-    console.log('Téléchargement de média:', media);
+    console.log('Téléchargement du média:', media);
     
-    // Ouvrir une boîte de dialogue pour choisir l'emplacement
+    if (!media.url) {
+      return { success: false, message: 'URL du média non disponible' };
+    }
+    
+    // Ouvrir la boîte de dialogue de sauvegarde
     const result = await dialog.showSaveDialog(mainWindow, {
       title: 'Sauvegarder le média',
-      defaultPath: `media_${Date.now()}`,
+      defaultPath: media.filename || 'media',
       filters: [
-        { name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif', 'webp'] },
-        { name: 'Vidéos', extensions: ['mp4', 'avi', 'mov', 'mkv'] },
-        { name: 'Audio', extensions: ['mp3', 'wav', 'ogg', 'm4a'] },
         { name: 'Tous les fichiers', extensions: ['*'] }
       ]
     });
     
-    if (!result.canceled && result.filePath) {
-      // Ici vous pouvez implémenter la logique de téléchargement
-      // Pour l'instant, on simule le téléchargement
-      console.log('Média sauvegardé à:', result.filePath);
-      return { success: true, path: result.filePath };
+    if (result.canceled) {
+      return { success: false, message: 'Téléchargement annulé' };
     }
     
-    return { success: false, message: 'Téléchargement annulé' };
+    // Ici vous pouvez implémenter la logique de téléchargement
+    // Pour l'instant, on retourne un succès
+    return { success: true, message: 'Média téléchargé', path: result.filePath };
   } catch (error) {
     console.error('Erreur lors du téléchargement:', error);
     return { success: false, error: error.message };
   }
-});
+}
 
-ipcMain.handle('view-media', async (event, media) => {
+// Gérer l'affichage de médias
+async function handleMediaView(media) {
   try {
     console.log('Affichage du média:', media);
     
-    // Ouvrir le média dans une nouvelle fenêtre ou avec l'application par défaut
     if (media.url) {
       await shell.openExternal(media.url);
+      return { success: true, message: 'Média ouvert' };
     }
     
+    return { success: false, message: 'URL du média non disponible' };
+  } catch (error) {
+    console.error('Erreur lors de l\'affichage:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Gérer le partage de médias
+async function handleMediaShare(media) {
+  try {
+    console.log('Partage du média:', media);
+    
+    if (media.url) {
+      // Copier l'URL dans le presse-papiers
+      clipboard.writeText(media.url);
+      return { success: true, message: 'Lien copié dans le presse-papiers' };
+    }
+    
+    return { success: false, message: 'URL du média non disponible' };
+  } catch (error) {
+    console.error('Erreur lors du partage:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+// Gestionnaires IPC pour la compatibilité
+ipcMain.handle('show-notification', async (event, title, body) => {
+  try {
+    new Notification({ title, body }).show();
     return { success: true };
   } catch (error) {
-    console.error('Erreur lors de l\'affichage du média:', error);
+    console.error('Erreur lors de l\'affichage de la notification:', error);
     return { success: false, error: error.message };
   }
 });
 
-ipcMain.handle('share-media', async (event, media) => {
+ipcMain.handle('get-app-version', () => {
+  return app.getVersion();
+});
+
+ipcMain.handle('get-platform', () => {
+  return process.platform;
+});
+
+ipcMain.handle('get-preferences', () => {
+  // Retourner les préférences par défaut
+  return {
+    theme: 'dark',
+    language: 'fr',
+    notifications: true
+  };
+});
+
+ipcMain.handle('set-preferences', async (event, preferences) => {
   try {
-    console.log('Partage du média:', media);
-    
-    // Ici vous pouvez implémenter la logique de partage
-    // Par exemple, copier le lien dans le presse-papiers
-    if (media.url) {
-      // Copier l'URL dans le presse-papiers
-      mainWindow.webContents.copy(media.url);
-    }
-    
+    // Ici vous pouvez sauvegarder les préférences
+    console.log('Préférences mises à jour:', preferences);
     return { success: true };
   } catch (error) {
-    console.error('Erreur lors du partage:', error);
+    console.error('Erreur lors de la sauvegarde des préférences:', error);
     return { success: false, error: error.message };
   }
 });
 
 ipcMain.handle('open-file-dialog', async () => {
-  const result = await dialog.showOpenDialog(mainWindow, {
-    properties: ['openFile'],
-    filters: [
-      { name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif'] },
-      { name: 'Tous les fichiers', extensions: ['*'] }
-    ]
-  });
-  
-  if (!result.canceled && result.filePaths.length > 0) {
-    return result.filePaths[0];
+  try {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openFile'],
+      filters: [
+        { name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif'] },
+        { name: 'Tous les fichiers', extensions: ['*'] }
+      ]
+    });
+    
+    if (!result.canceled && result.filePaths.length > 0) {
+      return result.filePaths[0];
+    }
+    return null;
+  } catch (error) {
+    console.error('Erreur lors de l\'ouverture du dialogue de fichier:', error);
+    return null;
   }
-  return null;
 });
 
 ipcMain.handle('save-file-dialog', async (event, data) => {
-  const result = await dialog.showSaveDialog(mainWindow, {
-    filters: [
-      { name: 'Fichiers texte', extensions: ['txt'] },
-      { name: 'Tous les fichiers', extensions: ['*'] }
-    ]
-  });
-  
-  if (!result.canceled) {
-    fs.writeFileSync(result.filePath, data);
-    return result.filePath;
+  try {
+    const result = await dialog.showSaveDialog(mainWindow, {
+      filters: [
+        { name: 'Fichiers texte', extensions: ['txt'] },
+        { name: 'Tous les fichiers', extensions: ['*'] }
+      ]
+    });
+    
+    if (!result.canceled) {
+      fs.writeFileSync(result.filePath, data);
+      return result.filePath;
+    }
+    return null;
+  } catch (error) {
+    console.error('Erreur lors de la sauvegarde du fichier:', error);
+    return null;
   }
-  return null;
+});
+
+ipcMain.handle('minimize-window', () => {
+  if (mainWindow) {
+    mainWindow.minimize();
+  }
+});
+
+ipcMain.handle('maximize-window', () => {
+  if (mainWindow) {
+    mainWindow.maximize();
+  }
+});
+
+ipcMain.handle('close-window', () => {
+  if (mainWindow) {
+    mainWindow.close();
+  }
+});
+
+ipcMain.handle('open-external', async (event, url) => {
+  try {
+    await shell.openExternal(url);
+    return { success: true };
+  } catch (error) {
+    console.error('Erreur lors de l\'ouverture du lien externe:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // Événements de l'application
 app.whenReady().then(() => {
   createWindow();
-  createMenu();
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

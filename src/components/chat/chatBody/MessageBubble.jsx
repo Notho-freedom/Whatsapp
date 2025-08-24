@@ -7,6 +7,7 @@ import { useState, useRef, useEffect, useCallback, memo } from 'react';
 import { useAppContext } from '@/context/AppContext';
 import { downloadMedia, viewMedia, shareMedia } from '@/utils/electronUtils';
 import { showSuccess, showError, showInfo } from '@/utils/notificationUtils';
+import { useMessageContextMenu } from '@/hooks/useNativeContextMenu';
 
 const MessageBubble = memo(function MessageBubble({ message, isFirstInGroup, isLastInGroup, isMobile }) {
   const isMe = message.sender === 'me';
@@ -240,6 +241,11 @@ const MessageBubble = memo(function MessageBubble({ message, isFirstInGroup, isL
     }
   }, [handleReplyMessage, handleForwardMessage, handleCopyMessage, handleStarMessage, handlePinMessage, handleDeleteMessage, handleViewMedia, handleSaveMedia, handleShareMedia]);
 
+  
+  // Hook pour les menus contextuels natifs d'Electron
+  const nativeMessageMenu = useMessageContextMenu(handleMenuAction);
+
+
   // Gestion du long press sur mobile
   const handleLongPressStart = useCallback(() => {
     if (!isMobile) return;
@@ -300,7 +306,23 @@ const MessageBubble = memo(function MessageBubble({ message, isFirstInGroup, isL
               borderTopRightRadius: isMe && isFirstInGroup ? 0 : 7.5,
               borderTopLeftRadius: !isMe && isFirstInGroup ? 0 : 7.5,
             }}
-            onContextMenu={(e) => openContextMenu(e, message)}
+            onContextMenu={(e) => {
+              // Menu contextuel natif Electron (priorité)
+              if (nativeMessageMenu && nativeMessageMenu.isElectron) {
+                nativeMessageMenu.handleContextMenu(e, {
+                  messageId: message.id,
+                  text: message.text,
+                  timestamp: message.time,
+                  sender: message.sender,
+                  isStarred: message.isStarred,
+                  media: message.media,
+                  link: message.link
+                });
+              } else {
+                // Fallback vers le menu contextuel HTML existant
+                openContextMenu(e, message);
+              }
+            }}
             role="article"
             aria-label={`Message from ${isMe ? 'you' : message.senderName || 'contact'}`}
           >
@@ -395,7 +417,23 @@ const MessageBubble = memo(function MessageBubble({ message, isFirstInGroup, isL
           <button 
             className={`absolute flex items-center p-1.5 gap-1 rounded-full top-[8px] ${isMe ? '-left-[25%]' : '-right-[25%]'} 
               opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer p-1 text-xs bg-neutral-900/50 hover:bg-neutral-900/70`}
-            onClick={(e) => openContextMenu(e, message)}
+            onClick={(e) => {
+              // Menu contextuel natif Electron (priorité)
+              if (nativeMessageMenu && nativeMessageMenu.isElectron) {
+                nativeMessageMenu.handleContextMenu(e, {
+                  messageId: message.id,
+                  text: message.text,
+                  timestamp: message.time,
+                  sender: message.sender,
+                  isStarred: message.isStarred,
+                  media: message.media,
+                  link: message.link
+                });
+              } else {
+                // Fallback vers le menu contextuel HTML existant
+                openContextMenu(e, message);
+              }
+            }}
             aria-label="Message options"
           >
             <FaAngleDown size={16} className="" />
