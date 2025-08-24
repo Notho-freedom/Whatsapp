@@ -6,8 +6,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onNewChat: (callback) => ipcRenderer.on('new-chat', callback),
   removeNewChatListener: () => ipcRenderer.removeAllListeners('new-chat'),
   
-  // API pour les notifications
-  showNotification: (title, body) => ipcRenderer.invoke('show-notification', title, body),
+  // API pour les notifications natives
+  showNotification: (title, body, options) => ipcRenderer.invoke('show-notification', title, body, options),
+  
+  // Écouter les événements de notification
+  onNotificationAction: (callback) => ipcRenderer.on('notification-action-clicked', callback),
+  onNotificationClick: (callback) => ipcRenderer.on('notification-clicked', callback),
+  onNotificationClose: (callback) => ipcRenderer.on('notification-closed', callback),
   
   // API pour les raccourcis clavier
   onKeyboardShortcut: (callback) => ipcRenderer.on('keyboard-shortcut', callback),
