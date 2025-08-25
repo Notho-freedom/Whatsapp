@@ -3,6 +3,9 @@ export { default as audioUtils } from './audioUtils';
 export { default as electronUtils } from './electronUtils';
 export { default as eventManager } from './eventManager';
 export { default as googleContactsService } from './googleContactsService';
+export { default as authService } from './authService';
+export { default as userService } from './userService';
+export { default as chatService } from './chatService';
 
 // Fonctions de média nommées
 export { 
