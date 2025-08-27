@@ -478,7 +478,7 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect,
               >
                 {/* Avatar avec cercles de statuts */}
                 <div 
-                  className="relative"
+                  className={`relative w-14 h-14`}
                   onClick={(e) => {
                     e.stopPropagation(); // Empêcher le clic sur le chat
                     if (chat.statuses && chat.statuses.length > 0 && onStatusSelect) {
