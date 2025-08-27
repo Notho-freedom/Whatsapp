@@ -8,6 +8,7 @@ import Lenis from '@studio-freight/lenis';
 import { useChatContextMenu } from '@/hooks';
 import { useGoogleContacts } from '@/hooks';
 import { useContacts } from '@/hooks';
+import apiInterceptor from '@/utils/apiInterceptor';
 
 export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect, currentUser }) {
   const [isClient, setIsClient] = useState(false);
@@ -140,11 +141,10 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect,
       };
 
       // Appeler l'API pour créer la conversation
-      const response = await fetch('/api/conversations', {
+      const response = await apiInterceptor.fetch('/api/conversations', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('accessToken') || ''}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           conversation_type: 'individual',

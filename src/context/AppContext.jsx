@@ -621,7 +621,9 @@ export function AppProvider({ children }) {
         // Transformer les données pour correspondre à notre structure
         const transformedUsers = data.results.map((user, index) => {
           const userName = Math.random() > 0.95 ? '+'+user.phone : `${user.name.first} ${user.name.last}`;
-          const userStatuses = generateUserStatuses(user.login.uuid, userName);
+          // Réduire la probabilité d'avoir des statuts (seulement 20% des utilisateurs)
+          const hasStatuses = Math.random() > 0.7;
+          const userStatuses = hasStatuses ? generateUserStatuses(user.login.uuid, userName) : [];
           
           return {
             id: user.login.uuid,

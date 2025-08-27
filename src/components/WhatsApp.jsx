@@ -50,7 +50,7 @@ import {
   NativeContextMenuDemo 
 } from '@/features';
 import { useAppContext } from '@/context';
-import { useGoogleAuth, useEventManager } from '@/hooks';
+import { useGoogleAuth, useEventManager, useTokenRefresh } from '@/hooks';
 
 export default function WhatsApp() {
   const [isClient, setIsClient] = React.useState(false);
@@ -64,6 +64,9 @@ export default function WhatsApp() {
   
   // Hook d'authentification Google
   const { user, isAuthenticated, isLoading: authLoading } = useGoogleAuth();
+  
+  // Hook de rafraîchissement automatique des tokens
+  useTokenRefresh();
   
   const { 
     selectedChat, 

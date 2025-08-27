@@ -8,3 +8,4 @@ export { useUser } from './useUser';
 export { useChat } from './useChat';
 export { default as useContacts } from './useContacts';
 export { useNotification } from './useNotification';
+export { useTokenRefresh } from './useTokenRefresh';

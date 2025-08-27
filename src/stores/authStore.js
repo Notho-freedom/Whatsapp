@@ -199,12 +199,8 @@ const createAuthSlice = (set, get) => ({
     const now = Date.now();
     const expiresIn = new Date(expiresAt).getTime() - now;
     
-    // Si le token expire dans moins de 5 minutes, le rafraîchir
-    if (expiresIn < 5 * 60 * 1000) {
-      get().refreshAccessToken();
-    }
-    
-    return expiresIn > 0;
+    // Retourner true si le token est encore valide (plus de 5 minutes restantes)
+    return expiresIn > 5 * 60 * 1000;
   },
   
   // Mise à jour du profil utilisateur
