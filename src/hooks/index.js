@@ -11,3 +11,4 @@ export { useNotification } from './useNotification';
 export { useTokenRefresh } from './useTokenRefresh';
 export { useTempConversations } from './useTempConversations';
 export { useRealtime } from './useRealtime';
+export { useLocalCache } from './useLocalCache';

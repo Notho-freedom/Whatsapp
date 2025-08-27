@@ -11,7 +11,8 @@ import {
   ProfilePanel, 
   WelcomeScreen,
   ClientOnly,
-  Notification 
+  Notification,
+  CacheManager
 } from '@/components/common';
 import CacheStats from '@/components/common/CacheStats';
 import RealtimeNotification from '@/components/common/RealtimeNotification';
@@ -52,7 +53,7 @@ import {
   NativeContextMenuDemo 
 } from '@/features';
 import { useAppContext } from '@/context';
-import { useGoogleAuth, useEventManager, useTokenRefresh, useTempConversations, useRealtime } from '@/hooks';
+import { useGoogleAuth, useEventManager, useTokenRefresh, useTempConversations, useRealtime, useLocalCache } from '@/hooks';
 
 export default function WhatsApp() {
   const [isClient, setIsClient] = React.useState(false);
@@ -85,6 +86,14 @@ export default function WhatsApp() {
     typingUsers,
     notifications
   } = useRealtime(currentUserId);
+
+  // Hook pour la gestion du cache local
+  const {
+    isInitialized: cacheInitialized,
+    cacheStats,
+    syncWithCache,
+    preloadData
+  } = useLocalCache();
   
   const { 
     selectedChat, 
@@ -157,6 +166,19 @@ export default function WhatsApp() {
       });
     }
   }, [isAuthenticated, currentUserId, users.length, listenToUserPresence]);
+
+  // Synchroniser les données avec le cache local
+  React.useEffect(() => {
+    if (cacheInitialized && isAuthenticated) {
+      // Synchroniser les utilisateurs/conversations avec le cache
+      if (users.length > 0) {
+        syncWithCache(users, 'users');
+      }
+      
+      // Précharger les données fréquemment utilisées
+      preloadData();
+    }
+  }, [cacheInitialized, isAuthenticated, users, syncWithCache, preloadData]);
 
 
 
@@ -354,6 +376,13 @@ export default function WhatsApp() {
 
       {/* Statistiques du cache (en mode développement) */}
       {process.env.NODE_ENV === 'development' && <CacheStats />}
+
+      {/* Gestionnaire de cache local */}
+      {process.env.NODE_ENV === 'development' && cacheInitialized && (
+        <div className="fixed bottom-4 right-4 z-50 max-w-md">
+          <CacheManager />
+        </div>
+      )}
 
     </div>
   );
