@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef } from 'react';
+import { electronAPI, hasElectronFunction } from '@/utils/electronAPI';
 
 /**
  * Hook pour utiliser les menus contextuels natifs d'Electron
@@ -10,7 +11,7 @@ import { useCallback, useEffect, useRef } from 'react';
  * @returns {Object} - Fonctions et état du menu contextuel
  */
 export function useNativeContextMenu(menuType, customItems = [], onAction = null) {
-  const isElectron = typeof window !== 'undefined' && window.electronAPI;
+  const isElectron = typeof window !== 'undefined' && electronAPI;
   const actionListenerRef = useRef(null);
 
   // Écouter les actions de menu contextuel
@@ -32,20 +33,24 @@ export function useNativeContextMenu(menuType, customItems = [], onAction = null
     };
 
     // Ajouter l'écouteur
-    window.electronAPI.onContextMenuAction(actionListenerRef.current);
+    electronAPI.onContextMenuAction(actionListenerRef.current);
 
     return () => {
-      if (actionListenerRef.current) {
-        // Nettoyer l'écouteur
-        window.electronAPI.onContextMenuAction(actionListenerRef.current);
+      if (actionListenerRef.current && hasElectronFunction('removeContextMenuAction')) {
+        // Nettoyer l'écouteur correctement
+        try {
+          electronAPI.removeContextMenuAction(actionListenerRef.current);
+        } catch (error) {
+          console.warn('⚠️ Impossible de nettoyer l\'écouteur context-menu-action:', error);
+        }
       }
     };
   }, [isElectron, onAction]);
 
   // Afficher le menu contextuel
   const showContextMenu = useCallback((event, additionalData = {}) => {
-    if (!isElectron) {
-      console.warn('Menus contextuels natifs non disponibles (pas dans Electron)');
+    if (!isElectron || !hasElectronFunction('showContextMenu')) {
+      console.warn('Menus contextuels natifs non disponibles (pas dans Electron ou API manquante)');
       return;
     }
 
@@ -59,7 +64,7 @@ export function useNativeContextMenu(menuType, customItems = [], onAction = null
     console.log(`Affichage du menu contextuel ${menuType} à (${x}, ${y})`);
 
     // Afficher le menu contextuel natif
-    window.electronAPI.showContextMenu(menuType, customItems, x, y)
+    electronAPI.showContextMenu(menuType, customItems, x, y)
       .then(result => {
         if (result.success) {
           console.log('Menu contextuel affiché avec succès');
@@ -74,13 +79,13 @@ export function useNativeContextMenu(menuType, customItems = [], onAction = null
 
   // Exécuter une action de menu contextuel
   const executeAction = useCallback(async (actionId, actionData = {}) => {
-    if (!isElectron) {
-      console.warn('Actions de menu contextuel non disponibles (pas dans Electron)');
+    if (!isElectron || !hasElectronFunction('executeContextMenuAction')) {
+      console.warn('Actions de menu contextuel non disponibles (pas dans Electron ou API manquante)');
       return null;
     }
 
     try {
-      const result = await window.electronAPI.executeContextMenuAction(actionId, actionData);
+      const result = await electronAPI.executeContextMenuAction(actionId, actionData);
       return result;
     } catch (error) {
       console.error('Erreur lors de l\'exécution de l\'action:', error);
@@ -214,7 +219,7 @@ export function useUserContextMenu(onAction = null) {
  * Hook pour les raccourcis clavier globaux
  */
 export function useGlobalShortcuts() {
-  const isElectron = typeof window !== 'undefined' && window.electronAPI;
+  const isElectron = typeof window !== 'undefined' && electronAPI;
 
   useEffect(() => {
     if (!isElectron) return;
@@ -229,11 +234,17 @@ export function useGlobalShortcuts() {
     };
 
     // Écouter les raccourcis clavier globaux
-    window.electronAPI.onKeyboardShortcut(handleKeyboardShortcut);
+    electronAPI.onKeyboardShortcut(handleKeyboardShortcut);
 
     return () => {
       // Nettoyer l'écouteur
-      window.electronAPI.onKeyboardShortcut(handleKeyboardShortcut);
+      if (hasElectronFunction('removeKeyboardShortcut')) {
+        try {
+          electronAPI.removeKeyboardShortcut(handleKeyboardShortcut);
+        } catch (error) {
+          console.warn('⚠️ Impossible de nettoyer l\'écouteur keyboard-shortcut:', error);
+        }
+      }
     };
   }, [isElectron]);
 
@@ -242,7 +253,7 @@ export function useGlobalShortcuts() {
     if (!isElectron) return null;
 
     try {
-      const id = await window.electronAPI.registerGlobalShortcut(accelerator, callback);
+      const id = await electronAPI.registerGlobalShortcut(accelerator, callback);
       return id;
     } catch (error) {
       console.error('Erreur lors de l\'enregistrement du raccourci:', error);
@@ -255,7 +266,7 @@ export function useGlobalShortcuts() {
     if (!isElectron) return;
 
     try {
-      await window.electronAPI.unregisterGlobalShortcut(id);
+      await electronAPI.unregisterGlobalShortcut(id);
     } catch (error) {
       console.error('Erreur lors de la désinscription du raccourci:', error);
     }

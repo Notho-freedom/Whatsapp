@@ -249,65 +249,141 @@ export default function WhatsApp() {
     }
   }, [cacheInitialized, isAuthenticated, checkFirebaseSync]);
 
-  // Stratégie de chargement en deux phases : Cache local d'abord, puis synchronisation discrète
+  // Stratégie de chargement asynchrone et non-bloquante
   React.useEffect(() => {
     if (cacheInitialized && isAuthenticated) {
       setLoadingPhase(1);
       setIsSyncing(false);
-      console.log('🚀 Phase 1 : Chargement depuis le cache local (offline-first)...');
+      console.log('🚀 Phase 1 : Chargement asynchrone depuis le cache local...');
 
-      // Charger les conversations depuis le cache local
-      const cachedConversations = getAllConversations();
-      if (cachedConversations.length > 0) {
-        console.log(`📦 ${cachedConversations.length} conversations chargées depuis le cache local (instantané)`);
-        
-        // Mettre à jour l'état avec les conversations en cache
-        const transformedConversations = cachedConversations.map(conv => ({
-          id: conv.id,
-          name: conv.name || 'Conversation inconnue',
-          lastMessage: conv.lastMessage,
-          timestamp: conv.timestamp,
-          unreadCount: conv.unreadCount || 0,
-          isGroup: conv.isGroup || false,
-          participants: conv.participants || [],
-          avatar: conv.avatar || '',
-        }));
-        
-        actions.setUsers(transformedConversations);
-
-        // Charger les derniers messages pour chaque conversation (optimisé)
-        cachedConversations.forEach(conv => {
-          const lastMessages = getLastMessages(conv.id, 5);
-          if (lastMessages.length > 0) {
-            actions.setMessages(conv.id, lastMessages);
-            console.log(`📝 ${lastMessages.length} derniers messages chargés pour ${conv.id}`);
+      // Charger les conversations de manière asynchrone et non-bloquante
+      const loadConversationsAsync = async () => {
+        try {
+          // Utiliser requestIdleCallback pour ne pas bloquer le rendu
+          if (window.requestIdleCallback) {
+            window.requestIdleCallback(async () => {
+              await loadConversationsFromCache();
+            }, { timeout: 1000 });
+          } else {
+            // Fallback pour les navigateurs qui ne supportent pas requestIdleCallback
+            setTimeout(async () => {
+              await loadConversationsFromCache();
+            }, 100);
           }
-        });
-      } else {
-        console.log('🤷 Aucune conversation trouvée dans le cache local.');
-      }
+        } catch (error) {
+          console.warn('⚠️ Erreur lors du chargement asynchrone:', error);
+        }
+      };
 
-      // PHASE 2 : Synchronisation discrète en arrière-plan après un délai plus long
-      setTimeout(async () => {
+      loadConversationsAsync();
+
+      // PHASE 2 : Synchronisation discrète en arrière-plan
+      const syncTimer = setTimeout(async () => {
         setLoadingPhase(2);
         setIsSyncing(true);
-        console.log('☁️ Phase 2 : Lancement de la synchronisation discrète en arrière-plan...');
+        console.log('☁️ Phase 2 : Synchronisation discrète en arrière-plan...');
         
         try {
-          // Utiliser le service intelligent pour le préchargement
-          const smartCacheService = require('@/utils/smartCacheService').default;
-          await smartCacheService.preloadData();
-          
-          console.log('✅ Synchronisation discrète terminée.');
+          // Utiliser requestIdleCallback pour la synchronisation
+          if (window.requestIdleCallback) {
+            window.requestIdleCallback(async () => {
+              await performBackgroundSync();
+            }, { timeout: 2000 });
+          } else {
+            await performBackgroundSync();
+          }
         } catch (error) {
           console.warn('⚠️ Erreur lors de la synchronisation discrète:', error);
         } finally {
           setIsSyncing(false);
           setLocalLoading(false);
         }
-      }, 2000); // Délai plus long pour une expérience plus fluide
+      }, 1000); // Délai réduit pour une meilleure réactivité
+
+      return () => clearTimeout(syncTimer);
     }
-  }, [cacheInitialized, isAuthenticated, users, syncWithCache, preloadData, getAllConversations, getMessages, getLastMessages, actions, setLocalLoading, setLoadingPhase, setIsSyncing]);
+  }, [cacheInitialized, isAuthenticated]);
+
+  // Fonction pour charger les conversations depuis le cache (non-bloquante)
+  const loadConversationsFromCache = React.useCallback(async () => {
+    try {
+      const cachedConversations = getAllConversations();
+      if (cachedConversations.length > 0) {
+        console.log(`📦 ${cachedConversations.length} conversations chargées depuis le cache local`);
+        
+        // Traitement par lots pour éviter de bloquer l'interface
+        const batchSize = 10;
+        for (let i = 0; i < cachedConversations.length; i += batchSize) {
+          const batch = cachedConversations.slice(i, i + batchSize);
+          
+          // Traiter le lot de manière asynchrone
+          await new Promise(resolve => {
+            if (window.requestIdleCallback) {
+              window.requestIdleCallback(() => {
+                processConversationBatch(batch);
+                resolve();
+              }, { timeout: 100 });
+            } else {
+              setTimeout(() => {
+                processConversationBatch(batch);
+                resolve();
+              }, 10);
+            }
+          });
+        }
+      } else {
+        console.log('🤷 Aucune conversation trouvée dans le cache local.');
+      }
+    } catch (error) {
+      console.warn('⚠️ Erreur lors du chargement des conversations:', error);
+    }
+  }, [getAllConversations]);
+
+  // Fonction pour traiter un lot de conversations
+  const processConversationBatch = React.useCallback((conversations) => {
+    const transformedConversations = conversations.map(conv => ({
+      id: conv.id,
+      name: conv.name || 'Conversation inconnue',
+      lastMessage: conv.lastMessage,
+      timestamp: conv.timestamp,
+      unreadCount: conv.unreadCount || 0,
+      isGroup: conv.isGroup || false,
+      participants: conv.participants || [],
+      avatar: conv.avatar || '',
+    }));
+    
+    actions.setUsers(transformedConversations);
+
+    // Charger les derniers messages de manière asynchrone
+    conversations.forEach(conv => {
+      if (window.requestIdleCallback) {
+        window.requestIdleCallback(() => {
+          const lastMessages = getLastMessages(conv.id, 5);
+          if (lastMessages.length > 0) {
+            actions.setMessages(conv.id, lastMessages);
+          }
+        }, { timeout: 50 });
+      } else {
+        setTimeout(() => {
+          const lastMessages = getLastMessages(conv.id, 5);
+          if (lastMessages.length > 0) {
+            actions.setMessages(conv.id, lastMessages);
+          }
+        }, 10);
+      }
+    });
+  }, [actions, getLastMessages]);
+
+  // Fonction pour la synchronisation en arrière-plan
+  const performBackgroundSync = React.useCallback(async () => {
+    try {
+      const smartCacheService = require('@/utils/smartCacheService').default;
+      await smartCacheService.preloadData();
+      console.log('✅ Synchronisation discrète terminée.');
+    } catch (error) {
+      console.warn('⚠️ Erreur lors de la synchronisation:', error);
+    }
+  }, []);
 
 
 

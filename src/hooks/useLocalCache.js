@@ -79,20 +79,50 @@ export function useLocalCache() {
     }
   }, [updateCacheStats]);
 
-  // Récupérer toutes les conversations (instantané)
-  const getAllConversations = useCallback(() => {
+  // Récupérer toutes les conversations (asynchrone et non-bloquante)
+  const getAllConversations = useCallback(async () => {
     try {
-      return localCacheService.getAllConversations();
+      // Utiliser requestIdleCallback pour ne pas bloquer l'interface
+      if (window.requestIdleCallback) {
+        return new Promise((resolve) => {
+          window.requestIdleCallback(() => {
+            const result = localCacheService.getAllConversations();
+            resolve(result);
+          }, { timeout: 500 });
+        });
+      } else {
+        // Fallback pour les navigateurs qui ne supportent pas requestIdleCallback
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            const result = localCacheService.getAllConversations();
+            resolve(result);
+          }, 50);
+        });
+      }
     } catch (error) {
       console.error('❌ Erreur lors de la récupération des conversations:', error);
       return [];
     }
   }, []);
 
-  // Récupérer une conversation spécifique (instantané)
-  const getConversation = useCallback((conversationId) => {
+  // Récupérer une conversation spécifique (asynchrone)
+  const getConversation = useCallback(async (conversationId) => {
     try {
-      return localCacheService.getConversation(conversationId);
+      if (window.requestIdleCallback) {
+        return new Promise((resolve) => {
+          window.requestIdleCallback(() => {
+            const result = localCacheService.getConversation(conversationId);
+            resolve(result);
+          }, { timeout: 100 });
+        });
+      } else {
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            const result = localCacheService.getConversation(conversationId);
+            resolve(result);
+          }, 10);
+        });
+      }
     } catch (error) {
       console.error('❌ Erreur lors de la récupération de la conversation:', error);
       return null;
@@ -111,21 +141,50 @@ export function useLocalCache() {
     }
   }, [updateCacheStats]);
 
-  // Récupérer des messages (instantané)
-  const getMessages = useCallback((conversationId, limit = 50, offset = 0) => {
+  // Récupérer des messages (asynchrone et non-bloquante)
+  const getMessages = useCallback(async (conversationId, limit = 50, offset = 0) => {
     try {
-      return localCacheService.getMessages(conversationId, limit, offset);
+      if (window.requestIdleCallback) {
+        return new Promise((resolve) => {
+          window.requestIdleCallback(() => {
+            const result = localCacheService.getMessages(conversationId, limit, offset);
+            resolve(result);
+          }, { timeout: 200 });
+        });
+      } else {
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            const result = localCacheService.getMessages(conversationId, limit, offset);
+            resolve(result);
+          }, 20);
+        });
+      }
     } catch (error) {
       console.error('❌ Erreur lors de la récupération des messages:', error);
       return [];
     }
   }, []);
 
-  // Récupérer les derniers messages d'une conversation (optimisé pour l'affichage)
-  const getLastMessages = useCallback((conversationId, count = 5) => {
+  // Récupérer les derniers messages d'une conversation (asynchrone et optimisé)
+  const getLastMessages = useCallback(async (conversationId, count = 5) => {
     try {
-      const messages = localCacheService.getMessages(conversationId, count, 0);
-      return messages.sort((a, b) => new Date(b.timestamp || b.time) - new Date(a.timestamp || a.time));
+      if (window.requestIdleCallback) {
+        return new Promise((resolve) => {
+          window.requestIdleCallback(() => {
+            const messages = localCacheService.getMessages(conversationId, count, 0);
+            const sortedMessages = messages.sort((a, b) => new Date(b.timestamp || b.time) - new Date(a.timestamp || a.time));
+            resolve(sortedMessages);
+          }, { timeout: 100 });
+        });
+      } else {
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            const messages = localCacheService.getMessages(conversationId, count, 0);
+            const sortedMessages = messages.sort((a, b) => new Date(b.timestamp || b.time) - new Date(a.timestamp || a.time));
+            resolve(sortedMessages);
+          }, 10);
+        });
+      }
     } catch (error) {
       console.warn(`⚠️ Erreur lors de la récupération des derniers messages pour ${conversationId}:`, error);
       return [];
