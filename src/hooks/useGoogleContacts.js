@@ -61,7 +61,7 @@ export function useGoogleContacts() {
       console.log(`${fetchedContacts.length} contacts récupérés avec succès`);
     } catch (error) {
       setError(error.message);
-      console.error('Erreur lors de la récupération des contacts:', error);
+      //console.error('Erreur lors de la récupération des contacts:', error);
     } finally {
       setIsLoading(false);
     }

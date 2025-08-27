@@ -11,12 +11,18 @@ import { API_ENDPOINTS } from '@/utils/config';
 export const useTempConversations = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const { addUser } = useAppContext();
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const { addUser, users } = useAppContext();
 
   /**
    * Charger les conversations temporaires depuis la base de données
    */
   const loadTempConversations = async () => {
+    // Éviter les rechargements répétés
+    if (hasLoaded || isLoading) {
+      return [];
+    }
+    
     setIsLoading(true);
     setError(null);
 
@@ -59,13 +65,20 @@ export const useTempConversations = () => {
         updated_at: conv.updated_at
       }));
 
-      // Ajouter chaque conversation à la liste des chats
-      transformedConversations.forEach(conversation => {
-        addUser(conversation);
-      });
+      // Ajouter chaque conversation à la liste des chats (éviter les doublons)
+      if (users && Array.isArray(users)) {
+        transformedConversations.forEach(conversation => {
+          // Vérifier si la conversation n'existe pas déjà
+          const existingConversation = users.find(user => user.id === conversation.id);
+          if (!existingConversation) {
+            addUser(conversation);
+          }
+        });
+      }
 
       console.log(`✅ ${transformedConversations.length} conversations temporaires chargées`);
       
+      setHasLoaded(true);
       return transformedConversations;
     } catch (error) {
       console.error('❌ Erreur lors du chargement des conversations temporaires:', error);
@@ -74,6 +87,12 @@ export const useTempConversations = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Fonction pour réinitialiser l'état de chargement (utile pour les tests)
+  const resetLoadState = () => {
+    setHasLoaded(false);
+    setError(null);
   };
 
   /**
@@ -153,7 +172,9 @@ export const useTempConversations = () => {
     cleanupOldConversations,
     convertToPermanent,
     deleteTempConversation,
+    resetLoadState,
     isLoading,
-    error
+    error,
+    hasLoaded
   };
 };

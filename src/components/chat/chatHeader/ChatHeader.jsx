@@ -4,6 +4,7 @@ import { Video, Phone, Search, MoreVertical } from 'lucide-react';
 import { useState } from 'react';
 import UserProfilePopup from './UserProfilePopup';
 import { useUserContextMenu } from '@/hooks';
+import { useRealtime } from '@/hooks';
 
 export default function ChatHeader({ selectedChat }) {
   const [isProfilePopupOpen, setIsProfilePopupOpen] = useState(false);
@@ -13,6 +14,10 @@ export default function ChatHeader({ selectedChat }) {
     console.log('Action de menu contextuel d\'utilisateur:', actionId, data);
     // Ici vous pouvez ajouter la logique pour les actions d'utilisateur
   });
+
+  // Hook temps réel pour la présence et les indicateurs de frappe
+  const currentUserId = 'default-user'; // À remplacer par l'ID utilisateur réel
+  const { presence, typingUsers } = useRealtime(currentUserId);
 
   if (!selectedChat) {
     return null;
@@ -82,7 +87,27 @@ export default function ChatHeader({ selectedChat }) {
             {selectedChat.name}
           </p>
           <p className="text-xs text-gray-300">
-            {selectedChat.status || 'last seen today at 6:39 PM'}
+            {(() => {
+              // Afficher l'indicateur de frappe en temps réel
+              const typingUsersInChat = typingUsers[selectedChat.id] || [];
+              if (typingUsersInChat.length > 0) {
+                const typingUser = typingUsersInChat[0];
+                return `${typingUser.userId} est en train d'écrire...`;
+              }
+              
+              // Afficher la présence en temps réel
+              const userPresence = presence[selectedChat.id];
+              if (userPresence) {
+                if (userPresence.status === 'online') {
+                  return 'en ligne';
+                } else {
+                  return `dernière connexion ${new Date(userPresence.lastSeen).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`;
+                }
+              }
+              
+              // Fallback vers le statut statique
+              return selectedChat.status || 'dernière connexion aujourd\'hui à 18:39';
+            })()}
           </p>
         </div>
       </div>

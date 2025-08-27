@@ -3,14 +3,25 @@
 import { FaLock, FaWhatsapp } from 'react-icons/fa';
 import MessageBubble from './MessageBubble';
 import SystemMessage from './SystemMessage';
+import TypingIndicator from './TypingIndicator';
 import { useEffect, useRef, useState, useCallback, memo } from 'react';
 import { useAppContext } from '@/context';
+import { useRealtime } from '@/hooks';
 
 const ChatBody = memo(function ChatBody({ selectedChat, currentUser }) {
   const scrollRef = useRef(null);
   const [isMobile, setIsMobile] = useState(false);
   const [autoScroll, setAutoScroll] = useState(true);
   const { messages, markMessagesRead } = useAppContext();
+  
+  // Hook temps réel pour les receipts de lecture et indicateurs de frappe
+  const currentUserId = currentUser?.id || 'default-user';
+  const { 
+    markMessageAsRead, 
+    listenToReadReceipts, 
+    listenToTypingStatus,
+    typingUsers 
+  } = useRealtime(currentUserId);
 
   // Optimisation avec useCallback
   const checkMobile = useCallback(() => {
@@ -48,8 +59,27 @@ const ChatBody = memo(function ChatBody({ selectedChat, currentUser }) {
   useEffect(() => {
     if (selectedChat && messages[selectedChat.id]) {
       markMessagesRead(selectedChat.id);
+      
+      // Marquer les messages comme lus en temps réel
+      const chatMessages = messages[selectedChat.id] || [];
+      chatMessages.forEach(message => {
+        if (message.sender !== 'me' && !message.read) {
+          markMessageAsRead(selectedChat.id, message.id);
+        }
+      });
     }
-  }, [selectedChat?.id, markMessagesRead]);
+  }, [selectedChat?.id, markMessagesRead, markMessageAsRead]);
+
+  // Écouter les receipts de lecture et indicateurs de frappe
+  useEffect(() => {
+    if (selectedChat?.id) {
+      // Écouter les receipts de lecture
+      listenToReadReceipts(selectedChat.id);
+      
+      // Écouter les indicateurs de frappe
+      listenToTypingStatus(selectedChat.id);
+    }
+  }, [selectedChat?.id, listenToReadReceipts, listenToTypingStatus]);
 
   // Détection du scroll manuel
   const handleScroll = useCallback(() => {
@@ -168,6 +198,12 @@ const ChatBody = memo(function ChatBody({ selectedChat, currentUser }) {
               </div>
             ))
           )}
+          
+          {/* Indicateur de frappe en temps réel */}
+          <TypingIndicator 
+            typingUsers={typingUsers[selectedChat?.id] || []}
+            currentUserId={currentUserId}
+          />
         </div>
       </div>
 

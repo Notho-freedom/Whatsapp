@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import firebaseService from '@/utils/firebaseService';
-import { testFirebaseConnection } from '@/utils/firebaseTest';
+import firebaseServerService from '@/utils/firebaseServerService';
 
 // GET /api/conversations - Récupérer les conversations de l'utilisateur
 export async function GET(request) {
@@ -11,15 +10,10 @@ export async function GET(request) {
     
     // Pour les conversations temporaires, pas besoin d'authentification
     if (isTemporary) {
-      // Test de connexion Firebase au premier appel
-      const testResult = await testFirebaseConnection();
-      console.log('🔍 Test Firebase:', testResult);
-      
-      const conversations = await firebaseService.getTempConversations();
+                  const conversations = await firebaseServerService.getTempConversations();
       return NextResponse.json({
         conversations,
-        count: conversations.length,
-        firebaseTest: testResult
+        count: conversations.length
       });
     }
 
@@ -57,15 +51,15 @@ export async function GET(request) {
     if (offset) filters.offset = offset;
 
           // Récupérer les conversations
-      let conversations;
-      if (query) {
-        conversations = await firebaseService.searchConversations(user.id, query, filters);
-      } else {
-        conversations = await firebaseService.getConversationsByUserId(user.id, limit, offset);
-      }
-
-      // Récupérer les statistiques
-      const stats = await firebaseService.getConversationStats(user.id);
+                    let conversations;
+              if (query) {
+                conversations = await firebaseServerService.searchConversations(user.id, query, filters);
+              } else {
+                conversations = await firebaseServerService.getConversationsByUserId(user.id, limit, offset);
+              }
+        
+              // Récupérer les statistiques
+              const stats = await firebaseServerService.getConversationStats(user.id);
 
     return NextResponse.json({
       conversations,
@@ -94,11 +88,12 @@ export async function DELETE(request) {
     const isTemporary = searchParams.get('is_temporary') === 'true';
     
     if (isTemporary) {
-      const deletedCount = await firebaseService.cleanupOldTempConversations();
+      // DÉSACTIVÉ: Ne plus supprimer automatiquement les conversations
+      console.log('⚠️ Suppression automatique des conversations temporaires désactivée');
       return NextResponse.json({
         success: true,
-        deletedCount,
-        message: `${deletedCount} conversations temporaires supprimées`
+        deletedCount: 0,
+        message: 'Suppression automatique désactivée'
       });
     }
 
@@ -124,7 +119,7 @@ export async function POST(request) {
 
     // Pour les conversations temporaires, pas besoin d'authentification
     if (is_temporary) {
-      const conversation = await firebaseService.createTempConversation(body);
+                  const conversation = await firebaseServerService.createTempConversation(body);
       return NextResponse.json({
         conversation,
         message: 'Conversation temporaire créée avec succès'
@@ -181,25 +176,25 @@ export async function POST(request) {
       custom_settings: group_settings
     };
 
-    const conversation = await firebaseService.createConversation(conversationData);
-
-    // Ajouter le créateur comme participant
-    await firebaseService.addParticipant(conversation.id, user.id, {
-      role: is_group ? 'admin' : 'participant',
-      is_admin: is_group
-    });
-
-    // Ajouter les autres participants
-    for (const participantId of participants) {
-      if (participantId !== user.id) {
-        await firebaseService.addParticipant(conversation.id, participantId, {
-          role: 'participant'
-        });
-      }
-    }
-
-    // Récupérer la conversation avec les participants
-    const participantsList = await firebaseService.getParticipants(conversation.id);
+                const conversation = await firebaseServerService.createConversation(conversationData);
+        
+            // Ajouter le créateur comme participant
+            await firebaseServerService.addParticipant(conversation.id, user.id, {
+              role: is_group ? 'admin' : 'participant',
+              is_admin: is_group
+            });
+        
+            // Ajouter les autres participants
+            for (const participantId of participants) {
+              if (participantId !== user.id) {
+                await firebaseServerService.addParticipant(conversation.id, participantId, {
+                  role: 'participant'
+                });
+              }
+            }
+        
+            // Récupérer la conversation avec les participants
+            const participantsList = await firebaseServerService.getParticipants(conversation.id);
 
     return NextResponse.json({
       conversation: {

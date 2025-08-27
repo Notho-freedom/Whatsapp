@@ -40,6 +40,12 @@ export default function AttachmentMenu({ isOpen, onClose, onSelectOption }) {
 
   const attachmentOptions = [
     {
+      id: 'media',
+      label: 'Média',
+      icon: Image,
+      action: 'media'
+    },
+    {
       id: 'photos-videos',
       label: 'Photos & videos',
       icon: Image,

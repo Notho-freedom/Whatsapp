@@ -102,7 +102,14 @@ function appReducer(state, action) {
       };
     
     case ACTIONS.SET_MESSAGES:
-      return { ...state, messages: action.payload };
+      const { chatId: setMessagesChatId, messages: messagesToSet } = action.payload;
+      return {
+        ...state,
+        messages: {
+          ...state.messages,
+          [setMessagesChatId]: messagesToSet
+        }
+      };
     
     case ACTIONS.SET_ERROR:
       return { ...state, error: action.payload };
@@ -298,7 +305,7 @@ export function AppProvider({ children }) {
     addMessage: (chatId, message) => dispatch({ type: ACTIONS.ADD_MESSAGE, payload: { chatId, message } }),
     updateMessage: (chatId, messageId, updates) => dispatch({ type: ACTIONS.UPDATE_MESSAGE, payload: { chatId, messageId, updates } }),
     deleteMessage: (chatId, messageId) => dispatch({ type: ACTIONS.DELETE_MESSAGE, payload: { chatId, messageId } }),
-    setMessages: (messages) => dispatch({ type: ACTIONS.SET_MESSAGES, payload: messages }),
+    setMessages: (chatId, messages) => dispatch({ type: ACTIONS.SET_MESSAGES, payload: { chatId, messages } }),
     setError: (error) => dispatch({ type: ACTIONS.SET_ERROR, payload: error }),
     updateUserStatus: (userId, status) => dispatch({ type: ACTIONS.UPDATE_USER_STATUS, payload: { userId, status } }),
     updateLastMessage: (chatId, lastMessage) => dispatch({ type: ACTIONS.UPDATE_LAST_MESSAGE, payload: { chatId, lastMessage } }),
@@ -509,6 +516,39 @@ export function AppProvider({ children }) {
     const message = createTextMessage(chatId, 'me', text.trim(), {
       replyTo: replyTo
     });
+
+    // Sauvegarder le message dans Firebase
+    try {
+      const messageData = {
+        text: text.trim(),
+        sender: 'me',
+        type: 'text',
+        replyTo: replyTo,
+        reactions: [],
+        isStarred: false,
+        isRead: false,
+        metadata: {}
+      };
+
+      const response = await fetch(`/api/conversations/${chatId}/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(messageData)
+      });
+
+      if (response.ok) {
+        const savedMessage = await response.json();
+        console.log('✅ Message sauvegardé dans Firebase:', savedMessage);
+      } else {
+        console.error('❌ Erreur lors de la sauvegarde du message');
+      }
+    } catch (error) {
+      console.error('❌ Erreur lors de la sauvegarde du message:', error);
+    }
+
+    // Ajouter le message à l'état local
     actions.addMessage(chatId, message);
 
     // Mettre à jour le dernier message de l'utilisateur
@@ -518,15 +558,51 @@ export function AppProvider({ children }) {
     });
 
     // Simuler une réponse après un délai
-    setTimeout(() => {
+    setTimeout(async () => {
+      const replyText = getRandomMessageText();
       const reply = createTextMessage(
         chatId,
         'other',
-        getRandomMessageText(),
+        replyText,
         {
           senderName: state.users.find(u => u.id === chatId)?.name
         }
       );
+
+      // Sauvegarder la réponse dans Firebase
+      try {
+        const replyData = {
+          text: replyText,
+          sender: 'other',
+          type: 'text',
+          replyTo: null,
+          reactions: [],
+          isStarred: false,
+          isRead: false,
+          metadata: {
+            senderName: state.users.find(u => u.id === chatId)?.name
+          }
+        };
+
+        const replyResponse = await fetch(`/api/conversations/${chatId}/messages`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(replyData)
+        });
+
+        if (replyResponse.ok) {
+          const savedReply = await replyResponse.json();
+          console.log('✅ Réponse sauvegardée dans Firebase:', savedReply);
+        } else {
+          console.error('❌ Erreur lors de la sauvegarde de la réponse');
+        }
+      } catch (error) {
+        console.error('❌ Erreur lors de la sauvegarde de la réponse:', error);
+      }
+
+      // Ajouter la réponse à l'état local
       actions.addMessage(chatId, reply);
       
       // Mettre à jour le dernier message
@@ -537,8 +613,42 @@ export function AppProvider({ children }) {
     }, 1000 + Math.random() * 2000);
   }, [createTextMessage, getRandomMessageText, actions, state.users]);
 
-  const selectChat = useCallback((chat) => {
+  const selectChat = useCallback(async (chat) => {
     actions.setSelectedChat(chat);
+
+    // Charger les messages existants depuis Firebase
+    try {
+      const response = await fetch(`/api/conversations/${chat.id}/messages?limit=50`);
+      if (response.ok) {
+        const data = await response.json();
+        const messages = data.messages || [];
+
+        // Transformer les messages pour l'interface
+        const transformedMessages = messages.map(msg => ({
+          id: msg.id,
+          text: msg.text,
+          sender: msg.sender,
+          type: msg.type || 'text',
+          replyTo: msg.reply_to,
+          reactions: msg.reactions || [],
+          isStarred: msg.is_starred || false,
+          isRead: msg.is_read || false,
+          metadata: msg.metadata || {},
+          timestamp: new Date(msg.created_at),
+          date: new Date(msg.created_at).toLocaleDateString('fr-FR')
+        }));
+
+        // Ajouter les messages à l'état local
+        if (transformedMessages.length > 0) {
+          actions.setMessages(chat.id, transformedMessages);
+          console.log(`✅ ${transformedMessages.length} messages chargés pour la conversation ${chat.id}`);
+        }
+      } else {
+        console.error('❌ Erreur lors du chargement des messages');
+      }
+    } catch (error) {
+      console.error('❌ Erreur lors du chargement des messages:', error);
+    }
   }, [actions]);
 
   const addReactionToMessage = useCallback((chatId, messageId, reaction) => {

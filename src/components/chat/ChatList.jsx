@@ -8,6 +8,7 @@ import Lenis from '@studio-freight/lenis';
 import { useChatContextMenu } from '@/hooks';
 import { useGoogleContacts } from '@/hooks';
 import { useContacts } from '@/hooks';
+import { useRealtime } from '@/hooks';
 import apiInterceptor from '@/utils/apiInterceptor';
 import { API_ENDPOINTS } from '@/utils/config';
 
@@ -18,6 +19,10 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect,
   const { filteredUsers, contacts: appContacts, searchQuery, setSearchQuery, addUser } = useAppContext();
   const { contacts: googleContacts, isLoading: contactsLoading, error: contactsError } = useGoogleContacts();
   const { createContact, fetchContacts } = useContacts();
+  
+  // Hook temps réel pour la présence et les notifications
+  const currentUserId = 'default-user'; // À remplacer par l'ID utilisateur réel
+  const { presence, notifications, sendNotification } = useRealtime(currentUserId);
   const scrollRef = useRef(null);
   
   // Hook pour les menus contextuels natifs d'Electron

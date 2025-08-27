@@ -13,6 +13,7 @@ import {
   ClientOnly,
   Notification 
 } from '@/components/common';
+import RealtimeNotification from '@/components/common/RealtimeNotification';
 import { 
   StatusCircle, 
   Message 
@@ -50,7 +51,7 @@ import {
   NativeContextMenuDemo 
 } from '@/features';
 import { useAppContext } from '@/context';
-import { useGoogleAuth, useEventManager, useTokenRefresh, useTempConversations } from '@/hooks';
+import { useGoogleAuth, useEventManager, useTokenRefresh, useTempConversations, useRealtime } from '@/hooks';
 
 export default function WhatsApp() {
   const [isClient, setIsClient] = React.useState(false);
@@ -70,6 +71,19 @@ export default function WhatsApp() {
   
   // Hook pour gérer les conversations temporaires
   const { loadTempConversations, cleanupOldConversations } = useTempConversations();
+  
+  // Hook pour les fonctionnalités temps réel
+  const currentUserId = user?.uid || 'default-user';
+  const { 
+    updatePresence, 
+    listenToUserPresence, 
+    setTypingStatus,
+    markMessageAsRead,
+    sendNotification,
+    presence,
+    typingUsers,
+    notifications
+  } = useRealtime(currentUserId);
   
   const { 
     selectedChat, 
@@ -119,10 +133,29 @@ export default function WhatsApp() {
       // Charger les conversations temporaires
       loadTempConversations();
       
-      // Nettoyer les anciennes conversations temporaires
-      cleanupOldConversations();
+      // DÉSACTIVÉ: Nettoyer les anciennes conversations temporaires
+      // cleanupOldConversations();
     }
-  }, [isClient, isAuthenticated, loadTempConversations, cleanupOldConversations]);
+  }, [isClient, isAuthenticated, loadTempConversations]);
+
+  // Gestion de la présence et des fonctionnalités temps réel
+  React.useEffect(() => {
+    if (isAuthenticated && currentUserId) {
+      // Mettre à jour la présence en ligne
+      updatePresence('online');
+    }
+  }, [isAuthenticated, currentUserId, updatePresence]);
+
+  // Écouter la présence des autres utilisateurs (séparé pour éviter les boucles)
+  React.useEffect(() => {
+    if (isAuthenticated && currentUserId && users.length > 0) {
+      users.forEach(user => {
+        if (user.id !== currentUserId) {
+          listenToUserPresence(user.id);
+        }
+      });
+    }
+  }, [isAuthenticated, currentUserId, users.length, listenToUserPresence]);
 
 
 
@@ -310,7 +343,13 @@ export default function WhatsApp() {
         </div>
       </div>
 
-      
+      {/* Notifications temps réel */}
+      <RealtimeNotification 
+        notifications={notifications}
+        onDismiss={(notificationId) => {
+          console.log('Notification fermée:', notificationId);
+        }}
+      />
 
     </div>
   );

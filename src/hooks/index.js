@@ -10,3 +10,4 @@ export { default as useContacts } from './useContacts';
 export { useNotification } from './useNotification';
 export { useTokenRefresh } from './useTokenRefresh';
 export { useTempConversations } from './useTempConversations';
+export { useRealtime } from './useRealtime';

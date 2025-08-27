@@ -3,16 +3,23 @@
 import { Smile, Paperclip, Mic, Send } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useAppContext } from '@/context';
+import { useRealtime } from '@/hooks';
 import ReplyCap from '../chatBody/ReplyCap';
 import AttachmentMenu from './AttachmentMenu';
 import EmojiPicker from './EmojiPicker';
+import MediaUpload from './MediaUpload';
 
 export default function ChatFooter({ selectedChat, onSendMessage, currentUser }) {
   const [message, setMessage] = useState('');
   const [isClient, setIsClient] = useState(false);
   const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false);
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
+  const [isMediaUploadOpen, setIsMediaUploadOpen] = useState(false);
   const { replyTo, clearReplyTo } = useAppContext();
+  
+  // Hook temps réel pour les indicateurs de frappe
+  const currentUserId = currentUser?.id || 'default-user';
+  const { setTypingStatus } = useRealtime(currentUserId);
 
   useEffect(() => {
     setIsClient(true);
@@ -40,6 +47,35 @@ export default function ChatFooter({ selectedChat, onSendMessage, currentUser })
     }
   };
 
+  // Gestion des indicateurs de frappe
+  const handleInputChange = (e) => {
+    const newMessage = e.target.value;
+    setMessage(newMessage);
+    
+    // Mettre à jour l'indicateur de frappe
+    if (selectedChat?.id) {
+      if (newMessage.length > 0) {
+        setTypingStatus(selectedChat.id, true);
+      } else {
+        setTypingStatus(selectedChat.id, false);
+      }
+    }
+  };
+
+  const handleInputFocus = () => {
+    // Indiquer que l'utilisateur commence à taper
+    if (selectedChat?.id) {
+      setTypingStatus(selectedChat.id, true);
+    }
+  };
+
+  const handleInputBlur = () => {
+    // Arrêter l'indicateur de frappe quand l'utilisateur quitte le champ
+    if (selectedChat?.id) {
+      setTypingStatus(selectedChat.id, false);
+    }
+  };
+
   const handleCancelReply = () => {
     clearReplyTo();
   };
@@ -59,55 +95,61 @@ export default function ChatFooter({ selectedChat, onSendMessage, currentUser })
   const handleAttachmentOptionSelect = (option) => {
     console.log('Selected attachment option:', option);
     
-    // Émettre un événement personnalisé pour l'action sélectionnée
-    window.dispatchEvent(new CustomEvent('attachment-action', {
-      detail: {
-        action: option.action,
-        option: option,
-        chatId: selectedChat?.id
-      }
-    }));
+    // Gérer les différentes options d'attachement
+    if (option.action === 'media') {
+      setIsMediaUploadOpen(true);
+      setIsAttachmentMenuOpen(false);
+    } else {
+      // Émettre un événement personnalisé pour l'action sélectionnée
+      window.dispatchEvent(new CustomEvent('attachment-action', {
+        detail: {
+          action: option.action,
+          option: option,
+          chatId: selectedChat?.id
+        }
+      }));
 
-    // Actions spécifiques selon l'option
-    switch (option.action) {
-      case 'select-media':
-        // Ouvrir le sélecteur de fichiers pour photos/vidéos
-        window.dispatchEvent(new CustomEvent('open-media-picker', {
-          detail: { chatId: selectedChat?.id }
-        }));
-        break;
-      case 'open-camera':
-        // Ouvrir la caméra
-        window.dispatchEvent(new CustomEvent('open-camera', {
-          detail: { chatId: selectedChat?.id }
-        }));
-        break;
-      case 'select-document':
-        // Ouvrir le sélecteur de documents
-        window.dispatchEvent(new CustomEvent('open-document-picker', {
-          detail: { chatId: selectedChat?.id }
-        }));
-        break;
-      case 'select-contact':
-        // Ouvrir le sélecteur de contacts
-        window.dispatchEvent(new CustomEvent('open-contact-picker', {
-          detail: { chatId: selectedChat?.id }
-        }));
-        break;
-      case 'create-poll':
-        // Ouvrir l'interface de création de sondage
-        window.dispatchEvent(new CustomEvent('open-poll-creator', {
-          detail: { chatId: selectedChat?.id }
-        }));
-        break;
-      case 'open-drawing':
-        // Ouvrir l'interface de dessin
-        window.dispatchEvent(new CustomEvent('open-drawing-board', {
-          detail: { chatId: selectedChat?.id }
-        }));
-        break;
-      default:
-        break;
+      // Actions spécifiques selon l'option
+      switch (option.action) {
+        case 'select-media':
+          // Ouvrir le sélecteur de fichiers pour photos/vidéos
+          window.dispatchEvent(new CustomEvent('open-media-picker', {
+            detail: { chatId: selectedChat?.id }
+          }));
+          break;
+        case 'open-camera':
+          // Ouvrir la caméra
+          window.dispatchEvent(new CustomEvent('open-camera', {
+            detail: { chatId: selectedChat?.id }
+          }));
+          break;
+        case 'select-document':
+          // Ouvrir le sélecteur de documents
+          window.dispatchEvent(new CustomEvent('open-document-picker', {
+            detail: { chatId: selectedChat?.id }
+          }));
+          break;
+        case 'select-contact':
+          // Ouvrir le sélecteur de contacts
+          window.dispatchEvent(new CustomEvent('open-contact-picker', {
+            detail: { chatId: selectedChat?.id }
+          }));
+          break;
+        case 'create-poll':
+          // Ouvrir l'interface de création de sondage
+          window.dispatchEvent(new CustomEvent('open-poll-creator', {
+            detail: { chatId: selectedChat?.id }
+          }));
+          break;
+        case 'open-drawing':
+          // Ouvrir l'interface de dessin
+          window.dispatchEvent(new CustomEvent('open-drawing-board', {
+            detail: { chatId: selectedChat?.id }
+          }));
+          break;
+        default:
+          break;
+      }
     }
   };
 
@@ -125,6 +167,15 @@ export default function ChatFooter({ selectedChat, onSendMessage, currentUser })
 
   const handleEmojiSelect = (emoji) => {
     setMessage(prev => prev + emoji);
+  };
+
+  const handleMediaUpload = (mediaData) => {
+    // Envoyer le média comme un message
+    onSendMessage(mediaData);
+  };
+
+  const handleMediaUploadClose = () => {
+    setIsMediaUploadOpen(false);
   };
 
   if (!isClient) {
@@ -196,8 +247,10 @@ export default function ChatFooter({ selectedChat, onSendMessage, currentUser })
             className="w-full bg-transparent py-2 px-4 text-sm text-white placeholder-gray-400 focus:outline-none font-segoe resize-none hover:bg-neutral-700"
             placeholder={replyTo ? "Reply to a message" : "Type a message"}
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            onChange={handleInputChange}
             onKeyPress={handleKeyPress}
+            onFocus={handleInputFocus}
+            onBlur={handleInputBlur}
           />
         </form>
         <button 
@@ -216,6 +269,15 @@ export default function ChatFooter({ selectedChat, onSendMessage, currentUser })
           {message.trim() ? <Send size={19} className="rotate-[45deg]" /> : <Mic size={19} />}
         </button>
       </footer>
+
+      {/* Composant d'upload de médias */}
+      {isMediaUploadOpen && (
+        <MediaUpload
+          conversationId={selectedChat.id}
+          onMediaUpload={handleMediaUpload}
+          onClose={handleMediaUploadClose}
+        />
+      )}
     </div>
   );
 }
