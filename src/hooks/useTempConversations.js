@@ -35,7 +35,7 @@ export const useTempConversations = () => {
       const transformedConversations = tempConversations.map(conv => ({
         id: conv.id,
         name: conv.name,
-        avatar: conv.avatar,
+        avatar: conv.avatar_url || conv.avatar || '/default-avatar.png',
         lastMessage: {
           text: 'Conversation temporaire',
           type: 'text',

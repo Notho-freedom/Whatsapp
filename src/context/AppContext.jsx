@@ -599,12 +599,20 @@ export function AppProvider({ children }) {
   // Filtrage intelligent des utilisateurs
   const filteredUsers = useMemo(() => {
     return state.users.filter(user =>
-      user.name.toLowerCase().includes(state.searchQuery.toLowerCase()) ||
-      user.lastMessage?.text?.toLowerCase().includes(state.searchQuery.toLowerCase())
+      // Ne montrer que les conversations (pas les contacts) dans la chatlist
+      !user.isContact && (
+        user.name.toLowerCase().includes(state.searchQuery.toLowerCase()) ||
+        user.lastMessage?.text?.toLowerCase().includes(state.searchQuery.toLowerCase())
+      )
     );
   }, [state.users, state.searchQuery]);
 
-  // Charger les utilisateurs depuis l'API
+  // Contacts pour la liste des contacts
+  const contacts = useMemo(() => {
+    return state.users.filter(user => user.isContact);
+  }, [state.users]);
+
+  // Charger les utilisateurs depuis l'API (seulement les contacts, pas les conversations)
   useEffect(() => {
     async function fetchUsers() {
       try {
@@ -618,10 +626,10 @@ export function AppProvider({ children }) {
           throw new Error('Erreur lors du chargement des utilisateurs');
         }
       
-        // Transformer les données pour correspondre à notre structure
+        // Transformer les données pour correspondre à notre structure (seulement les contacts)
         const transformedUsers = data.results.map((user, index) => {
           const userName = Math.random() > 0.95 ? '+'+user.phone : `${user.name.first} ${user.name.last}`;
-          // Réduire la probabilité d'avoir des statuts (seulement 20% des utilisateurs)
+          // Réduire la probabilité d'avoir des statuts (seulement 30% des utilisateurs)
           const hasStatuses = Math.random() > 0.7;
           const userStatuses = hasStatuses ? generateUserStatuses(user.login.uuid, userName) : [];
           
@@ -630,33 +638,18 @@ export function AppProvider({ children }) {
             name: userName,
             avatar: user.picture.medium,
             status: getRandomStatus(),
-            lastMessage: getRandomLastMessage(),
-            lastMessageTime: getRandomTime(),
-            unreadCount: Math.floor(Math.random() * 5),
-            online: Math.random() > 0.7,
             phone: user.phone,
             email: user.email,
-            isMuted: Math.random() > 0.7,
-            isPinned: Math.random() > 0.9,
-            isArchived: Math.random() > 0.5,
-            isStarred: Math.random() > 0.5,
-            isUnread: Math.random() > 0.5,
-            isTyping: Math.random() > 0.8,
-            isRead: Math.random() > 0.5,
             // Nouvelles propriétés pour les statuts
             statuses: userStatuses,
-            statusCircles: generateStatusCircles(userStatuses)
+            statusCircles: generateStatusCircles(userStatuses),
+            // Marquer comme contact (pas comme conversation)
+            isContact: true,
+            isConversation: false
           };
         });
 
         actions.setUsers(transformedUsers);
-        
-        // Générer des messages initiaux pour chaque utilisateur
-        const initialMessages = {};
-        transformedUsers.forEach(user => {
-          initialMessages[user.id] = generateInitialMessages(user);
-        });
-        actions.setMessages(initialMessages);
         
         // Stocker tous les statuts dans le contexte
         const allStatuses = transformedUsers.flatMap(user => user.statuses);
@@ -883,7 +876,8 @@ function getRandomLastMessage() {
     addUserStatus,
     
     // Données calculées
-    filteredUsers
+    filteredUsers,
+    contacts
   }), [
     state,
     actions,
@@ -895,6 +889,7 @@ function getRandomLastMessage() {
     toggleMessageStar,
     toggleChatPin,
     filteredUsers,
+    contacts,
     createTextMessage,
     createMediaMessage,
     createSystemMessage

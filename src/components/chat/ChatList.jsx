@@ -15,8 +15,8 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect,
   const [isClient, setIsClient] = useState(false);
   const [showContacts, setShowContacts] = useState(false);
   const [notification, setNotification] = useState(null);
-  const { filteredUsers, searchQuery, setSearchQuery, addUser } = useAppContext();
-  const { contacts, isLoading: contactsLoading, error: contactsError } = useGoogleContacts();
+  const { filteredUsers, contacts: appContacts, searchQuery, setSearchQuery, addUser } = useAppContext();
+  const { contacts: googleContacts, isLoading: contactsLoading, error: contactsError } = useGoogleContacts();
   const { createContact, fetchContacts } = useContacts();
   const scrollRef = useRef(null);
   
@@ -97,7 +97,7 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect,
           const fallbackChat = {
             id: tempConversation.id,
             name: tempConversation.name,
-            avatar: tempConversation.avatar,
+            avatar: tempConversation.avatar_url || tempConversation.avatar || '/default-avatar.png',
             lastMessage: {
               text: 'Nouvelle conversation',
               type: 'text',
@@ -108,7 +108,7 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect,
             isPinned: false,
             isMuted: false,
             isTyping: false,
-            contact: tempConversation.contact,
+            contact: tempConversation.custom_settings?.contact || tempConversation.contact,
             isNewConversation: true,
             isTemporary: true
           };
@@ -449,8 +449,8 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect,
                   Réessayer
                 </button>
               </div>
-            ) : contacts && contacts.length > 0 ? (
-              contacts.map((contact) => (
+            ) : googleContacts && googleContacts.length > 0 ? (
+              googleContacts.map((contact) => (
                 <div
                   key={contact.id}
                   onClick={() => createConversationWithContact(contact)}

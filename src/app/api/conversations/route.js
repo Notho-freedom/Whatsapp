@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-const conversationService = require('@/utils/conversationDatabaseService');
-const authService = require('@/utils/authDatabaseService');
+import firebaseService from '@/utils/firebaseService';
+import { testFirebaseConnection } from '@/utils/firebaseTest';
 
 // GET /api/conversations - Récupérer les conversations de l'utilisateur
 export async function GET(request) {
@@ -11,10 +11,15 @@ export async function GET(request) {
     
     // Pour les conversations temporaires, pas besoin d'authentification
     if (isTemporary) {
-      const conversations = await conversationService.getTempConversations();
+      // Test de connexion Firebase au premier appel
+      const testResult = await testFirebaseConnection();
+      console.log('🔍 Test Firebase:', testResult);
+      
+      const conversations = await firebaseService.getTempConversations();
       return NextResponse.json({
         conversations,
-        count: conversations.length
+        count: conversations.length,
+        firebaseTest: testResult
       });
     }
 
@@ -28,13 +33,10 @@ export async function GET(request) {
     }
 
     const token = authHeader.substring(7);
-    const user = await authService.verifyToken(token);
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Token invalide' },
-        { status: 401 }
-      );
-    }
+    
+    // Pour l'instant, on utilise un utilisateur par défaut
+    // TODO: Implémenter la vérification Firebase Auth
+    const user = { id: 1, name: 'Utilisateur par défaut' };
 
     // Récupérer les paramètres de requête pour les conversations normales
     const limit = parseInt(searchParams.get('limit')) || 50;
@@ -54,16 +56,16 @@ export async function GET(request) {
     if (limit) filters.limit = limit;
     if (offset) filters.offset = offset;
 
-    // Récupérer les conversations
-    let conversations;
-    if (query) {
-      conversations = await conversationService.searchConversations(user.id, query, filters);
-    } else {
-      conversations = await conversationService.getConversationsByUserId(user.id, limit, offset);
-    }
+          // Récupérer les conversations
+      let conversations;
+      if (query) {
+        conversations = await firebaseService.searchConversations(user.id, query, filters);
+      } else {
+        conversations = await firebaseService.getConversationsByUserId(user.id, limit, offset);
+      }
 
-    // Récupérer les statistiques
-    const stats = await conversationService.getConversationStats(user.id);
+      // Récupérer les statistiques
+      const stats = await firebaseService.getConversationStats(user.id);
 
     return NextResponse.json({
       conversations,
@@ -92,7 +94,7 @@ export async function DELETE(request) {
     const isTemporary = searchParams.get('is_temporary') === 'true';
     
     if (isTemporary) {
-      const deletedCount = await conversationService.cleanupOldTempConversations();
+      const deletedCount = await firebaseService.cleanupOldTempConversations();
       return NextResponse.json({
         success: true,
         deletedCount,
@@ -122,7 +124,7 @@ export async function POST(request) {
 
     // Pour les conversations temporaires, pas besoin d'authentification
     if (is_temporary) {
-      const conversation = await conversationService.createTempConversation(body);
+      const conversation = await firebaseService.createTempConversation(body);
       return NextResponse.json({
         conversation,
         message: 'Conversation temporaire créée avec succès'
@@ -139,13 +141,10 @@ export async function POST(request) {
     }
 
     const token = authHeader.substring(7);
-    const user = await authService.verifyToken(token);
-    if (!user) {
-      return NextResponse.json(
-        { error: 'Token invalide' },
-        { status: 401 }
-      );
-    }
+    
+    // Pour l'instant, on utilise un utilisateur par défaut
+    // TODO: Implémenter la vérification Firebase Auth
+    const user = { id: 1, name: 'Utilisateur par défaut' };
 
     const {
       conversation_type = 'individual',
@@ -174,19 +173,18 @@ export async function POST(request) {
 
     // Créer la conversation
     const conversationData = {
-      conversation_type,
-      title: is_group ? title : null,
+      type: conversation_type,
+      name: is_group ? title : null,
       description,
       created_by: user.id,
-      is_group,
-      group_photo_url,
-      group_settings
+      avatar_url: group_photo_url,
+      custom_settings: group_settings
     };
 
-    const conversation = await conversationService.createConversation(conversationData);
+    const conversation = await firebaseService.createConversation(conversationData);
 
     // Ajouter le créateur comme participant
-    await conversationService.addParticipant(conversation.id, user.id, {
+    await firebaseService.addParticipant(conversation.id, user.id, {
       role: is_group ? 'admin' : 'participant',
       is_admin: is_group
     });
@@ -194,14 +192,14 @@ export async function POST(request) {
     // Ajouter les autres participants
     for (const participantId of participants) {
       if (participantId !== user.id) {
-        await conversationService.addParticipant(conversation.id, participantId, {
+        await firebaseService.addParticipant(conversation.id, participantId, {
           role: 'participant'
         });
       }
     }
 
     // Récupérer la conversation avec les participants
-    const participantsList = await conversationService.getParticipants(conversation.id);
+    const participantsList = await firebaseService.getParticipants(conversation.id);
 
     return NextResponse.json({
       conversation: {
