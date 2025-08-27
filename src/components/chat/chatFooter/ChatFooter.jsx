@@ -15,7 +15,7 @@ export default function ChatFooter({ selectedChat, onSendMessage, currentUser })
   const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false);
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const [isMediaUploadOpen, setIsMediaUploadOpen] = useState(false);
-  const { replyTo, clearReplyTo } = useAppContext();
+  const { replyTo, clearReplyTo, users } = useAppContext();
   
   // Hook temps réel pour les indicateurs de frappe
   const currentUserId = currentUser?.id || 'default-user';
@@ -200,6 +200,9 @@ export default function ChatFooter({ selectedChat, onSendMessage, currentUser })
         replyTo={replyTo}
         onCancelReply={handleCancelReply}
         isMobile={false}
+        currentUser={currentUser}
+        selectedChat={selectedChat}
+        users={users}
       />
       
       {/* Footer principal */}

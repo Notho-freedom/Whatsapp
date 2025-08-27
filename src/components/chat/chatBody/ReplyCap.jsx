@@ -2,8 +2,16 @@ import { FaReply } from 'react-icons/fa';
 import { memo } from 'react';
 import { XCircle } from 'lucide-react';
 
-const ReplyCap = memo(function ReplyCap({ replyTo, onCancelReply }) {
+const ReplyCap = memo(function ReplyCap({ replyTo, onCancelReply, currentUser, selectedChat, users }) {
   if (!replyTo) return null;
+
+  // Logs de débogage pour vérifier les données reçues
+  console.log('ReplyCap - Données reçues:', {
+    replyTo,
+    currentUser,
+    selectedChat,
+    usersCount: users?.length || 0
+  });
 
   const truncateText = (text, maxLength = 50) => {
     if (!text) return '';
@@ -29,8 +37,62 @@ const ReplyCap = memo(function ReplyCap({ replyTo, onCancelReply }) {
   };
 
   const getSenderName = () => {
-    return replyTo.sender === 'me' ? 'You' : (replyTo.senderName || 'Unknown');
+    // Si c'est l'utilisateur actuel
+    if (replyTo.sender === 'me' || replyTo.sender === currentUser?.id) {
+      return currentUser?.name || 'You';
+    }
+
+    // Si on a un nom d'expéditeur direct
+    if (replyTo.senderName) {
+      return replyTo.senderName;
+    }
+
+    // Si on a un ID d'expéditeur, chercher dans la liste des utilisateurs
+    if (replyTo.sender && users && users.length > 0) {
+      const senderUser = users.find(u => u.id === replyTo.sender);
+      if (senderUser) {
+        return senderUser.name;
+      }
+    }
+
+    // Si on a un chat sélectionné et que ce n'est pas l'utilisateur actuel
+    if (selectedChat && selectedChat.id !== currentUser?.id) {
+      return selectedChat.name || 'Contact';
+    }
+
+    // Fallback
+    return 'Unknown';
   };
+
+  const getSenderAvatar = () => {
+    // Si c'est l'utilisateur actuel
+    if (replyTo.sender === 'me' || replyTo.sender === currentUser?.id) {
+      return currentUser?.picture || null;
+    }
+
+    // Si on a un avatar direct
+    if (replyTo.senderAvatar) {
+      return replyTo.senderAvatar;
+    }
+
+    // Si on a un ID d'expéditeur, chercher dans la liste des utilisateurs
+    if (replyTo.sender && users && users.length > 0) {
+      const senderUser = users.find(u => u.id === replyTo.sender);
+      if (senderUser) {
+        return senderUser.avatar;
+      }
+    }
+
+    // Si on a un chat sélectionné et que ce n'est pas l'utilisateur actuel
+    if (selectedChat && selectedChat.id !== currentUser?.id) {
+      return selectedChat.avatar || null;
+    }
+
+    return null;
+  };
+
+  const senderName = getSenderName();
+  const senderAvatar = getSenderAvatar();
 
   return (
     <div className="relative w-full bg-[#2c2c2c] animate-[replyCapSlideIn_0.2s_ease-out]">
@@ -42,10 +104,20 @@ const ReplyCap = memo(function ReplyCap({ replyTo, onCancelReply }) {
         {/* Contenu principal */}
         <div className="flex-1 bg-neutral-600/70 pl-2 min-w-0 flex flex-col justify-center gap-1 border-t-2 rounded-tl-[3px] border-neutral-400">
           
-          {/* En-tête avec nom */}
+          {/* En-tête avec nom et avatar */}
           <div className="flex items-center gap-1.5 text-[#00a884] text-[13px] font-medium truncate">
             <FaReply className="text-xs shrink-0" />
-            <span className="font-semibold truncate">{getSenderName()}</span>
+            
+            {/* Avatar de l'expéditeur */}
+            {senderAvatar && (
+              <img 
+                src={senderAvatar} 
+                alt={senderName}
+                className="w-4 h-4 rounded-full object-cover flex-shrink-0"
+              />
+            )}
+            
+            <span className="font-semibold truncate">{senderName}</span>
           </div>
           
           {/* Aperçu du message + thumb */}

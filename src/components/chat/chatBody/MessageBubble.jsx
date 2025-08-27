@@ -50,14 +50,29 @@ const MessageBubble = memo(function MessageBubble({ message, isFirstInGroup, isL
   const handleReplyMessage = useCallback(async (messageData) => {
     try {
       console.log('Reply to message:', messageData);
+      
+      // Enrichir les données du message avec les informations utilisateur
+      const enrichedMessageData = {
+        ...messageData,
+        senderName: messageData.senderName || getUserInfo().name,
+        senderAvatar: messageData.senderAvatar || getUserInfo().avatar,
+        // S'assurer que l'ID de l'expéditeur est correct
+        sender: messageData.sender || (isMe ? 'me' : messageData.senderId),
+        // Ajouter des informations supplémentaires si disponibles
+        timestamp: messageData.timestamp || new Date().toISOString(),
+        messageType: messageData.type || 'text'
+      };
+      
+      console.log('Enriched message data for reply:', enrichedMessageData);
+      
       // Définir le message auquel on répond
-      setReplyTo(messageData);
+      setReplyTo(enrichedMessageData);
       showInfo('Reply', 'Réponse activée - tapez votre message');
     } catch (error) {
       console.error('Erreur lors de la réponse:', error);
       showError('Erreur', 'Erreur lors de la réponse au message');
     }
-  }, [setReplyTo]);
+  }, [setReplyTo, getUserInfo, isMe]);
 
   const handleForwardMessage = useCallback(async (messageData) => {
     try {
