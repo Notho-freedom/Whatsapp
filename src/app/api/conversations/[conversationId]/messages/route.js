@@ -56,16 +56,17 @@ export async function POST(request, { params }) {
       );
     }
 
-    const messageData = {
-      text: body.text,
-      sender: body.sender,
-      type: body.type || 'text',
-      replyTo: body.replyTo || null,
-      reactions: body.reactions || [],
-      isStarred: body.isStarred || false,
-      isRead: body.isRead || false,
-      metadata: body.metadata || {}
-    };
+                    const messageData = {
+                  text: body.text,
+                  sender: body.sender,
+                  type: body.type || 'text',
+                  media: body.media || null, // Ajout du champ media
+                  replyTo: body.replyTo || null,
+                  reactions: body.reactions || [],
+                  isStarred: body.isStarred || false,
+                  isRead: body.isRead || false,
+                  metadata: body.metadata || {}
+                };
 
     const savedMessage = await firebaseServerService.saveMessage(conversationId, messageData);
 

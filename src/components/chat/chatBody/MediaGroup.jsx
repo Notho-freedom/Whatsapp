@@ -42,9 +42,9 @@ export default function MediaGroup({ media = [], isMe = false, isMobile = false,
   return (
     <div className={`${!isSingleMedia && `grid gap-[2px] ${gridCols}`}`}>
       {media.map((item, idx) => {
-        if (item.type === 'image') return <ImageItem key={idx} item={item} isSingleMedia={isSingleMedia} isMobile={isMobile} />;
-        if (item.type === 'video') return <VideoItem key={idx} item={item} isSingleMedia={isSingleMedia} isMobile={isMobile} />;
-        if (item.type === 'audio') return (
+        if ((item.type === 'images') || (item.type === 'image')) return <ImageItem key={idx} item={item} isSingleMedia={isSingleMedia} isMobile={isMobile} />;
+        if ((item.type === 'videos') || (item.type === 'video')) return <VideoItem key={idx} item={item} isSingleMedia={isSingleMedia} isMobile={isMobile} />;
+        if ((item.type === 'audios') || (item.type === 'audio')) return (
           <AudioMessage
             key={idx}
             audio={item}

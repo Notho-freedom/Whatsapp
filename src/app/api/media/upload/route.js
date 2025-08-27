@@ -46,12 +46,12 @@ export async function POST(request) {
     return NextResponse.json({
       success: true,
       media: {
+        type: mediaType,
         url: uploadResult.url,
         path: uploadResult.path,
         fileName: uploadResult.fileName,
         size: uploadResult.size,
         contentType: uploadResult.contentType,
-        mediaType: mediaType,
         timeCreated: uploadResult.timeCreated
       }
     });

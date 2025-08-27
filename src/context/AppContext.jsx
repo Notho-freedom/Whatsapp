@@ -359,6 +359,7 @@ export function AppProvider({ children }) {
       forwarded: options.forwarded || false,
       replyTo: options.replyTo,
       reactions: options.reactions || [],
+      type: 'text',
       ...options
     };
   }, [generateMessageId]);
@@ -374,6 +375,7 @@ export function AppProvider({ children }) {
       date: new Date().toLocaleDateString('fr-FR'),
       read: isMe ? false : undefined,
       reactions: options.reactions || [],
+      type: 'media',
       ...options
     };
   }, [generateMessageId]);
@@ -510,32 +512,57 @@ export function AppProvider({ children }) {
   }, []);
 
   // Méthodes métier optimisées
-  const sendMessage = useCallback(async (chatId, text, replyTo = null) => {
-    if (!text.trim()) return;
+  const sendMessage = useCallback(async (chatId, messageData, replyTo = null) => {
+    // Gérer les différents types de messages
+    let message;
+    let firebaseData;
 
-    const message = createTextMessage(chatId, 'me', text.trim(), {
-      replyTo: replyTo
-    });
-
-    // Sauvegarder le message dans Firebase
-    try {
-      const messageData = {
-        text: text.trim(),
+    if (messageData.type === 'media') {
+      // Message média
+      message = createMediaMessage(chatId, 'me', messageData.media, {
+        replyTo: replyTo
+      });
+      
+      firebaseData = {
+        text: messageData.text || `📎 ${messageData.media[0]?.fileName || 'fichier'}`,
         sender: 'me',
-        type: 'text',
+        type: 'media',
+        media: messageData.media,
         replyTo: replyTo,
         reactions: [],
         isStarred: false,
         isRead: false,
         metadata: {}
       };
+    } else {
+      // Message texte
+      if (!messageData.text?.trim()) return;
+      
+      message = createTextMessage(chatId, 'me', messageData.text.trim(), {
+        replyTo: replyTo
+      });
+      
+      firebaseData = {
+        text: messageData.text.trim(),
+        sender: 'me',
+        type: 'text',
+        media: null,
+        replyTo: replyTo,
+        reactions: [],
+        isStarred: false,
+        isRead: false,
+        metadata: {}
+      };
+    }
 
+    // Sauvegarder le message dans Firebase
+    try {
       const response = await fetch(`/api/conversations/${chatId}/messages`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(messageData)
+        body: JSON.stringify(firebaseData)
       });
 
       if (response.ok) {
@@ -552,9 +579,16 @@ export function AppProvider({ children }) {
     actions.addMessage(chatId, message);
 
     // Mettre à jour le dernier message de l'utilisateur
+    let lastMessageText = '';
+    if (messageData.text?.trim()) {
+      lastMessageText = messageData.text.trim();
+    } else if (messageData.media && messageData.media.length > 0) {
+      lastMessageText = `📎 ${messageData.media[0]?.fileName || 'fichier'}`;
+    }
+    
     actions.updateLastMessage(chatId, {
-      text: text.trim(),
-      type: 'text'
+      text: lastMessageText,
+      type: messageData.type || 'text'
     });
 
     // Simuler une réponse après un délai
@@ -623,20 +657,20 @@ export function AppProvider({ children }) {
         const data = await response.json();
         const messages = data.messages || [];
 
-        // Transformer les messages pour l'interface
-        const transformedMessages = messages.map(msg => ({
-          id: msg.id,
-          text: msg.text,
-          sender: msg.sender,
-          type: msg.type || 'text',
-          replyTo: msg.reply_to,
-          reactions: msg.reactions || [],
-          isStarred: msg.is_starred || false,
-          isRead: msg.is_read || false,
-          metadata: msg.metadata || {},
-          timestamp: new Date(msg.created_at),
-          date: new Date(msg.created_at).toLocaleDateString('fr-FR')
-        }));
+                              // Transformer les messages pour l'interface
+                      const transformedMessages = messages.map(msg => ({
+                        id: msg.id,
+                        text: msg.text,
+                        sender: msg.sender,
+                        type: msg.type || 'text',
+                        media: msg.media || null, // Ajout du champ media
+                        replyTo: msg.reply_to,
+                        reactions: msg.reactions || [],
+                        time: msg.time || new Date(msg.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+                        date: msg.date || new Date(msg.created_at).toLocaleDateString('fr-FR'),
+                        read: msg.read || false,
+                        timestamp: new Date(msg.created_at)
+                      }));
 
         // Ajouter les messages à l'état local
         if (transformedMessages.length > 0) {

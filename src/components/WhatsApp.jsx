@@ -266,10 +266,10 @@ export default function WhatsApp() {
     if (selectedChat) {
       // Si messageData est une chaîne (ancien format), la convertir
       if (typeof messageData === 'string') {
-        sendMessage(selectedChat.id, messageData);
+        sendMessage(selectedChat.id, { text: messageData, type: 'text' });
       } else {
         // Nouveau format avec replyTo
-        sendMessage(selectedChat.id, messageData.text, messageData.replyTo);
+        sendMessage(selectedChat.id, messageData, messageData.replyTo);
       }
     }
   };

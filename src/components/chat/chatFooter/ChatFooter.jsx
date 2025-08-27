@@ -31,6 +31,7 @@ export default function ChatFooter({ selectedChat, onSendMessage, currentUser })
       // Envoyer le message avec la réponse si elle existe
       const messageData = {
         text: message,
+        type: 'text',
         replyTo: replyTo
       };
       onSendMessage(messageData);

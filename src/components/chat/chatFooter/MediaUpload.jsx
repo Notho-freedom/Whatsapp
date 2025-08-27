@@ -48,7 +48,7 @@ const MediaUpload = ({ conversationId, onMediaUpload, onClose }) => {
         // Appeler le callback avec le média uploadé
         onMediaUpload({
           type: 'media',
-          media: result.media,
+          media: [result.media], // Structure attendue : tableau de médias
           text: `📎 ${selectedFile.name}`,
           sender: 'me',
           timestamp: new Date(),

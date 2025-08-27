@@ -183,6 +183,7 @@ class FirebaseServerService {
         text,
         sender,
         type = 'text',
+        media = null,
         replyTo = null,
         reactions = [],
         isStarred = false,
@@ -190,17 +191,20 @@ class FirebaseServerService {
         metadata = {}
       } = messageData;
 
-      // Créer le message dans Firestore
+      // Créer le message dans Firestore avec la structure compatible
       const messageRef = await addDoc(collection(this.db, 'messages'), {
         conversation_id: conversationId,
         text,
         sender,
         type,
+        media, // Ajout du champ media pour les messages média
         reply_to: replyTo,
         reactions,
         is_starred: isStarred,
         is_read: isRead,
         metadata,
+        time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+        date: new Date().toLocaleDateString('fr-FR'),
         created_at: serverTimestamp(),
         updated_at: serverTimestamp()
       });
@@ -209,7 +213,7 @@ class FirebaseServerService {
       const conversationRef = doc(this.db, 'conversations', conversationId);
       await updateDoc(conversationRef, {
         last_message: {
-          text,
+          text: text || (media ? `📎 ${media[0]?.type || 'fichier'}` : ''),
           type,
           sender,
           timestamp: serverTimestamp()
@@ -219,17 +223,19 @@ class FirebaseServerService {
 
       console.log(`✅ Message sauvegardé dans Firestore avec l'ID: ${messageRef.id}`);
       
+      // Retourner la structure compatible avec l'interface existante
       return {
         id: messageRef.id,
         conversation_id: conversationId,
-        text,
         sender,
+        text,
         type,
-        reply_to: replyTo,
+        media,
+        time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+        date: new Date().toLocaleDateString('fr-FR'),
+        read: isRead,
         reactions,
-        is_starred: isStarred,
-        is_read: isRead,
-        metadata,
+        reply_to: replyTo,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString()
       };
@@ -255,14 +261,15 @@ class FirebaseServerService {
         messages.push({
           id: doc.id,
           conversation_id: data.conversation_id,
-          text: data.text,
           sender: data.sender,
+          text: data.text,
           type: data.type || 'text',
-          reply_to: data.reply_to,
+          media: data.media || null, // Ajout du champ media
+          time: data.time || new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+          date: data.date || new Date().toLocaleDateString('fr-FR'),
+          read: data.is_read || false,
           reactions: data.reactions || [],
-          is_starred: data.is_starred || false,
-          is_read: data.is_read || false,
-          metadata: data.metadata || {},
+          reply_to: data.reply_to,
           created_at: data.created_at?.toDate?.()?.toISOString() || new Date().toISOString(),
           updated_at: data.updated_at?.toDate?.()?.toISOString() || new Date().toISOString()
         });
