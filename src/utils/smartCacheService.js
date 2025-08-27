@@ -12,407 +12,362 @@ class SmartCacheService {
     this.firebaseService = firebaseService;
     this.syncQueue = new Map();
     this.isSyncing = false;
+    this.lastSyncTime = 0;
+    this.syncInterval = 30000; // 30 secondes entre synchronisations
+    this.isInitialized = false;
+    this.pendingChanges = new Set();
+    this.syncInProgress = false;
   }
 
   /**
-   * Charger les conversations avec stratégie de cache intelligente
+   * Initialisation intelligente - charge tout depuis le cache local
+   */
+  async initialize(userId) {
+    if (this.isInitialized) return;
+    
+    console.log('🚀 Initialisation du cache intelligent en mode offline-first...');
+    
+    try {
+      // Charger toutes les données depuis le cache local
+      const conversations = this.localCache.getAllConversations();
+      const users = this.localCache.getAllUsers();
+      
+      console.log(`📦 ${conversations.length} conversations et ${users.length} utilisateurs chargés depuis le cache local`);
+      
+      // Marquer comme initialisé
+      this.isInitialized = true;
+      this.lastSyncTime = Date.now();
+      
+      // Lancer la synchronisation initiale en arrière-plan (discrètement)
+      this.scheduleBackgroundSync(userId);
+      
+      return { conversations, users };
+    } catch (error) {
+      console.error('❌ Erreur lors de l\'initialisation du cache:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Récupération des conversations - PRIORITÉ AU CACHE LOCAL
    */
   async getConversations(userId, options = {}) {
-    const {
-      forceRefresh = false,
-      limit = 50,
-      offset = 0,
-      useLocalFirst = true
-    } = options;
-
     try {
-      // 1. Essayer le cache local d'abord (si activé)
-      if (useLocalFirst && !forceRefresh) {
-        const cachedConversations = this.localCache.getAllConversations();
-        if (cachedConversations.length > 0) {
-          console.log(`📦 ${cachedConversations.length} conversations récupérées du cache local`);
-          
-          // Retourner les conversations paginées
-          const paginatedConversations = cachedConversations.slice(offset, offset + limit);
-          
-          // Synchroniser en arrière-plan si nécessaire
-          this.syncInBackground('conversations', userId);
-          
-          return {
-            data: paginatedConversations,
-            fromCache: true,
-            total: cachedConversations.length,
-            hasMore: offset + limit < cachedConversations.length
-          };
-        }
-      }
-
-      // 2. Charger depuis Firebase si pas de cache
-      console.log('🔥 Chargement des conversations depuis Firebase...');
-      const firebaseConversations = await this.firebaseService.getConversations(userId, limit, offset);
+      // 1. Récupérer immédiatement depuis le cache local
+      const cachedConversations = this.localCache.getAllConversations();
       
-      if (firebaseConversations && firebaseConversations.length > 0) {
-        // Sauvegarder dans le cache local
-        this.localCache.saveConversations(firebaseConversations);
+      if (cachedConversations.length > 0) {
+        console.log(`📱 ${cachedConversations.length} conversations récupérées depuis le cache local (instantané)`);
         
-        return {
-          data: firebaseConversations,
-          fromCache: false,
-          total: firebaseConversations.length,
-          hasMore: firebaseConversations.length === limit
-        };
+        // Retourner immédiatement les données du cache
+        return cachedConversations;
       }
-
-      return {
-        data: [],
-        fromCache: false,
-        total: 0,
-        hasMore: false
-      };
+      
+      // 2. Si pas de cache, alors seulement récupérer depuis Firebase
+      console.log('⚠️ Aucune conversation en cache, récupération depuis Firebase...');
+      const firebaseConversations = await this.firebaseService.getConversationsByUserId(userId, options.limit || 50, options.offset || 0);
+      
+      // Sauvegarder dans le cache local
+      this.localCache.saveConversations(firebaseConversations);
+      
+      return firebaseConversations;
     } catch (error) {
-      console.error('Erreur lors du chargement des conversations:', error);
-      
-      // En cas d'erreur, essayer de récupérer depuis le cache local
-      const fallbackConversations = this.localCache.getAllConversations();
-      if (fallbackConversations.length > 0) {
-        console.log('🔄 Utilisation du cache local comme fallback');
-        return {
-          data: fallbackConversations.slice(offset, offset + limit),
-          fromCache: true,
-          total: fallbackConversations.length,
-          hasMore: offset + limit < fallbackConversations.length,
-          error: error.message
-        };
-      }
-      
-      throw error;
+      console.error('❌ Erreur lors de la récupération des conversations:', error);
+      return [];
     }
   }
 
   /**
-   * Charger les messages avec stratégie de cache intelligente
+   * Récupération des messages - PRIORITÉ AU CACHE LOCAL
    */
   async getMessages(conversationId, options = {}) {
-    const {
-      forceRefresh = false,
-      limit = 50,
-      offset = 0,
-      useLocalFirst = true
-    } = options;
-
     try {
-      // 1. Essayer le cache local d'abord
-      if (useLocalFirst && !forceRefresh) {
-        const cachedMessages = this.localCache.getMessages(conversationId, limit, offset);
-        if (cachedMessages.length > 0) {
-          console.log(`📦 ${cachedMessages.length} messages récupérés du cache local pour ${conversationId}`);
-          
-          return {
-            data: cachedMessages,
-            fromCache: true,
-            total: cachedMessages.length,
-            hasMore: cachedMessages.length === limit
-          };
-        }
-      }
-
-      // 2. Charger depuis Firebase si pas de cache
-      console.log(`🔥 Chargement des messages depuis Firebase pour ${conversationId}...`);
-      const firebaseMessages = await this.firebaseService.getMessages(conversationId, limit, offset);
+      // 1. Récupérer immédiatement depuis le cache local
+      const cachedMessages = this.localCache.getMessages(conversationId, options.limit || 50, options.offset || 0);
       
-      if (firebaseMessages && firebaseMessages.length > 0) {
-        // Sauvegarder dans le cache local
-        this.localCache.saveMessages(conversationId, firebaseMessages);
+      if (cachedMessages.length > 0) {
+        console.log(`📝 ${cachedMessages.length} messages récupérés depuis le cache local pour ${conversationId} (instantané)`);
         
-        return {
-          data: firebaseMessages,
-          fromCache: false,
-          total: firebaseMessages.length,
-          hasMore: firebaseMessages.length === limit
-        };
+        // Retourner immédiatement les données du cache
+        return cachedMessages;
       }
-
-      return {
-        data: [],
-        fromCache: false,
-        total: 0,
-        hasMore: false
-      };
+      
+      // 2. Si pas de cache, alors seulement récupérer depuis Firebase
+      console.log(`⚠️ Aucun message en cache pour ${conversationId}, récupération depuis Firebase...`);
+      const firebaseMessages = await this.firebaseService.getMessages(conversationId, options.limit || 50, options.offset || 0);
+      
+      // Sauvegarder dans le cache local
+      this.localCache.saveMessages(conversationId, firebaseMessages);
+      
+      return firebaseMessages;
     } catch (error) {
-      console.error(`Erreur lors du chargement des messages pour ${conversationId}:`, error);
-      
-      // En cas d'erreur, essayer de récupérer depuis le cache local
-      const fallbackMessages = this.localCache.getMessages(conversationId, limit, offset);
-      if (fallbackMessages.length > 0) {
-        console.log(`🔄 Utilisation du cache local comme fallback pour ${conversationId}`);
-        return {
-          data: fallbackMessages,
-          fromCache: true,
-          total: fallbackMessages.length,
-          hasMore: fallbackMessages.length === limit,
-          error: error.message
-        };
-      }
-      
-      throw error;
+      console.error('❌ Erreur lors de la récupération des messages:', error);
+      return [];
     }
   }
 
   /**
-   * Ajouter un message avec synchronisation intelligente
+   * Ajout de message - CACHE LOCAL D'ABORD, puis synchronisation discrète
    */
   async addMessage(conversationId, message) {
     try {
-      // 1. Ajouter au cache local immédiatement (pour l'affichage instantané)
-      this.localCache.addMessage(conversationId, message);
-      
-      // 2. Synchroniser avec Firebase en arrière-plan
-      this.syncInBackground('message', { conversationId, message });
-      
-      return {
-        success: true,
-        message: message,
-        fromCache: true
+      // 1. Ajouter immédiatement au cache local (instantané)
+      const messageWithId = {
+        ...message,
+        id: message.id || `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        timestamp: message.timestamp || new Date().toISOString(),
+        isLocal: true // Marquer comme message local
       };
+      
+      this.localCache.addMessage(conversationId, messageWithId);
+      console.log(`✅ Message ajouté au cache local (instantané): ${messageWithId.id}`);
+      
+      // 2. Ajouter à la queue de synchronisation (discrètement)
+      this.addToSyncQueue('message', { conversationId, message: messageWithId });
+      
+      // 3. Retourner immédiatement le message
+      return messageWithId;
     } catch (error) {
-      console.error('Erreur lors de l\'ajout du message:', error);
+      console.error('❌ Erreur lors de l\'ajout du message:', error);
       throw error;
     }
   }
 
   /**
-   * Mettre à jour un message avec synchronisation intelligente
+   * Mise à jour de message - CACHE LOCAL D'ABORD
    */
   async updateMessage(conversationId, messageId, updates) {
     try {
-      // 1. Mettre à jour le cache local immédiatement
+      // 1. Mettre à jour immédiatement le cache local
       this.localCache.updateMessage(conversationId, messageId, updates);
+      console.log(`✅ Message mis à jour dans le cache local: ${messageId}`);
       
-      // 2. Synchroniser avec Firebase en arrière-plan
-      this.syncInBackground('messageUpdate', { conversationId, messageId, updates });
+      // 2. Ajouter à la queue de synchronisation (discrètement)
+      this.addToSyncQueue('message_update', { conversationId, messageId, updates });
       
-      return {
-        success: true,
-        fromCache: true
-      };
+      return true;
     } catch (error) {
-      console.error('Erreur lors de la mise à jour du message:', error);
+      console.error('❌ Erreur lors de la mise à jour du message:', error);
       throw error;
     }
   }
 
   /**
-   * Supprimer un message avec synchronisation intelligente
+   * Suppression de message - CACHE LOCAL D'ABORD
    */
   async deleteMessage(conversationId, messageId) {
     try {
-      // 1. Supprimer du cache local immédiatement
+      // 1. Supprimer immédiatement du cache local
       this.localCache.deleteMessage(conversationId, messageId);
+      console.log(`✅ Message supprimé du cache local: ${messageId}`);
       
-      // 2. Synchroniser avec Firebase en arrière-plan
-      this.syncInBackground('messageDelete', { conversationId, messageId });
+      // 2. Ajouter à la queue de synchronisation (discrètement)
+      this.addToSyncQueue('message_delete', { conversationId, messageId });
       
-      return {
-        success: true,
-        fromCache: true
-      };
+      return true;
     } catch (error) {
-      console.error('Erreur lors de la suppression du message:', error);
+      console.error('❌ Erreur lors de la suppression du message:', error);
       throw error;
     }
   }
 
   /**
-   * Synchronisation en arrière-plan avec retry et gestion d'erreur
+   * Ajout intelligent à la queue de synchronisation
    */
-  async syncInBackground(type, data) {
+  addToSyncQueue(type, data) {
     const syncKey = `${type}:${Date.now()}`;
     
-    // Ajouter à la queue de synchronisation avec métadonnées
+    // Éviter les doublons
+    if (this.pendingChanges.has(syncKey)) return;
+    
     this.syncQueue.set(syncKey, { 
       type, 
       data, 
       timestamp: Date.now(),
       retryCount: 0,
-      maxRetries: 3,
-      lastError: null
+      maxRetries: 2
     });
     
-    // Démarrer la synchronisation si pas déjà en cours
-    if (!this.isSyncing) {
-      this.processSyncQueue();
+    this.pendingChanges.add(syncKey);
+    
+    // Programmer la synchronisation en arrière-plan
+    this.scheduleBackgroundSync();
+  }
+
+  /**
+   * Programmation intelligente de la synchronisation en arrière-plan
+   */
+  scheduleBackgroundSync(userId = null) {
+    // Éviter les synchronisations trop fréquentes
+    const timeSinceLastSync = Date.now() - this.lastSyncTime;
+    
+    if (timeSinceLastSync < this.syncInterval) {
+      const delay = this.syncInterval - timeSinceLastSync;
+      console.log(`⏰ Synchronisation programmée dans ${Math.round(delay / 1000)}s`);
+      
+      setTimeout(() => {
+        this.processSyncQueue(userId);
+      }, delay);
+    } else {
+      // Synchronisation immédiate si assez de temps s'est écoulé
+      this.processSyncQueue(userId);
     }
   }
 
   /**
-   * Traiter la queue de synchronisation avec retry
+   * Traitement intelligent de la queue de synchronisation
    */
-  async processSyncQueue() {
-    if (this.isSyncing || this.syncQueue.size === 0) return;
+  async processSyncQueue(userId = null) {
+    if (this.syncInProgress || this.syncQueue.size === 0) return;
     
-    this.isSyncing = true;
+    this.syncInProgress = true;
+    console.log('🔄 Début de la synchronisation en arrière-plan...');
     
     try {
       const entries = Array.from(this.syncQueue.entries());
+      let successCount = 0;
+      let errorCount = 0;
       
       for (const [key, syncItem] of entries) {
         try {
           await this.syncWithFirebase(syncItem.type, syncItem.data);
+          
+          // Supprimer de la queue et des changements en attente
           this.syncQueue.delete(key);
-          console.log(`✅ Synchronisation réussie: ${syncItem.type}`);
+          this.pendingChanges.delete(key);
+          successCount++;
+          
         } catch (error) {
-          console.error(`❌ Erreur de synchronisation pour ${syncItem.type}:`, error);
+          console.warn(`⚠️ Échec de synchronisation pour ${syncItem.type}:`, error);
           
-          // Gestion du retry
-          syncItem.retryCount++;
-          syncItem.lastError = error.message;
-          
-          if (syncItem.retryCount >= syncItem.maxRetries) {
-            console.error(`❌ Échec définitif après ${syncItem.maxRetries} tentatives pour ${syncItem.type}`);
-            // Optionnel : notifier l'utilisateur de l'échec de synchronisation
-            this.notifySyncFailure(syncItem);
-            this.syncQueue.delete(key);
+          // Gérer les retry
+          if (syncItem.retryCount < syncItem.maxRetries) {
+            syncItem.retryCount++;
+            syncItem.timestamp = Date.now();
+            console.log(`🔄 Nouvelle tentative ${syncItem.retryCount}/${syncItem.maxRetries} pour ${syncItem.type}`);
           } else {
-            // Programmer une nouvelle tentative avec délai exponentiel
-            const delay = Math.pow(2, syncItem.retryCount) * 1000; // 2s, 4s, 8s
-            console.log(`🔄 Nouvelle tentative dans ${delay}ms pour ${syncItem.type}`);
-            setTimeout(() => {
-              this.processSyncQueue();
-            }, delay);
+            // Supprimer après trop d'échecs
+            this.syncQueue.delete(key);
+            this.pendingChanges.delete(key);
+            errorCount++;
           }
         }
       }
-    } finally {
-      this.isSyncing = false;
       
-      // Continuer le traitement s'il y a encore des éléments dans la queue
-      if (this.syncQueue.size > 0) {
-        setTimeout(() => this.processSyncQueue(), 1000);
+      if (successCount > 0 || errorCount > 0) {
+        console.log(`✅ Synchronisation terminée: ${successCount} succès, ${errorCount} échecs`);
       }
-    }
-  }
-
-  /**
-   * Notifier l'échec de synchronisation
-   */
-  notifySyncFailure(syncItem) {
-    // Ici vous pouvez implémenter une notification utilisateur
-    console.warn(`⚠️ Échec de synchronisation pour ${syncItem.type}:`, syncItem.lastError);
-    
-    // Optionnel : stocker les échecs pour une synchronisation manuelle ultérieure
-    this.storeFailedSync(syncItem);
-  }
-
-  /**
-   * Stocker les échecs de synchronisation pour récupération ultérieure
-   */
-  storeFailedSync(syncItem) {
-    const failedSyncs = JSON.parse(localStorage.getItem('failedSyncs') || '[]');
-    failedSyncs.push({
-      ...syncItem,
-      failedAt: new Date().toISOString()
-    });
-    localStorage.setItem('failedSyncs', JSON.stringify(failedSyncs));
-  }
-
-  /**
-   * Récupérer et traiter les synchronisations échouées
-   */
-  async retryFailedSyncs() {
-    try {
-      const failedSyncs = JSON.parse(localStorage.getItem('failedSyncs') || '[]');
       
-      if (failedSyncs.length === 0) return;
+      this.lastSyncTime = Date.now();
       
-      console.log(`🔄 Tentative de récupération de ${failedSyncs.length} synchronisations échouées`);
-      
-      for (const failedSync of failedSyncs) {
-        try {
-          await this.syncWithFirebase(failedSync.type, failedSync.data);
-          console.log(`✅ Récupération réussie pour ${failedSync.type}`);
-          
-          // Supprimer de la liste des échecs
-          const updatedFailedSyncs = failedSyncs.filter(fs => fs !== failedSync);
-          localStorage.setItem('failedSyncs', JSON.stringify(updatedFailedSyncs));
-        } catch (error) {
-          console.error(`❌ Échec de récupération pour ${failedSync.type}:`, error);
-        }
-      }
     } catch (error) {
-      console.error('Erreur lors de la récupération des synchronisations échouées:', error);
+      console.error('❌ Erreur lors du traitement de la queue de synchronisation:', error);
+    } finally {
+      this.syncInProgress = false;
     }
   }
 
   /**
-   * Synchroniser avec Firebase
+   * Synchronisation avec Firebase - UNIQUEMENT les nouvelles données
    */
   async syncWithFirebase(type, data) {
-    switch (type) {
-      case 'conversations':
-        // Synchroniser les conversations
-        break;
-        
-      case 'message':
-        // Ajouter le message à Firebase
-        if (data.conversationId && data.message) {
-          await this.firebaseService.addMessage(data.conversationId, data.message);
-        }
-        break;
-        
-      case 'messageUpdate':
-        // Mettre à jour le message dans Firebase
-        if (data.conversationId && data.messageId && data.updates) {
+    try {
+      switch (type) {
+        case 'message':
+          // Vérifier si le message existe déjà sur Firebase
+          const existingMessage = await this.firebaseService.getMessages(data.conversationId, 1, 0);
+          const messageExists = existingMessage.some(msg => 
+            msg.text === data.message.text && 
+            msg.sender === data.message.sender &&
+            Math.abs(new Date(msg.timestamp) - new Date(data.message.timestamp)) < 60000 // 1 minute
+          );
+          
+          if (!messageExists) {
+            await this.firebaseService.addMessage(data.conversationId, data.message);
+            console.log(`☁️ Nouveau message synchronisé avec Firebase: ${data.message.id}`);
+          } else {
+            console.log(`ℹ️ Message déjà synchronisé, ignoré: ${data.message.id}`);
+          }
+          break;
+          
+        case 'message_update':
           await this.firebaseService.updateMessage(data.conversationId, data.messageId, data.updates);
-        }
-        break;
-        
-      case 'messageDelete':
-        // Supprimer le message de Firebase
-        if (data.conversationId && data.messageId) {
+          console.log(`☁️ Mise à jour de message synchronisée avec Firebase: ${data.messageId}`);
+          break;
+          
+        case 'message_delete':
           await this.firebaseService.deleteMessage(data.conversationId, data.messageId);
-        }
-        break;
-        
-      default:
-        console.warn('Type de synchronisation non reconnu:', type);
+          console.log(`☁️ Suppression de message synchronisée avec Firebase: ${data.messageId}`);
+          break;
+          
+        default:
+          console.warn(`⚠️ Type de synchronisation non géré: ${type}`);
+      }
+    } catch (error) {
+      console.error(`❌ Erreur de synchronisation pour ${type}:`, error);
+      throw error;
     }
   }
 
   /**
-   * Précharger les données fréquemment utilisées
+   * Préchargement intelligent - UNIQUEMENT si nécessaire
    */
-  async preloadFrequentlyUsedData(userId) {
+  async preloadData(userId) {
+    if (!this.isInitialized) {
+      console.log('⚠️ Cache non initialisé, initialisation en cours...');
+      await this.initialize(userId);
+      return;
+    }
+    
+    // Vérifier si une synchronisation est nécessaire
+    const timeSinceLastSync = Date.now() - this.lastSyncTime;
+    
+    if (timeSinceLastSync < this.syncInterval) {
+      console.log(`ℹ️ Synchronisation récente (${Math.round(timeSinceLastSync / 1000)}s), préchargement ignoré`);
+      return;
+    }
+    
+    console.log('🔄 Préchargement des données depuis Firebase en arrière-plan...');
+    
     try {
-      console.log('🚀 Préchargement des données fréquemment utilisées...');
+      // Récupérer uniquement les nouvelles conversations
+      const firebaseConversations = await this.firebaseService.getConversationsByUserId(userId, 50, 0);
+      const cachedConversations = this.localCache.getAllConversations();
       
-      // Précharger les conversations récentes
-      const conversations = await this.getConversations(userId, { limit: 20, useLocalFirst: true });
+      // Identifier les nouvelles conversations
+      const newConversations = firebaseConversations.filter(fbConv => 
+        !cachedConversations.some(cachedConv => cachedConv.id === fbConv.id)
+      );
       
-      // Précharger les messages des conversations récentes
-      if (conversations.data.length > 0) {
-        for (const conv of conversations.data.slice(0, 5)) {
-          await this.getMessages(conv.id, { limit: 30, useLocalFirst: true });
-        }
+      if (newConversations.length > 0) {
+        console.log(`🆕 ${newConversations.length} nouvelles conversations détectées`);
+        this.localCache.saveConversations(newConversations);
       }
       
-      console.log('✅ Préchargement terminé');
+      // Mettre à jour le timestamp de synchronisation
+      this.lastSyncTime = Date.now();
+      
     } catch (error) {
-      console.error('Erreur lors du préchargement:', error);
+      console.error('❌ Erreur lors du préchargement:', error);
     }
   }
 
   /**
-   * Obtenir les statistiques de performance
+   * Statistiques de performance
    */
   getPerformanceStats() {
     const cacheStats = this.localCache.getCacheStats();
     const queueSize = this.syncQueue.size;
+    const pendingChanges = this.pendingChanges.size;
     
     return {
       cache: cacheStats,
-      syncQueue: {
-        size: queueSize,
-        isProcessing: this.isSyncing
+      sync: {
+        queueSize,
+        pendingChanges,
+        lastSync: this.lastSyncTime,
+        isSyncing: this.syncInProgress,
+        isInitialized: this.isInitialized
       },
       performance: {
         cacheHitRate: this.calculateCacheHitRate(),
@@ -422,35 +377,42 @@ class SmartCacheService {
   }
 
   /**
-   * Calculer le taux de succès du cache
+   * Calcul du taux de succès du cache
    */
   calculateCacheHitRate() {
-    // Logique pour calculer le taux de succès du cache
-    // À implémenter avec des métriques réelles
-    return 0.85; // Exemple
+    const stats = this.localCache.getCacheStats();
+    const totalRequests = stats.totalRequests || 1;
+    const cacheHits = stats.cacheHits || 0;
+    
+    return Math.round((cacheHits / totalRequests) * 100);
   }
 
   /**
-   * Calculer l'efficacité de la synchronisation
+   * Calcul de l'efficacité de la synchronisation
    */
   calculateSyncEfficiency() {
-    // Logique pour calculer l'efficacité de la synchronisation
-    // À implémenter avec des métriques réelles
-    return 0.92; // Exemple
+    if (this.syncQueue.size === 0) return 100;
+    
+    const totalItems = this.syncQueue.size + this.pendingChanges.size;
+    const processedItems = totalItems - this.syncQueue.size;
+    
+    return Math.round((processedItems / totalItems) * 100);
   }
 
   /**
-   * Nettoyer le cache et la queue de synchronisation
+   * Nettoyage et réinitialisation
    */
   cleanup() {
-    this.localCache.clearAll();
     this.syncQueue.clear();
+    this.pendingChanges.clear();
     this.isSyncing = false;
-    console.log('🧹 Service de cache intelligent nettoyé');
+    this.syncInProgress = false;
+    this.isInitialized = false;
+    console.log('🧹 Cache intelligent nettoyé');
   }
 }
 
-// Créer une instance singleton
+// Instance singleton
 const smartCacheService = new SmartCacheService();
 
 export default smartCacheService;

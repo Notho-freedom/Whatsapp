@@ -1,391 +1,295 @@
 'use client';
 
-/**
- * Hook personnalisé pour la gestion du cache local
- * Optimise l'affichage en gardant les données en mémoire et en localStorage
- */
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import localCacheService from '@/utils/localCacheService';
+import smartCacheService from '@/utils/smartCacheService';
 
 export function useLocalCache() {
   const [isInitialized, setIsInitialized] = useState(false);
-  const [cacheStats, setCacheStats] = useState(null);
-  const syncInProgress = useRef(false);
+  const [cacheStats, setCacheStats] = useState({});
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState(0);
+  const initializationRef = useRef(false);
 
-  /**
-   * Initialiser le cache
-   */
-  const initializeCache = useCallback(async () => {
+  // Initialisation intelligente du cache
+  const initializeCache = useCallback(async (userId = null) => {
+    if (initializationRef.current) return;
+    initializationRef.current = true;
+
     try {
-      // Le service se charge automatiquement depuis localStorage
+      console.log('🚀 Initialisation du cache local...');
+      
+      // Initialiser le cache local
+      localCacheService.init();
+      
+      // Initialiser le service intelligent
+      if (userId) {
+        await smartCacheService.initialize(userId);
+      }
+      
       setIsInitialized(true);
       updateCacheStats();
-      console.log('✅ Cache local initialisé');
+      
+      console.log('✅ Cache local initialisé avec succès');
     } catch (error) {
       console.error('❌ Erreur lors de l\'initialisation du cache:', error);
+      setIsInitialized(false);
+    } finally {
+      initializationRef.current = false;
     }
   }, []);
 
-  /**
-   * Mettre à jour les statistiques du cache
-   */
+  // Mise à jour des statistiques du cache
   const updateCacheStats = useCallback(() => {
-    const stats = localCacheService.getCacheStats();
-    setCacheStats(stats);
+    try {
+      const localStats = localCacheService.getCacheStats();
+      const smartStats = smartCacheService.getPerformanceStats();
+      
+      setCacheStats({
+        ...localStats,
+        smart: smartStats,
+        lastUpdate: Date.now()
+      });
+    } catch (error) {
+      console.warn('⚠️ Erreur lors de la mise à jour des statistiques:', error);
+    }
   }, []);
 
-  /**
-   * Gestion des conversations
-   */
-  
-  // Sauvegarder une conversation
+  // Sauvegarder une conversation (instantané)
   const saveConversation = useCallback((conversation) => {
     try {
       localCacheService.saveConversation(conversation);
       updateCacheStats();
       return true;
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde de la conversation:', error);
+      console.error('❌ Erreur lors de la sauvegarde de la conversation:', error);
       return false;
     }
   }, [updateCacheStats]);
 
-  // Sauvegarder plusieurs conversations
+  // Sauvegarder plusieurs conversations (instantané)
   const saveConversations = useCallback((conversations) => {
     try {
       localCacheService.saveConversations(conversations);
       updateCacheStats();
       return true;
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde des conversations:', error);
+      console.error('❌ Erreur lors de la sauvegarde des conversations:', error);
       return false;
     }
   }, [updateCacheStats]);
 
-  // Récupérer une conversation
-  const getConversation = useCallback((conversationId) => {
-    return localCacheService.getConversation(conversationId);
-  }, []);
-
-  // Récupérer toutes les conversations
+  // Récupérer toutes les conversations (instantané)
   const getAllConversations = useCallback(() => {
-    return localCacheService.getAllConversations();
+    try {
+      return localCacheService.getAllConversations();
+    } catch (error) {
+      console.error('❌ Erreur lors de la récupération des conversations:', error);
+      return [];
+    }
   }, []);
 
-  /**
-   * Gestion des messages
-   */
-  
-  // Sauvegarder des messages pour une conversation
+  // Récupérer une conversation spécifique (instantané)
+  const getConversation = useCallback((conversationId) => {
+    try {
+      return localCacheService.getConversation(conversationId);
+    } catch (error) {
+      console.error('❌ Erreur lors de la récupération de la conversation:', error);
+      return null;
+    }
+  }, []);
+
+  // Sauvegarder des messages (instantané)
   const saveMessages = useCallback((conversationId, messages) => {
     try {
       localCacheService.saveMessages(conversationId, messages);
       updateCacheStats();
       return true;
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde des messages:', error);
+      console.error('❌ Erreur lors de la sauvegarde des messages:', error);
       return false;
     }
   }, [updateCacheStats]);
 
-  // Récupérer les messages d'une conversation avec optimisation
+  // Récupérer des messages (instantané)
   const getMessages = useCallback((conversationId, limit = 50, offset = 0) => {
-    return localCacheService.getMessages(conversationId, limit, offset);
+    try {
+      return localCacheService.getMessages(conversationId, limit, offset);
+    } catch (error) {
+      console.error('❌ Erreur lors de la récupération des messages:', error);
+      return [];
+    }
   }, []);
-  
+
   // Récupérer les derniers messages d'une conversation (optimisé pour l'affichage)
   const getLastMessages = useCallback((conversationId, count = 5) => {
     try {
       const messages = localCacheService.getMessages(conversationId, count, 0);
       return messages.sort((a, b) => new Date(b.timestamp || b.time) - new Date(a.timestamp || a.time));
     } catch (error) {
-      console.warn(`Erreur lors de la récupération des derniers messages pour ${conversationId}:`, error);
+      console.warn(`⚠️ Erreur lors de la récupération des derniers messages pour ${conversationId}:`, error);
       return [];
     }
   }, []);
 
-  // Ajouter un nouveau message
-  const addMessage = useCallback((conversationId, message) => {
+  // Ajouter un message (instantané + synchronisation discrète)
+  const addMessage = useCallback(async (conversationId, message) => {
     try {
-      localCacheService.addMessage(conversationId, message);
+      // Utiliser le service intelligent pour la synchronisation
+      const result = await smartCacheService.addMessage(conversationId, message);
       updateCacheStats();
-      return true;
+      return result;
     } catch (error) {
-      console.error('Erreur lors de l\'ajout du message:', error);
-      return false;
+      console.error('❌ Erreur lors de l\'ajout du message:', error);
+      throw error;
     }
   }, [updateCacheStats]);
 
-  // Mettre à jour un message
-  const updateMessage = useCallback((conversationId, messageId, updates) => {
+  // Mettre à jour un message (instantané + synchronisation discrète)
+  const updateMessage = useCallback(async (conversationId, messageId, updates) => {
     try {
-      localCacheService.updateMessage(conversationId, messageId, updates);
+      const result = await smartCacheService.updateMessage(conversationId, messageId, updates);
       updateCacheStats();
-      return true;
+      return result;
     } catch (error) {
-      console.error('Erreur lors de la mise à jour du message:', error);
-      return false;
+      console.error('❌ Erreur lors de la mise à jour du message:', error);
+      throw error;
     }
   }, [updateCacheStats]);
 
-  // Supprimer un message
-  const deleteMessage = useCallback((conversationId, messageId) => {
+  // Supprimer un message (instantané + synchronisation discrète)
+  const deleteMessage = useCallback(async (conversationId, messageId) => {
     try {
-      localCacheService.deleteMessage(conversationId, messageId);
+      const result = await smartCacheService.deleteMessage(conversationId, messageId);
       updateCacheStats();
-      return true;
+      return result;
     } catch (error) {
-      console.error('Erreur lors de la suppression du message:', error);
-      return false;
+      console.error('❌ Erreur lors de la suppression du message:', error);
+      throw error;
     }
   }, [updateCacheStats]);
 
-  /**
-   * Gestion des utilisateurs
-   */
-  
-  // Sauvegarder un utilisateur
+  // Sauvegarder un utilisateur (instantané)
   const saveUser = useCallback((user) => {
     try {
       localCacheService.saveUser(user);
       updateCacheStats();
       return true;
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde de l\'utilisateur:', error);
+      console.error('❌ Erreur lors de la sauvegarde de l\'utilisateur:', error);
       return false;
     }
   }, [updateCacheStats]);
 
-  // Sauvegarder plusieurs utilisateurs
+  // Sauvegarder plusieurs utilisateurs (instantané)
   const saveUsers = useCallback((users) => {
     try {
       localCacheService.saveUsers(users);
       updateCacheStats();
       return true;
     } catch (error) {
-      console.error('Erreur lors de la sauvegarde des utilisateurs:', error);
+      console.error('❌ Erreur lors de la sauvegarde des utilisateurs:', error);
       return false;
     }
   }, [updateCacheStats]);
 
-  // Récupérer un utilisateur
+  // Récupérer un utilisateur (instantané)
   const getUser = useCallback((userId) => {
-    return localCacheService.getUser(userId);
+    try {
+      return localCacheService.getUser(userId);
+    } catch (error) {
+      console.error('❌ Erreur lors de la récupération de l\'utilisateur:', error);
+      return null;
+    }
   }, []);
 
-  /**
-   * Synchronisation intelligente
-   */
-  
-  // Synchroniser les données avec le cache local
-  const syncWithCache = useCallback(async (data, type) => {
-    if (syncInProgress.current) {
-      console.log('⏳ Synchronisation déjà en cours, ignorée');
-      return;
+  // Récupérer tous les utilisateurs (instantané)
+  const getAllUsers = useCallback(() => {
+    try {
+      return localCacheService.getAllUsers();
+    } catch (error) {
+      console.error('❌ Erreur lors de la récupération des utilisateurs:', error);
+      return [];
     }
+  }, []);
 
-    syncInProgress.current = true;
-    
+  // Synchronisation avec le cache (instantané)
+  const syncWithCache = useCallback((data, type) => {
     try {
       switch (type) {
         case 'conversations':
-          if (Array.isArray(data)) {
-            saveConversations(data);
-          }
+          saveConversations(data);
           break;
-          
+        case 'users':
+          saveUsers(data);
+          break;
         case 'messages':
-          if (data.conversationId && Array.isArray(data.messages)) {
+          if (data.conversationId && data.messages) {
             saveMessages(data.conversationId, data.messages);
           }
           break;
-          
-        case 'users':
-          if (Array.isArray(data)) {
-            saveUsers(data);
-          }
-          break;
-          
         default:
-          console.warn('Type de données non reconnu pour la synchronisation:', type);
+          console.warn(`⚠️ Type de synchronisation non géré: ${type}`);
       }
-      
-      console.log(`🔄 Données synchronisées avec le cache local: ${type}`);
-    } catch (error) {
-      console.error('Erreur lors de la synchronisation:', error);
-    } finally {
-      syncInProgress.current = false;
-    }
-  }, [saveConversations, saveMessages, saveUsers]);
-
-  /**
-   * Gestion du cache
-   */
-  
-  // Vider le cache
-  const clearCache = useCallback(() => {
-    try {
-      localCacheService.clearAll();
-      updateCacheStats();
-      console.log('🗑️ Cache local vidé');
       return true;
     } catch (error) {
-      console.error('Erreur lors du vidage du cache:', error);
+      console.error('❌ Erreur lors de la synchronisation avec le cache:', error);
+      return false;
+    }
+  }, [saveConversations, saveUsers, saveMessages]);
+
+  // Préchargement intelligent des données (discrètement)
+  const preloadData = useCallback(async (userId = null) => {
+    try {
+      setIsSyncing(true);
+      console.log('🔄 Préchargement intelligent des données...');
+      
+      // Utiliser le service intelligent pour le préchargement
+      await smartCacheService.preloadData(userId);
+      
+      // Mettre à jour les statistiques
+      updateCacheStats();
+      setLastSyncTime(Date.now());
+      
+      console.log('✅ Préchargement terminé');
+      return true;
+    } catch (error) {
+      console.error('❌ Erreur lors du préchargement:', error);
+      return false;
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [updateCacheStats]);
+
+  // Nettoyer le cache
+  const clearCache = useCallback(async () => {
+    try {
+      localCacheService.clearAll();
+      smartCacheService.cleanup();
+      updateCacheStats();
+      console.log('🧹 Cache nettoyé');
+      return true;
+    } catch (error) {
+      console.error('❌ Erreur lors du nettoyage du cache:', error);
       return false;
     }
   }, [updateCacheStats]);
 
   // Exporter le cache
   const exportCache = useCallback(() => {
-    return localCacheService.exportCache();
+    try {
+      return localCacheService.exportCache();
+    } catch (error) {
+      console.error('❌ Erreur lors de l\'export du cache:', error);
+      return null;
+    }
   }, []);
 
-  // Charger des données depuis le cache avec fallback
-  const loadFromCache = useCallback(async (key, fallbackFunction, options = {}) => {
-    const { 
-      type = 'conversations', 
-      forceRefresh = false, 
-      maxAge = 5 * 60 * 1000 // 5 minutes par défaut
-    } = options;
-
-    try {
-      // Si pas de force refresh, essayer le cache d'abord
-      if (!forceRefresh) {
-        let cachedData = null;
-        
-        switch (type) {
-          case 'conversations':
-            if (key === 'all') {
-              cachedData = getAllConversations();
-            } else {
-              cachedData = getConversation(key);
-            }
-            break;
-            
-          case 'messages':
-            cachedData = getMessages(key, options.limit || 50, options.offset || 0);
-            break;
-            
-          case 'users':
-            cachedData = getUser(key);
-            break;
-        }
-
-        if (cachedData && (Array.isArray(cachedData) ? cachedData.length > 0 : true)) {
-          console.log(`📦 Données récupérées du cache local: ${type} - ${key}`);
-          return { data: cachedData, fromCache: true };
-        }
-      }
-
-      // Si pas de cache ou force refresh, utiliser le fallback
-      if (fallbackFunction) {
-        console.log(`🔥 Chargement des données depuis la source: ${type} - ${key}`);
-        const freshData = await fallbackFunction();
-        
-        // Sauvegarder dans le cache
-        if (freshData) {
-          switch (type) {
-            case 'conversations':
-              if (Array.isArray(freshData)) {
-                saveConversations(freshData);
-              }
-              break;
-              
-            case 'messages':
-              if (options.conversationId && Array.isArray(freshData)) {
-                saveMessages(options.conversationId, freshData);
-              }
-              break;
-              
-            case 'users':
-              if (Array.isArray(freshData)) {
-                saveUsers(freshData);
-              }
-              break;
-          }
-        }
-        
-        return { data: freshData, fromCache: false };
-      }
-
-      return { data: null, fromCache: false };
-    } catch (error) {
-      console.error(`Erreur lors du chargement depuis le cache: ${type} - ${key}`, error);
-      return { data: null, fromCache: false, error };
-    }
-  }, [
-    getAllConversations, 
-    getConversation, 
-    getMessages, 
-    getUser, 
-    saveConversations, 
-    saveMessages, 
-    saveUsers
-  ]);
-
-  /**
-   * Préchargement intelligent
-   */
-  
-  // Précharger les données fréquemment utilisées de manière optimisée
-  const preloadData = useCallback(async () => {
-    try {
-      console.log('🚀 Préchargement optimisé des données fréquemment utilisées...');
-      
-      // Précharger les conversations récentes (priorité haute)
-      const recentConversations = getAllConversations().slice(0, 10);
-      console.log(`📦 ${recentConversations.length} conversations récentes identifiées`);
-      
-      // Précharger les messages des conversations récentes en parallèle
-      const preloadPromises = recentConversations.map(async (conv) => {
-        try {
-          const messages = getMessages(conv.id, 20, 0); // 20 derniers messages
-          if (messages.length === 0) {
-            console.log(`📥 Pas de messages en cache pour ${conv.id} - à charger depuis l'API`);
-            // Ici on pourrait déclencher un chargement depuis l'API
-            return { conversationId: conv.id, status: 'needs_loading' };
-          } else {
-            console.log(`✅ ${messages.length} messages déjà en cache pour ${conv.id}`);
-            return { conversationId: conv.id, status: 'cached', count: messages.length };
-          }
-        } catch (error) {
-          console.warn(`⚠️ Erreur lors du préchargement pour ${conv.id}:`, error);
-          return { conversationId: conv.id, status: 'error', error: error.message };
-        }
-      });
-      
-      // Attendre que tous les préchargements soient terminés
-      const results = await Promise.allSettled(preloadPromises);
-      
-      // Analyser les résultats
-      const summary = {
-        total: recentConversations.length,
-        cached: results.filter(r => r.status === 'fulfilled' && r.value.status === 'cached').length,
-        needsLoading: results.filter(r => r.status === 'fulfilled' && r.value.status === 'needs_loading').length,
-        errors: results.filter(r => r.status === 'rejected').length
-      };
-      
-      console.log('📊 Résumé du préchargement:', summary);
-      console.log('✅ Préchargement optimisé terminé');
-      
-      return summary;
-    } catch (error) {
-      console.error('❌ Erreur lors du préchargement optimisé:', error);
-      throw error;
-    }
-  }, [getAllConversations, getMessages]);
-
-  // Initialiser le cache au montage
-  useEffect(() => {
-    initializeCache();
-  }, [initializeCache]);
-
-  // Mettre à jour les stats périodiquement
+  // Mise à jour périodique des statistiques
   useEffect(() => {
     if (isInitialized) {
-      const interval = setInterval(updateCacheStats, 30000); // Toutes les 30 secondes
-      return () => clearInterval(interval);
+      const statsInterval = setInterval(updateCacheStats, 10000); // Toutes les 10 secondes
+      return () => clearInterval(statsInterval);
     }
   }, [isInitialized, updateCacheStats]);
 
@@ -393,42 +297,39 @@ export function useLocalCache() {
     // État
     isInitialized,
     cacheStats,
+    isSyncing,
+    lastSyncTime,
+    
+    // Initialisation
+    initializeCache,
     
     // Gestion des conversations
     saveConversation,
     saveConversations,
-    getConversation,
     getAllConversations,
+    getConversation,
     
-         // Gestion des messages
-     saveMessages,
-     getMessages,
-     getLastMessages,
-     addMessage,
-     updateMessage,
-     deleteMessage,
+    // Gestion des messages
+    saveMessages,
+    getMessages,
+    getLastMessages,
+    addMessage,
+    updateMessage,
+    deleteMessage,
     
     // Gestion des utilisateurs
     saveUser,
     saveUsers,
     getUser,
+    getAllUsers,
     
     // Synchronisation
     syncWithCache,
-    
-    // Gestion du cache
-    clearCache,
-    exportCache,
-    
-    // Chargement intelligent
-    loadFromCache,
-    
-    // Préchargement
     preloadData,
     
-    // Utilitaires
+    // Maintenance
+    clearCache,
+    exportCache,
     updateCacheStats
   };
 }
-
-export default useLocalCache;

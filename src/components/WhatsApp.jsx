@@ -102,59 +102,63 @@ export default function WhatsApp() {
   const [loadingPhase, setLoadingPhase] = React.useState(1); // 1: Cache local, 2: Synchronisation
   const [isSyncing, setIsSyncing] = React.useState(false);
   const [syncErrors, setSyncErrors] = React.useState([]);
+  const [localLoading, setLocalLoading] = React.useState(false);
 
-  // Fonction pour vérifier la synchronisation avec Firebase
+  // Fonction pour vérifier la synchronisation avec Firebase (discrètement)
   const checkFirebaseSync = React.useCallback(async () => {
     try {
-      console.log('🔍 Vérification de la synchronisation avec Firebase...');
+      // Vérifier uniquement si nécessaire (pas à chaque action)
+      const timeSinceLastCheck = Date.now() - (window.lastSyncCheck || 0);
+      if (timeSinceLastCheck < 60000) { // 1 minute entre vérifications
+        return;
+      }
+      
+      window.lastSyncCheck = Date.now();
+      console.log('🔍 Vérification discrète de la synchronisation...');
       
       // Importer le service intelligent
       const smartCacheService = require('@/utils/smartCacheService').default;
       
-      // Vérifier les statistiques de synchronisation
+      // Vérifier les statistiques de performance
       const stats = smartCacheService.getPerformanceStats();
-      console.log('📊 Statistiques de synchronisation:', stats);
       
-      // Vérifier s'il y a des synchronisations échouées
-      const failedSyncs = JSON.parse(localStorage.getItem('failedSyncs') || '[]');
-      if (failedSyncs.length > 0) {
-        console.warn(`⚠️ ${failedSyncs.length} synchronisations échouées détectées`);
-        setSyncErrors(failedSyncs);
-        
-        // Tenter de récupérer les synchronisations échouées
-        await smartCacheService.retryFailedSyncs();
-      } else {
-        console.log('✅ Aucune synchronisation échouée détectée');
-        setSyncErrors([]);
+      if (stats.sync.queueSize > 0) {
+        console.log(`📊 ${stats.sync.queueSize} éléments en attente de synchronisation`);
+      }
+      
+      // Vérifier les erreurs de synchronisation
+      if (stats.sync.isSyncing && stats.sync.queueSize === 0) {
+        console.log('✅ Synchronisation en cours, tout semble normal');
       }
       
     } catch (error) {
-      console.error('❌ Erreur lors de la vérification de la synchronisation:', error);
+      console.warn('⚠️ Erreur lors de la vérification de synchronisation:', error);
     }
   }, []);
 
-  // Fonction pour forcer la synchronisation
+  // Fonction pour forcer la synchronisation (manuellement)
   const forceSync = React.useCallback(async () => {
     try {
       setIsSyncing(true);
+      setSyncErrors([]);
+      
       console.log('🔄 Synchronisation forcée en cours...');
       
       // Importer le service intelligent
       const smartCacheService = require('@/utils/smartCacheService').default;
       
-      // Traiter la queue de synchronisation
+      // Forcer le traitement de la queue
       await smartCacheService.processSyncQueue();
       
-      // Vérifier la synchronisation
-      await checkFirebaseSync();
-      
       console.log('✅ Synchronisation forcée terminée');
+      
     } catch (error) {
       console.error('❌ Erreur lors de la synchronisation forcée:', error);
+      setSyncErrors([error.message]);
     } finally {
       setIsSyncing(false);
     }
-  }, [checkFirebaseSync]);
+  }, []);
   
   const { 
     selectedChat, 
@@ -229,75 +233,81 @@ export default function WhatsApp() {
     }
   }, [isAuthenticated, currentUserId, users.length, listenToUserPresence]);
 
-  // Vérification périodique de la synchronisation
+  // Vérification périodique de la synchronisation (moins fréquente)
   React.useEffect(() => {
     if (cacheInitialized && isAuthenticated) {
-      // Vérifier la synchronisation toutes les 30 secondes
-      const syncInterval = setInterval(checkFirebaseSync, 30000);
+      // Vérifier la synchronisation toutes les 2 minutes (au lieu de 30 secondes)
+      const syncInterval = setInterval(checkFirebaseSync, 120000);
       
-      // Vérification initiale
-      checkFirebaseSync();
+      // Vérification initiale après un délai
+      const initialCheck = setTimeout(checkFirebaseSync, 10000);
       
-      return () => clearInterval(syncInterval);
+      return () => {
+        clearInterval(syncInterval);
+        clearTimeout(initialCheck);
+      };
     }
   }, [cacheInitialized, isAuthenticated, checkFirebaseSync]);
 
-  // Stratégie de chargement en deux phases : Cache local d'abord, puis synchronisation
+  // Stratégie de chargement en deux phases : Cache local d'abord, puis synchronisation discrète
   React.useEffect(() => {
     if (cacheInitialized && isAuthenticated) {
-      // PHASE 1 : Chargement instantané depuis le cache local
-      console.log('🚀 Phase 1 : Chargement depuis le cache local...');
       setLoadingPhase(1);
-      
-              // Charger les conversations depuis le cache local
-        const cachedConversations = getAllConversations();
-        if (cachedConversations.length > 0) {
-          console.log(`📦 ${cachedConversations.length} conversations chargées depuis le cache local`);
-          // Transformer les conversations en utilisateurs pour la compatibilité avec le contexte
-          const transformedConversations = cachedConversations.map(conv => ({
-            id: conv.id,
-            name: conv.name || 'Conversation',
-            avatar: conv.avatar || '/default-avatar.png',
-            lastMessage: conv.lastMessage || '',
-            lastMessageTime: conv.lastMessageTime || new Date().toISOString(),
-            unreadCount: conv.unreadCount || 0,
-            isConversation: true
-          }));
-          
-          // Mettre à jour l'état avec les conversations transformées
-          actions.setUsers(transformedConversations);
-          
-          // Charger les derniers messages pour chaque conversation (optimisé)
-          cachedConversations.forEach(conv => {
-            const lastMessages = getLastMessages(conv.id, 5); // 5 derniers messages optimisés
-            if (lastMessages.length > 0) {
-              actions.setMessages(conv.id, lastMessages);
-              console.log(`📝 ${lastMessages.length} derniers messages chargés pour ${conv.id}`);
-            }
-          });
+      setIsSyncing(false);
+      console.log('🚀 Phase 1 : Chargement depuis le cache local (offline-first)...');
+
+      // Charger les conversations depuis le cache local
+      const cachedConversations = getAllConversations();
+      if (cachedConversations.length > 0) {
+        console.log(`📦 ${cachedConversations.length} conversations chargées depuis le cache local (instantané)`);
         
-        // Marquer la phase 1 comme terminée
-        setLoadingPhase(2);
-      }
-      
-      // PHASE 2 : Synchronisation furtive en arrière-plan
-      console.log('🔄 Phase 2 : Lancement de la synchronisation furtive...');
-      setIsSyncing(true);
-      
-      setTimeout(() => {
-        // Synchroniser les utilisateurs avec le cache
-        if (users.length > 0) {
-          syncWithCache(users, 'users');
-        }
+        // Mettre à jour l'état avec les conversations en cache
+        const transformedConversations = cachedConversations.map(conv => ({
+          id: conv.id,
+          name: conv.name || 'Conversation inconnue',
+          lastMessage: conv.lastMessage,
+          timestamp: conv.timestamp,
+          unreadCount: conv.unreadCount || 0,
+          isGroup: conv.isGroup || false,
+          participants: conv.participants || [],
+          avatar: conv.avatar || '',
+        }));
         
-        // Précharger et synchroniser les données
-        preloadData().finally(() => {
-          setIsSyncing(false);
-          console.log('✅ Synchronisation furtive terminée');
+        actions.setUsers(transformedConversations);
+
+        // Charger les derniers messages pour chaque conversation (optimisé)
+        cachedConversations.forEach(conv => {
+          const lastMessages = getLastMessages(conv.id, 5);
+          if (lastMessages.length > 0) {
+            actions.setMessages(conv.id, lastMessages);
+            console.log(`📝 ${lastMessages.length} derniers messages chargés pour ${conv.id}`);
+          }
         });
-      }, 100); // Délai minimal pour laisser l'interface se charger
+      } else {
+        console.log('🤷 Aucune conversation trouvée dans le cache local.');
+      }
+
+      // PHASE 2 : Synchronisation discrète en arrière-plan après un délai plus long
+      setTimeout(async () => {
+        setLoadingPhase(2);
+        setIsSyncing(true);
+        console.log('☁️ Phase 2 : Lancement de la synchronisation discrète en arrière-plan...');
+        
+        try {
+          // Utiliser le service intelligent pour le préchargement
+          const smartCacheService = require('@/utils/smartCacheService').default;
+          await smartCacheService.preloadData();
+          
+          console.log('✅ Synchronisation discrète terminée.');
+        } catch (error) {
+          console.warn('⚠️ Erreur lors de la synchronisation discrète:', error);
+        } finally {
+          setIsSyncing(false);
+          setLocalLoading(false);
+        }
+      }, 2000); // Délai plus long pour une expérience plus fluide
     }
-  }, [cacheInitialized, isAuthenticated, users, syncWithCache, preloadData, getAllConversations, getMessages, actions]);
+  }, [cacheInitialized, isAuthenticated, users, syncWithCache, preloadData, getAllConversations, getMessages, getLastMessages, actions, setLocalLoading, setLoadingPhase, setIsSyncing]);
 
 
 
@@ -535,7 +545,6 @@ export default function WhatsApp() {
       {process.env.NODE_ENV === 'development' && <CacheStats />}
 
       {/* Gestionnaire de cache local intégré dans ProfilePanel */}
-
     </div>
   );
 }
