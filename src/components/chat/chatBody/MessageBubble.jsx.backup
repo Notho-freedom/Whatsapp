@@ -1,6 +1,6 @@
 'use client';
 
-import { FaAngleDown, FaStar, FaSmile } from 'react-icons/fa';
+import { FaAngleDown, FaStar, FaSmile, FaSmileWink, FaSmileBeam, FaRegSmileBeam } from 'react-icons/fa';
 import MediaGroup from './MediaGroup';
 import PreviewLink from './PreviewLink';
 import ReactionBar from './ReactionBar';

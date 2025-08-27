@@ -16,10 +16,12 @@ import {
   Play,
   Music
 } from 'lucide-react';
-import { useGoogleAuth } from '@/hooks';
+import { useGoogleAuth, useLocalCache } from '@/hooks';
+import CacheManager from './CacheManager';
 
 export default function Profile({ activeTab = 'overview' }) {
   const { user, logout } = useGoogleAuth();
+  const { isInitialized: cacheInitialized } = useLocalCache();
   const [isEditingName, setIsEditingName] = useState(false);
   const [isEditingAbout, setIsEditingAbout] = useState(false);
   const [editedName, setEditedName] = useState(user?.name || '');
@@ -326,8 +328,21 @@ export default function Profile({ activeTab = 'overview' }) {
         </div>
       )}
 
+      {/* Onglet Cache */}
+      {activeTab === 'cache' && cacheInitialized && (
+        <div className="p-6 bg-[#2c2c2c] h-full overflow-y-auto">
+          <div className="mb-4">
+            <h2 className="text-xl font-semibold text-white mb-2">Gestion du Cache Local</h2>
+            <p className="text-gray-400 text-sm">
+              Gérez le cache local pour optimiser les performances de l'application
+            </p>
+          </div>
+          <CacheManager />
+        </div>
+      )}
+
       {/* Placeholder pour les autres onglets */}
-      {activeTab !== 'overview' && (
+      {activeTab !== 'overview' && activeTab !== 'cache' && (
         <div className="p-6 bg-[#2c2c2c] flex items-center justify-center h-full">
           <div className="text-center text-gray-400">
             <p className="text-lg mb-2">Onglet {activeTab}</p>

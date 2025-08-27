@@ -218,16 +218,15 @@ export default function WhatsApp() {
     );
   }
 
-  if (loading) {
-    return (
-      <div className="h-screen flex items-center justify-center bg-whatsapp-dark-950">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-whatsapp-primary mx-auto mb-4"></div>
-          <p className="text-white">Chargement des conversations...</p>
-        </div>
+  // Indicateur de chargement subtil en haut de l'écran
+  const LoadingIndicator = () => (
+    <div className="absolute top-0 left-0 right-0 z-50 bg-whatsapp-primary/90 text-white py-2 px-4 text-center text-sm">
+      <div className="flex items-center justify-center space-x-2">
+        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+        <span>Chargement des conversations...</span>
       </div>
-    );
-  }
+    </div>
+  );
 
   if (error) {
     return (
@@ -302,7 +301,10 @@ export default function WhatsApp() {
   };
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-[#202020] font-segoe overflow-hidden rounded-md">
+    <div className="h-screen w-screen flex flex-col bg-[#202020] font-segoe overflow-hidden rounded-md relative">
+      {/* Indicateur de chargement subtil */}
+      {loading && <LoadingIndicator />}
+      
       {/* Titlebar */}
       <Titlebar />
 
@@ -377,12 +379,7 @@ export default function WhatsApp() {
       {/* Statistiques du cache (en mode développement) */}
       {process.env.NODE_ENV === 'development' && <CacheStats />}
 
-      {/* Gestionnaire de cache local */}
-      {process.env.NODE_ENV === 'development' && cacheInitialized && (
-        <div className="fixed bottom-4 right-4 z-50 max-w-md">
-          <CacheManager />
-        </div>
-      )}
+      {/* Gestionnaire de cache local intégré dans ProfilePanel */}
 
     </div>
   );

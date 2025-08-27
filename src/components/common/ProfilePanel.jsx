@@ -16,7 +16,8 @@ import {
   Pencil,  // For Personalization
   HardDrive, // For Storage
   Keyboard, // For Shortcuts
-  HelpCircle // For Help
+  HelpCircle, // For Help
+  Database // For Cache
 } from 'lucide-react';
 
 const ProfilePanel = ({ activeTab, onTabChange }) => {
@@ -37,6 +38,7 @@ const ProfilePanel = ({ activeTab, onTabChange }) => {
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'personalization', label: 'Personalization', icon: Pencil },
     { id: 'storage', label: 'Storage', icon: HardDrive },
+    { id: 'cache', label: 'Cache', icon: Database },
     { id: 'shortcuts', label: 'Shortcuts', icon: Keyboard },
     { id: 'separator' },
     { id: 'help', label: 'Help', icon: HelpCircle },
