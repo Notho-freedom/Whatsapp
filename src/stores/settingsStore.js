@@ -487,7 +487,74 @@ export const useSettingsStore = create(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         settings: state.settings
-      })
+      }),
+      // Fonction de migration pour gérer les changements de structure
+      migrate: (persistedState, version) => {
+        if (persistedState) {
+          console.log('🔄 Migration de l\'état des paramètres...');
+          return {
+            settings: persistedState.settings || {
+              interface: {
+                theme: 'light',
+                language: 'fr',
+                fontSize: 'medium',
+                compactMode: false,
+                showAvatars: true,
+                showTimestamps: true
+              },
+              chat: {
+                enterToSend: true,
+                mediaAutoDownload: true,
+                showReadReceipts: true,
+                showTypingIndicator: true,
+                messagePreview: true
+              },
+              notifications: {
+                enabled: true,
+                sound: true,
+                vibration: true,
+                showPreview: true,
+                quietHours: {
+                  enabled: false,
+                  start: '22:00',
+                  end: '08:00'
+                }
+              },
+              privacy: {
+                lastSeen: 'everyone',
+                profilePhoto: 'everyone',
+                status: 'everyone',
+                readReceipts: true,
+                typingIndicator: true
+              },
+              security: {
+                twoFactorAuth: false,
+                biometricAuth: false,
+                autoLock: false,
+                lockTimeout: 5
+              },
+              storage: {
+                autoCleanup: true,
+                maxStorageSize: 1024,
+                compressImages: true,
+                compressVideos: true
+              },
+              performance: {
+                lowDataMode: false,
+                backgroundSync: true,
+                cacheSize: 100
+              },
+              accessibility: {
+                highContrast: false,
+                reduceMotion: false,
+                screenReader: false
+              }
+            }
+          };
+        }
+        return persistedState;
+      },
+      version: 1 // Version pour la migration
     }
   )
 );

@@ -6,4 +6,5 @@ export { useNativeContextMenu, useChatContextMenu, useMediaContextMenu, useMessa
 export { useAuth } from './useAuth';
 export { useUser } from './useUser';
 export { useChat } from './useChat';
+export { default as useContacts } from './useContacts';
 export { useNotification } from './useNotification';

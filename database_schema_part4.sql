@@ -11,7 +11,7 @@
 CREATE TABLE user_settings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
-    setting_category ENUM('interface', 'chat', 'notifications', 'privacy', 'security', 'storage', 'performance', 'accessibility') NOT NULL,
+    setting_category VARCHAR(50) CHECK (setting_category IN ('interface', 'chat', 'notifications', 'privacy', 'security', 'storage', 'performance', 'accessibility')) NOT NULL,
     setting_key VARCHAR(100) NOT NULL,
     setting_value JSON NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -71,7 +71,7 @@ CREATE INDEX idx_keyboard_shortcuts_enabled ON keyboard_shortcuts(is_enabled);
 CREATE TABLE encryption_keys (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
-    key_type ENUM('message', 'media', 'backup') NOT NULL,
+    key_type VARCHAR(50) CHECK (key_type IN ('message', 'media', 'backup')) NOT NULL,
     key_data TEXT NOT NULL, -- Clé chiffrée
     key_iv VARCHAR(255) NOT NULL, -- Vecteur d'initialisation
     algorithm VARCHAR(50) DEFAULT 'AES-256-GCM',
@@ -131,7 +131,7 @@ CREATE INDEX idx_failed_login_attempts_blocked_until ON failed_login_attempts(bl
 CREATE TABLE backups (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
-    backup_type ENUM('full', 'messages', 'media', 'settings', 'contacts') NOT NULL,
+    backup_type VARCHAR(50) CHECK (backup_type IN ('full', 'messages', 'media', 'settings', 'contacts')) NOT NULL,
     backup_name VARCHAR(255) NOT NULL,
     backup_size INTEGER NOT NULL, -- Taille en bytes
     backup_path VARCHAR(500) NOT NULL,
@@ -141,7 +141,7 @@ CREATE TABLE backups (
     checksum VARCHAR(64), -- Hash de vérification
     is_encrypted BOOLEAN DEFAULT TRUE,
     is_compressed BOOLEAN DEFAULT TRUE,
-    backup_status ENUM('pending', 'in_progress', 'completed', 'failed') DEFAULT 'pending',
+    backup_status VARCHAR(50) CHECK (backup_status IN ('pending', 'in_progress', 'completed', 'failed')) DEFAULT 'pending',
     error_message TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     completed_at TIMESTAMP NULL,
@@ -159,11 +159,11 @@ CREATE INDEX idx_backups_created_at ON backups(created_at);
 CREATE TABLE sync_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
-    sync_type ENUM('contacts', 'messages', 'media', 'settings', 'full') NOT NULL,
-    sync_status ENUM('pending', 'in_progress', 'completed', 'failed', 'partial') NOT NULL,
+    sync_type VARCHAR(50) CHECK (sync_type IN ('contacts', 'messages', 'media', 'settings', 'full')) NOT NULL,
+    sync_status VARCHAR(50) CHECK (sync_status IN ('pending', 'in_progress', 'completed', 'failed', 'partial')) NOT NULL,
     items_synced INTEGER DEFAULT 0,
     items_total INTEGER DEFAULT 0,
-    sync_direction ENUM('upload', 'download', 'bidirectional') NOT NULL,
+    sync_direction VARCHAR(50) CHECK (sync_direction IN ('upload', 'download', 'bidirectional')) NOT NULL,
     last_sync_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     next_sync_at TIMESTAMP NULL,
     error_message TEXT,
@@ -191,7 +191,7 @@ CREATE TABLE activity_logs (
     user_agent TEXT,
     device_info JSON,
     metadata JSON,
-    severity ENUM('info', 'warning', 'error', 'critical') DEFAULT 'info',
+    severity VARCHAR(50) CHECK (severity IN ('info', 'warning', 'error', 'critical')) DEFAULT 'info',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
@@ -210,7 +210,7 @@ CREATE TABLE system_errors (
     error_stack TEXT,
     user_id INTEGER,
     request_data JSON,
-    severity ENUM('low', 'medium', 'high', 'critical') DEFAULT 'medium',
+    severity VARCHAR(50) CHECK (severity IN ('low', 'medium', 'high', 'critical')) DEFAULT 'medium',
     is_resolved BOOLEAN DEFAULT FALSE,
     resolved_at TIMESTAMP NULL,
     resolved_by INTEGER,
@@ -253,7 +253,7 @@ CREATE INDEX idx_performance_metrics_recorded_at ON performance_metrics(recorded
 CREATE TABLE resource_usage (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER,
-    resource_type ENUM('storage', 'memory', 'bandwidth', 'cpu') NOT NULL,
+    resource_type VARCHAR(50) CHECK (resource_type IN ('storage', 'memory', 'bandwidth', 'cpu')) NOT NULL,
     usage_amount REAL NOT NULL,
     usage_unit VARCHAR(20) NOT NULL,
     usage_period VARCHAR(20) DEFAULT 'daily', -- daily, weekly, monthly

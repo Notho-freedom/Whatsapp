@@ -1,46 +1,51 @@
 import { NextResponse } from 'next/server';
+const authService = require('@/utils/authDatabaseService');
 
-export async function GET(request) {
+export async function POST(request) {
   try {
-    // Récupération du token depuis les headers
-    const authHeader = request.headers.get('authorization');
-    
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const { accessToken, sessionToken } = await request.json();
+
+    let user = null;
+
+    // Vérifier d'abord le JWT
+    if (accessToken) {
+      try {
+        const decoded = await authService.verifyJWT(accessToken);
+        user = await authService.getUserById(decoded.userId);
+      } catch (jwtError) {
+        console.log('JWT invalide, tentative avec session token');
+      }
+    }
+
+    // Si pas d'utilisateur via JWT, essayer avec le session token
+    if (!user && sessionToken) {
+      user = await authService.validateSession(sessionToken);
+    }
+
+    if (!user) {
       return NextResponse.json(
-        { error: 'Token d\'accès requis' },
+        { error: 'Token d\'authentification invalide' },
         { status: 401 }
       );
     }
 
-    const accessToken = authHeader.substring(7);
-
-    // Simulation de la validation du token
-    // En production, vous devriez valider le token avec votre système d'authentification
-    if (!accessToken.startsWith('access_') && !accessToken.startsWith('google_access_')) {
-      return NextResponse.json(
-        { error: 'Token d\'accès invalide' },
-        { status: 401 }
-      );
-    }
-
-    // Simulation d'un utilisateur basé sur le token
-    const mockUser = {
-      id: accessToken.startsWith('google_access_') ? 'google_123456789' : 1,
-      email: accessToken.startsWith('google_access_') ? 'user@gmail.com' : 'demo@example.com',
-      name: accessToken.startsWith('google_access_') ? 'Utilisateur Google' : 'Utilisateur Demo',
-      avatar: accessToken.startsWith('google_access_') ? 'https://via.placeholder.com/150' : '/api/avatar/1',
-      phone: '+33123456789',
-      provider: accessToken.startsWith('google_access_') ? 'google' : 'local'
-    };
-
-    const responseData = {
-      user: mockUser,
-      valid: true
-    };
-
-    return NextResponse.json(responseData);
+    return NextResponse.json({
+      user: {
+        id: user.id,
+        email: user.email,
+        username: user.username,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        phone_number: user.phone,
+        profile_picture_url: user.profile_photo_url,
+        status_message: user.status_message,
+        is_online: user.is_online,
+        last_seen: user.last_seen
+      },
+      authenticated: true
+    });
   } catch (error) {
-    console.error('Erreur lors de la vérification du token:', error);
+    console.error('❌ Erreur lors de la vérification de l\'authentification:', error);
     return NextResponse.json(
       { error: 'Erreur interne du serveur' },
       { status: 500 }

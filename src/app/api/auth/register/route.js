@@ -3,25 +3,53 @@ const authService = require('@/utils/authDatabaseService');
 
 export async function POST(request) {
   try {
-    const { email, password } = await request.json();
+    const {
+      username,
+      email,
+      password,
+      phone_number,
+      first_name,
+      last_name,
+      profile_picture_url,
+      status_message
+    } = await request.json();
 
     // Validation des données
-    if (!email || !password) {
+    if (!username || !email || !password) {
       return NextResponse.json(
-        { error: 'Email et mot de passe requis' },
+        { error: 'Nom d\'utilisateur, email et mot de passe requis' },
         { status: 400 }
       );
     }
 
-    // Authentification avec SQLite
-    const user = await authService.authenticateUser(email, password);
-    
-    if (!user) {
+    // Validation du mot de passe
+    if (password.length < 6) {
       return NextResponse.json(
-        { error: 'Email ou mot de passe incorrect' },
-        { status: 401 }
+        { error: 'Le mot de passe doit contenir au moins 6 caractères' },
+        { status: 400 }
       );
     }
+
+    // Validation de l'email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: 'Format d\'email invalide' },
+        { status: 400 }
+      );
+    }
+
+    // Créer l'utilisateur
+    const user = await authService.createUser({
+      username,
+      email,
+      password,
+      phone_number,
+      first_name,
+      last_name,
+      profile_picture_url,
+      status_message
+    });
 
     // Créer une session
     const session = await authService.createSession(user.id, {
@@ -56,15 +84,15 @@ export async function POST(request) {
       expiresAt: session.expiresAt
     };
 
-    return NextResponse.json(responseData);
+    return NextResponse.json(responseData, { status: 201 });
   } catch (error) {
-    console.error('❌ Erreur lors de la connexion:', error);
+    console.error('❌ Erreur lors de l\'inscription:', error);
     
     // Gérer les erreurs spécifiques
-    if (error.message === 'Email ou mot de passe incorrect') {
+    if (error.message.includes('existe déjà')) {
       return NextResponse.json(
         { error: error.message },
-        { status: 401 }
+        { status: 409 }
       );
     }
 

@@ -449,7 +449,41 @@ export const useNotificationStore = create(
       partialize: (state) => ({
         notifications: state.notifications,
         settings: state.settings
-      })
+      }),
+      // Fonction de migration pour gérer les changements de structure
+      migrate: (persistedState, version) => {
+        if (persistedState) {
+          console.log('🔄 Migration de l\'état des notifications...');
+          return {
+            notifications: persistedState.notifications || [],
+            settings: persistedState.settings || {
+              enabled: true,
+              sound: true,
+              vibration: true,
+              showPreview: true,
+              showSenderName: true,
+              showMessageContent: true,
+              quietHours: {
+                enabled: false,
+                start: '22:00',
+                end: '08:00'
+              },
+              desktopNotifications: true,
+              mobileNotifications: true,
+              emailNotifications: false,
+              categories: {
+                messages: true,
+                calls: true,
+                status: true,
+                media: true,
+                system: true
+              }
+            }
+          };
+        }
+        return persistedState;
+      },
+      version: 1 // Version pour la migration
     }
   )
 );

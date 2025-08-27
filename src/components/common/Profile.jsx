@@ -86,12 +86,9 @@ export default function Profile({ activeTab = 'overview' }) {
             <div className="relative inline-block mb-3">
               <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-[#1DAA61] shadow-lg">
                 <img
-                  src={user.picture || '/default-avatar.png'}
+                  src={user.picture}
                   alt={`${user.name} profile picture`}
                   className="w-full h-full object-cover"
-                  onError={(e) => {
-                    e.target.src = '/default-avatar.png';
-                  }}
                 />
               </div>
               <button

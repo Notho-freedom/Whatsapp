@@ -453,7 +453,24 @@ export const useMediaStore = create(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         media: state.media
-      })
+      }),
+      // Fonction de migration pour gérer les changements de structure
+      migrate: (persistedState, version) => {
+        if (persistedState) {
+          console.log('🔄 Migration de l\'état des médias...');
+          return {
+            media: persistedState.media || {
+              images: [],
+              videos: [],
+              audios: [],
+              documents: [],
+              other: []
+            }
+          };
+        }
+        return persistedState;
+      },
+      version: 1 // Version pour la migration
     }
   )
 );

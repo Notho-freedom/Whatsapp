@@ -10,7 +10,7 @@
 -- Table des conversations
 CREATE TABLE conversations (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    type ENUM('individual', 'group', 'broadcast') NOT NULL,
+    type VARCHAR(50) CHECK (type IN ('individual', 'group', 'broadcast')) NOT NULL,
     name VARCHAR(255), -- Pour les groupes
     description TEXT, -- Pour les groupes
     avatar_url VARCHAR(500),
@@ -36,7 +36,7 @@ CREATE TABLE conversation_participants (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     conversation_id INTEGER NOT NULL,
     user_id INTEGER NOT NULL,
-    role ENUM('admin', 'member', 'readonly') DEFAULT 'member',
+    role VARCHAR(50) CHECK (role IN ('admin', 'member', 'readonly')) DEFAULT 'member',
     joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     left_at TIMESTAMP NULL,
     is_active BOOLEAN DEFAULT TRUE,
@@ -58,14 +58,14 @@ CREATE TABLE messages (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     conversation_id INTEGER NOT NULL,
     sender_id INTEGER NOT NULL,
-    message_type ENUM('text', 'image', 'video', 'audio', 'document', 'location', 'contact', 'sticker', 'system') NOT NULL,
+    message_type VARCHAR(50) CHECK (message_type IN ('text', 'image', 'video', 'audio', 'document', 'location', 'contact', 'sticker', 'system')) NOT NULL,
     content TEXT, -- Contenu texte ou description
     media_url VARCHAR(500), -- URL du média
     media_metadata JSON, -- Métadonnées du média (taille, durée, etc.)
     reply_to_message_id INTEGER, -- Message auquel on répond
     forward_from_message_id INTEGER, -- Message original si forwardé
     forward_from_conversation_id INTEGER, -- Conversation originale si forwardé
-    status ENUM('sending', 'sent', 'delivered', 'read', 'failed') DEFAULT 'sending',
+    status VARCHAR(50) CHECK (status IN ('sending', 'sent', 'delivered', 'read', 'failed')) DEFAULT 'sending',
     is_edited BOOLEAN DEFAULT FALSE,
     edited_at TIMESTAMP NULL,
     is_deleted BOOLEAN DEFAULT FALSE,
@@ -170,13 +170,13 @@ CREATE INDEX idx_message_read_status_read_at ON message_read_status(read_at);
 CREATE TABLE statuses (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
-    status_type ENUM('text', 'image', 'video', 'audio') NOT NULL,
+    status_type VARCHAR(50) CHECK (status_type IN ('text', 'image', 'video', 'audio')) NOT NULL,
     content TEXT, -- Contenu texte ou description
     media_url VARCHAR(500), -- URL du média
     media_metadata JSON, -- Métadonnées du média
     background_color VARCHAR(7), -- Couleur de fond pour les statuts texte
     font_style VARCHAR(50), -- Style de police
-    privacy ENUM('public', 'contacts', 'selected_contacts', 'exclude_contacts') DEFAULT 'contacts',
+    privacy VARCHAR(50) CHECK (privacy IN ('public', 'contacts', 'selected_contacts', 'exclude_contacts')) DEFAULT 'contacts',
     expires_at TIMESTAMP NOT NULL, -- Expiration automatique (24h par défaut)
     is_active BOOLEAN DEFAULT TRUE,
     view_count INTEGER DEFAULT 0,
@@ -214,7 +214,7 @@ CREATE INDEX idx_status_views_viewed_at ON status_views(viewed_at);
 CREATE TABLE status_privacy_settings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
-    setting_type ENUM('default_privacy', 'excluded_contacts', 'selected_contacts') NOT NULL,
+    setting_type VARCHAR(50) CHECK (setting_type IN ('default_privacy', 'excluded_contacts', 'selected_contacts')) NOT NULL,
     setting_value JSON, -- Valeur du paramètre (contacts exclus, sélectionnés, etc.)
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

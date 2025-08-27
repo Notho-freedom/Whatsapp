@@ -333,7 +333,40 @@ export const useUserStore = create(
         currentUser: state.currentUser,
         contacts: state.contacts,
         preferences: state.preferences
-      })
+      }),
+      // Fonction de migration pour gérer les changements de structure
+      migrate: (persistedState, version) => {
+        if (persistedState) {
+          console.log('🔄 Migration de l\'état utilisateur...');
+          return {
+            currentUser: persistedState.currentUser || null,
+            contacts: persistedState.contacts || [],
+            preferences: persistedState.preferences || {
+              theme: 'light',
+              language: 'fr',
+              notifications: {
+                enabled: true,
+                sound: true,
+                vibration: true,
+                showPreview: true
+              },
+              privacy: {
+                lastSeen: 'everyone',
+                profilePhoto: 'everyone',
+                status: 'everyone',
+                readReceipts: true
+              },
+              chat: {
+                enterToSend: true,
+                mediaAutoDownload: true,
+                fontSize: 'medium'
+              }
+            }
+          };
+        }
+        return persistedState;
+      },
+      version: 1 // Version pour la migration
     }
   )
 );

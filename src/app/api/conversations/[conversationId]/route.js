@@ -1,52 +1,59 @@
 import { NextResponse } from 'next/server';
+const conversationService = require('@/utils/conversationDatabaseService');
+const authService = require('@/utils/authDatabaseService');
 
-// Simulation d'une base de données de conversations
-let mockConversations = [
-  {
-    id: 'conv_1',
-    participants: [
-      { id: 'user_1', name: 'Utilisateur Demo', profilePhoto: 'https://via.placeholder.com/150' },
-      { id: 'contact_1', name: 'Jean Dupont', profilePhoto: 'https://via.placeholder.com/150' }
-    ],
-    type: 'individual',
-    createdAt: '2024-01-01T00:00:00.000Z',
-    lastMessage: {
-      id: 'msg_1',
-      content: 'Salut ! Comment ça va ?',
-      timestamp: '2024-01-15T10:30:00.000Z',
-      sender: { id: 'contact_1', name: 'Jean Dupont' }
-    },
-    unreadCount: 2,
-    isPinned: true,
-    isArchived: false,
-    isMuted: false,
-    theme: 'default',
-    customName: null
-  }
-];
-
-// GET - Récupérer une conversation spécifique
+// GET /api/conversations/[conversationId] - Récupérer une conversation spécifique
 export async function GET(request, { params }) {
   try {
+    // Vérifier l'authentification
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { error: 'Token d\'authentification requis' },
+        { status: 401 }
+      );
+    }
+
+    const token = authHeader.substring(7);
+    const user = await authService.verifyToken(token);
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Token invalide' },
+        { status: 401 }
+      );
+    }
+
     const { conversationId } = params;
-    
-    // Simulation d'un délai réseau
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
-    const conversation = mockConversations.find(conv => conv.id === conversationId);
-    
+
+    // Récupérer la conversation
+    const conversation = await conversationService.getConversationById(conversationId);
     if (!conversation) {
       return NextResponse.json(
         { error: 'Conversation non trouvée' },
         { status: 404 }
       );
     }
+
+    // Vérifier que l'utilisateur est participant
+    const participants = await conversationService.getParticipants(conversationId);
+    const isParticipant = participants.some(p => p.user_id === user.id);
     
+    if (!isParticipant) {
+      return NextResponse.json(
+        { error: 'Accès non autorisé à cette conversation' },
+        { status: 403 }
+      );
+    }
+
     return NextResponse.json({
-      conversation
+      conversation: {
+        ...conversation,
+        participants
+      }
     });
+
   } catch (error) {
-    console.error('Erreur lors de la récupération de la conversation:', error);
+    console.error('❌ Erreur lors de la récupération de la conversation:', error);
     return NextResponse.json(
       { error: 'Erreur interne du serveur' },
       { status: 500 }
@@ -54,33 +61,60 @@ export async function GET(request, { params }) {
   }
 }
 
-// PUT - Mettre à jour une conversation
+// PUT /api/conversations/[conversationId] - Mettre à jour une conversation
 export async function PUT(request, { params }) {
   try {
-    const { conversationId } = params;
-    const updates = await request.json();
-    
-    const conversationIndex = mockConversations.findIndex(conv => conv.id === conversationId);
-    
-    if (conversationIndex === -1) {
+    // Vérifier l'authentification
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
-        { error: 'Conversation non trouvée' },
-        { status: 404 }
+        { error: 'Token d\'authentification requis' },
+        { status: 401 }
       );
     }
+
+    const token = authHeader.substring(7);
+    const user = await authService.verifyToken(token);
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Token invalide' },
+        { status: 401 }
+      );
+    }
+
+    const { conversationId } = params;
+    const body = await request.json();
+
+    // Vérifier que l'utilisateur est participant
+    const participants = await conversationService.getParticipants(conversationId);
+    const userParticipant = participants.find(p => p.user_id === user.id);
     
+    if (!userParticipant) {
+      return NextResponse.json(
+        { error: 'Accès non autorisé à cette conversation' },
+        { status: 403 }
+      );
+    }
+
+    // Vérifier les permissions pour les modifications de groupe
+    const conversation = await conversationService.getConversationById(conversationId);
+    if (conversation.is_group && body.title && !userParticipant.is_admin) {
+      return NextResponse.json(
+        { error: 'Seuls les administrateurs peuvent modifier le titre du groupe' },
+        { status: 403 }
+      );
+    }
+
     // Mettre à jour la conversation
-    mockConversations[conversationIndex] = {
-      ...mockConversations[conversationIndex],
-      ...updates
-    };
-    
+    const updatedConversation = await conversationService.updateConversation(conversationId, body);
+
     return NextResponse.json({
-      conversation: mockConversations[conversationIndex],
+      conversation: updatedConversation,
       message: 'Conversation mise à jour avec succès'
     });
+
   } catch (error) {
-    console.error('Erreur lors de la mise à jour de la conversation:', error);
+    console.error('❌ Erreur lors de la mise à jour de la conversation:', error);
     return NextResponse.json(
       { error: 'Erreur interne du serveur' },
       { status: 500 }
@@ -88,29 +122,58 @@ export async function PUT(request, { params }) {
   }
 }
 
-// DELETE - Supprimer une conversation
+// DELETE /api/conversations/[conversationId] - Supprimer une conversation
 export async function DELETE(request, { params }) {
   try {
-    const { conversationId } = params;
-    
-    const conversationIndex = mockConversations.findIndex(conv => conv.id === conversationId);
-    
-    if (conversationIndex === -1) {
+    // Vérifier l'authentification
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
-        { error: 'Conversation non trouvée' },
-        { status: 404 }
+        { error: 'Token d\'authentification requis' },
+        { status: 401 }
       );
     }
+
+    const token = authHeader.substring(7);
+    const user = await authService.verifyToken(token);
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Token invalide' },
+        { status: 401 }
+      );
+    }
+
+    const { conversationId } = params;
+
+    // Vérifier que l'utilisateur est participant
+    const participants = await conversationService.getParticipants(conversationId);
+    const userParticipant = participants.find(p => p.user_id === user.id);
     
+    if (!userParticipant) {
+      return NextResponse.json(
+        { error: 'Accès non autorisé à cette conversation' },
+        { status: 403 }
+      );
+    }
+
+    // Vérifier les permissions pour la suppression
+    const conversation = await conversationService.getConversationById(conversationId);
+    if (conversation.is_group && !userParticipant.is_admin) {
+      return NextResponse.json(
+        { error: 'Seuls les administrateurs peuvent supprimer un groupe' },
+        { status: 403 }
+      );
+    }
+
     // Supprimer la conversation
-    const deletedConversation = mockConversations.splice(conversationIndex, 1)[0];
-    
+    await conversationService.deleteConversation(conversationId);
+
     return NextResponse.json({
-      message: 'Conversation supprimée avec succès',
-      conversation: deletedConversation
+      message: 'Conversation supprimée avec succès'
     });
+
   } catch (error) {
-    console.error('Erreur lors de la suppression de la conversation:', error);
+    console.error('❌ Erreur lors de la suppression de la conversation:', error);
     return NextResponse.json(
       { error: 'Erreur interne du serveur' },
       { status: 500 }

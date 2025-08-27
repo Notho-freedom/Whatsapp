@@ -7,7 +7,7 @@ const createAuthSlice = (set, get) => ({
   isAuthenticated: false,
   user: null,
   accessToken: null,
-  refreshToken: null,
+  sessionToken: null,
   expiresAt: null,
   
   // État de chargement
@@ -19,8 +19,6 @@ const createAuthSlice = (set, get) => ({
     set({ isLoading: true, error: null });
     
     try {
-      // Simulation d'une API d'authentification
-      // Plus tard, remplacez par votre vraie API
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -28,7 +26,8 @@ const createAuthSlice = (set, get) => ({
       });
       
       if (!response.ok) {
-        throw new Error('Échec de l\'authentification');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Échec de l\'authentification');
       }
       
       const data = await response.json();
@@ -37,7 +36,45 @@ const createAuthSlice = (set, get) => ({
         isAuthenticated: true,
         user: data.user,
         accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
+        sessionToken: data.session.sessionToken,
+        expiresAt: data.expiresAt,
+        isLoading: false,
+        error: null
+      });
+      
+      return data;
+    } catch (error) {
+      set({
+        isLoading: false,
+        error: error.message
+      });
+      throw error;
+    }
+  },
+
+  // Inscription
+  register: async (userData) => {
+    set({ isLoading: true, error: null });
+    
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Échec de l\'inscription');
+      }
+      
+      const data = await response.json();
+      
+      set({
+        isAuthenticated: true,
+        user: data.user,
+        accessToken: data.accessToken,
+        sessionToken: data.session.sessionToken,
         expiresAt: data.expiresAt,
         isLoading: false,
         error: null
@@ -74,7 +111,7 @@ const createAuthSlice = (set, get) => ({
         isAuthenticated: true,
         user: data.user,
         accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
+        sessionToken: data.session?.sessionToken,
         expiresAt: data.expiresAt,
         isLoading: false,
         error: null
@@ -91,12 +128,27 @@ const createAuthSlice = (set, get) => ({
   },
   
   // Déconnexion
-  logout: () => {
+  logout: async () => {
+    const { sessionToken } = get();
+    
+    try {
+      // Invalider la session côté serveur
+      if (sessionToken) {
+        await fetch('/api/auth/logout', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionToken })
+        });
+      }
+    } catch (error) {
+      console.error('Erreur lors de la déconnexion côté serveur:', error);
+    }
+    
     set({
       isAuthenticated: false,
       user: null,
       accessToken: null,
-      refreshToken: null,
+      sessionToken: null,
       expiresAt: null,
       error: null
     });
@@ -104,17 +156,17 @@ const createAuthSlice = (set, get) => ({
   
   // Rafraîchissement du token
   refreshAccessToken: async () => {
-    const { refreshToken } = get();
+    const { sessionToken } = get();
     
-    if (!refreshToken) {
-      throw new Error('Aucun refresh token disponible');
+    if (!sessionToken) {
+      throw new Error('Aucun session token disponible');
     }
     
     try {
       const response = await fetch('/api/auth/refresh', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refreshToken })
+        body: JSON.stringify({ sessionToken })
       });
       
       if (!response.ok) {
@@ -145,7 +197,7 @@ const createAuthSlice = (set, get) => ({
     }
     
     const now = Date.now();
-    const expiresIn = expiresAt - now;
+    const expiresIn = new Date(expiresAt).getTime() - now;
     
     // Si le token expire dans moins de 5 minutes, le rafraîchir
     if (expiresIn < 5 * 60 * 1000) {
@@ -167,16 +219,18 @@ const createAuthSlice = (set, get) => ({
   
   // Vérification de l'état d'authentification au démarrage
   checkAuthStatus: async () => {
-    const { accessToken, checkTokenExpiration } = get();
+    const { accessToken, sessionToken } = get();
     
-    if (!accessToken) {
+    if (!accessToken && !sessionToken) {
       return false;
     }
     
     try {
       // Vérifier si le token est valide
       const response = await fetch('/api/auth/verify', {
-        headers: { 'Authorization': `Bearer ${accessToken}` }
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accessToken, sessionToken })
       });
       
       if (response.ok) {
@@ -187,12 +241,13 @@ const createAuthSlice = (set, get) => ({
         });
         return true;
       } else {
-        // Token invalide, essayer de le rafraîchir
-        await checkTokenExpiration();
-        return get().isAuthenticated;
+        // Token invalide, déconnecter l'utilisateur
+        get().logout();
+        return false;
       }
     } catch (error) {
       console.error('Erreur lors de la vérification du statut d\'authentification:', error);
+      get().logout();
       return false;
     }
   }
@@ -209,9 +264,23 @@ export const useAuthStore = create(
         isAuthenticated: state.isAuthenticated,
         user: state.user,
         accessToken: state.accessToken,
-        refreshToken: state.refreshToken,
+        sessionToken: state.sessionToken,
         expiresAt: state.expiresAt
-      })
+      }),
+      // Fonction de migration pour gérer les changements de structure
+      migrate: (persistedState, version) => {
+        // Si l'état persistant a l'ancienne structure (avec refreshToken)
+        if (persistedState && persistedState.refreshToken && !persistedState.sessionToken) {
+          console.log('🔄 Migration de l\'état d\'authentification...');
+          return {
+            ...persistedState,
+            sessionToken: null, // Pas de session token dans l'ancienne version
+            refreshToken: undefined // Supprimer l'ancien refreshToken
+          };
+        }
+        return persistedState;
+      },
+      version: 2 // Version pour la migration
     }
   )
 );

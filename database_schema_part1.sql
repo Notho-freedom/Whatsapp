@@ -25,7 +25,7 @@ CREATE TABLE users (
     status_message TEXT,
     bio TEXT,
     date_of_birth DATE,
-    gender ENUM('male', 'female', 'other', 'prefer_not_to_say'),
+    gender VARCHAR(20) CHECK (gender IN ('male', 'female', 'other', 'prefer_not_to_say')),
     country_code VARCHAR(3),
     language_code VARCHAR(5) DEFAULT 'fr',
     timezone VARCHAR(50),
@@ -145,7 +145,7 @@ CREATE TABLE contacts (
     is_blocked BOOLEAN DEFAULT FALSE,
     labels JSON, -- Array de labels
     custom_fields JSON, -- Champs personnalisés
-    sync_source ENUM('manual', 'google', 'apple', 'outlook'),
+    sync_source VARCHAR(50) CHECK (sync_source IN ('manual', 'google', 'apple', 'outlook')),
     sync_id VARCHAR(255), -- ID externe pour la synchronisation
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

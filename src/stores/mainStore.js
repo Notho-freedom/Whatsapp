@@ -385,7 +385,31 @@ export const useMainStore = create(
           lastSync: state.syncState.lastSync,
           pendingChanges: state.syncState.pendingChanges
         }
-      })
+      }),
+      // Fonction de migration pour gérer les changements de structure
+      migrate: (persistedState, version) => {
+        if (persistedState) {
+          console.log('🔄 Migration de l\'état principal...');
+          return {
+            appState: persistedState.appState || {
+              isInitialized: false,
+              currentView: 'chat',
+              sidebarOpen: true,
+              theme: 'light',
+              language: 'fr'
+            },
+            syncState: {
+              lastSync: persistedState.syncState?.lastSync || null,
+              pendingChanges: persistedState.syncState?.pendingChanges || [],
+              isSyncing: false,
+              syncProgress: 0
+            },
+            globalErrors: persistedState.globalErrors || []
+          };
+        }
+        return persistedState;
+      },
+      version: 1 // Version pour la migration
     }
   )
 );

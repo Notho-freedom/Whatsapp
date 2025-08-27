@@ -10,10 +10,10 @@
 -- Table des appels
 CREATE TABLE calls (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    call_type ENUM('audio', 'video') NOT NULL,
+    call_type VARCHAR(50) CHECK (call_type IN ('audio', 'video')) NOT NULL,
     initiator_id INTEGER NOT NULL,
     conversation_id INTEGER NOT NULL,
-    call_status ENUM('initiating', 'ringing', 'answered', 'ended', 'missed', 'rejected', 'busy') NOT NULL,
+    call_status VARCHAR(50) CHECK (call_status IN ('initiating', 'ringing', 'answered', 'ended', 'missed', 'rejected', 'busy')) NOT NULL,
     start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     end_time TIMESTAMP NULL,
     duration_seconds INTEGER DEFAULT 0,
@@ -62,9 +62,9 @@ CREATE TABLE call_history (
     user_id INTEGER NOT NULL,
     call_id INTEGER NOT NULL,
     contact_id INTEGER, -- Contact avec qui l'appel a été fait
-    call_type ENUM('audio', 'video') NOT NULL,
-    call_direction ENUM('incoming', 'outgoing', 'missed') NOT NULL,
-    call_status ENUM('completed', 'missed', 'rejected', 'busy') NOT NULL,
+    call_type VARCHAR(50) CHECK (call_type IN ('audio', 'video')) NOT NULL,
+    call_direction VARCHAR(50) CHECK (call_direction IN ('incoming', 'outgoing', 'missed')) NOT NULL,
+    call_status VARCHAR(50) CHECK (call_status IN ('completed', 'missed', 'rejected', 'busy')) NOT NULL,
     duration_seconds INTEGER DEFAULT 0,
     call_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     notes TEXT,
@@ -88,13 +88,13 @@ CREATE INDEX idx_call_history_direction ON call_history(call_direction);
 CREATE TABLE notifications (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
-    notification_type ENUM('message', 'call', 'status', 'system', 'media', 'group') NOT NULL,
+    notification_type VARCHAR(50) CHECK (notification_type IN ('message', 'call', 'status', 'system', 'media', 'group')) NOT NULL,
     title VARCHAR(255) NOT NULL,
     content TEXT,
     icon_url VARCHAR(500),
     action_url VARCHAR(500), -- URL ou action à effectuer
     metadata JSON, -- Données supplémentaires
-    priority ENUM('low', 'normal', 'high', 'urgent') DEFAULT 'normal',
+    priority VARCHAR(50) CHECK (priority IN ('low', 'normal', 'high', 'urgent')) DEFAULT 'normal',
     category VARCHAR(50),
     is_read BOOLEAN DEFAULT FALSE,
     is_dismissed BOOLEAN DEFAULT FALSE,
@@ -118,7 +118,7 @@ CREATE INDEX idx_notifications_expires_at ON notifications(expires_at);
 CREATE TABLE notification_settings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
-    setting_type ENUM('global', 'conversation', 'contact', 'category') NOT NULL,
+    setting_type VARCHAR(50) CHECK (setting_type IN ('global', 'conversation', 'contact', 'category')) NOT NULL,
     target_id INTEGER, -- ID de la conversation, contact ou catégorie
     setting_name VARCHAR(100) NOT NULL,
     setting_value JSON NOT NULL,
@@ -164,7 +164,7 @@ CREATE TABLE media (
     user_id INTEGER NOT NULL, -- Propriétaire du média
     conversation_id INTEGER, -- Conversation d'origine
     message_id INTEGER, -- Message d'origine
-    media_type ENUM('image', 'video', 'audio', 'document', 'sticker', 'gif') NOT NULL,
+    media_type VARCHAR(50) CHECK (media_type IN ('image', 'video', 'audio', 'document', 'sticker', 'gif')) NOT NULL,
     file_name VARCHAR(255) NOT NULL,
     file_path VARCHAR(500) NOT NULL,
     file_url VARCHAR(500),
@@ -202,7 +202,7 @@ CREATE TABLE media_cache (
     cache_key VARCHAR(255) UNIQUE NOT NULL,
     cache_data BLOB, -- Données en cache
     cache_size INTEGER NOT NULL,
-    cache_type ENUM('thumbnail', 'preview', 'full') NOT NULL,
+    cache_type VARCHAR(50) CHECK (cache_type IN ('thumbnail', 'preview', 'full')) NOT NULL,
     expires_at TIMESTAMP NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
@@ -219,7 +219,7 @@ CREATE TABLE media_downloads (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
     media_id INTEGER NOT NULL,
-    download_status ENUM('pending', 'downloading', 'completed', 'failed', 'cancelled') NOT NULL,
+    download_status VARCHAR(50) CHECK (download_status IN ('pending', 'downloading', 'completed', 'failed', 'cancelled')) NOT NULL,
     progress_percentage INTEGER DEFAULT 0,
     download_path VARCHAR(500),
     error_message TEXT,

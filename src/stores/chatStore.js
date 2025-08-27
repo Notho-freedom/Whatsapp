@@ -360,7 +360,20 @@ export const useChatStore = create(
         conversations: state.conversations,
         messages: state.messages,
         unreadCounts: state.unreadCounts
-      })
+      }),
+      // Fonction de migration pour gérer les changements de structure
+      migrate: (persistedState, version) => {
+        if (persistedState) {
+          console.log('🔄 Migration de l\'état de chat...');
+          return {
+            conversations: persistedState.conversations || [],
+            messages: persistedState.messages || {},
+            unreadCounts: persistedState.unreadCounts || {}
+          };
+        }
+        return persistedState;
+      },
+      version: 1 // Version pour la migration
     }
   )
 );
