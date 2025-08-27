@@ -276,7 +276,7 @@ class FirebaseServerService {
       });
 
       // Trier par date de création côté client (plus récent en premier)
-      messages.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      messages.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
       // Appliquer la pagination
       const paginatedMessages = messages.slice(offset, offset + limit);
