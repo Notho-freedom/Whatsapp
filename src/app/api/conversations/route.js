@@ -5,7 +5,20 @@ const authService = require('@/utils/authDatabaseService');
 // GET /api/conversations - Récupérer les conversations de l'utilisateur
 export async function GET(request) {
   try {
-    // Vérifier l'authentification
+    // Récupérer les paramètres de requête
+    const { searchParams } = new URL(request.url);
+    const isTemporary = searchParams.get('is_temporary') === 'true';
+    
+    // Pour les conversations temporaires, pas besoin d'authentification
+    if (isTemporary) {
+      const conversations = await conversationService.getTempConversations();
+      return NextResponse.json({
+        conversations,
+        count: conversations.length
+      });
+    }
+
+    // Pour les conversations normales, vérifier l'authentification
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
@@ -23,8 +36,7 @@ export async function GET(request) {
       );
     }
 
-    // Récupérer les paramètres de requête
-    const { searchParams } = new URL(request.url);
+    // Récupérer les paramètres de requête pour les conversations normales
     const limit = parseInt(searchParams.get('limit')) || 50;
     const offset = parseInt(searchParams.get('offset')) || 0;
     const query = searchParams.get('query') || '';
@@ -73,10 +85,51 @@ export async function GET(request) {
   }
 }
 
+// DELETE /api/conversations - Nettoyer les anciennes conversations temporaires
+export async function DELETE(request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const isTemporary = searchParams.get('is_temporary') === 'true';
+    
+    if (isTemporary) {
+      const deletedCount = await conversationService.cleanupOldTempConversations();
+      return NextResponse.json({
+        success: true,
+        deletedCount,
+        message: `${deletedCount} conversations temporaires supprimées`
+      });
+    }
+
+    return NextResponse.json(
+      { error: 'Méthode DELETE non autorisée pour les conversations normales' },
+      { status: 405 }
+    );
+
+  } catch (error) {
+    console.error('❌ Erreur lors du nettoyage des conversations temporaires:', error);
+    return NextResponse.json(
+      { error: 'Erreur interne du serveur' },
+      { status: 500 }
+    );
+  }
+}
+
 // POST /api/conversations - Créer une nouvelle conversation
 export async function POST(request) {
   try {
-    // Vérifier l'authentification
+    const body = await request.json();
+    const { is_temporary = false } = body;
+
+    // Pour les conversations temporaires, pas besoin d'authentification
+    if (is_temporary) {
+      const conversation = await conversationService.createTempConversation(body);
+      return NextResponse.json({
+        conversation,
+        message: 'Conversation temporaire créée avec succès'
+      }, { status: 201 });
+    }
+
+    // Pour les conversations normales, vérifier l'authentification
     const authHeader = request.headers.get('authorization');
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
@@ -94,7 +147,6 @@ export async function POST(request) {
       );
     }
 
-    const body = await request.json();
     const {
       conversation_type = 'individual',
       title,

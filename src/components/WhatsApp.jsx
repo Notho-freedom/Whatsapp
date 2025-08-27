@@ -50,7 +50,7 @@ import {
   NativeContextMenuDemo 
 } from '@/features';
 import { useAppContext } from '@/context';
-import { useGoogleAuth, useEventManager, useTokenRefresh } from '@/hooks';
+import { useGoogleAuth, useEventManager, useTokenRefresh, useTempConversations } from '@/hooks';
 
 export default function WhatsApp() {
   const [isClient, setIsClient] = React.useState(false);
@@ -67,6 +67,9 @@ export default function WhatsApp() {
   
   // Hook de rafraîchissement automatique des tokens
   useTokenRefresh();
+  
+  // Hook pour gérer les conversations temporaires
+  const { loadTempConversations, cleanupOldConversations } = useTempConversations();
   
   const { 
     selectedChat, 
@@ -109,6 +112,17 @@ export default function WhatsApp() {
       window.removeEventListener('start-call', handleStartCall);
     };
   }, [setActiveTab]);
+
+  // Charger les conversations temporaires au démarrage
+  React.useEffect(() => {
+    if (isClient && isAuthenticated) {
+      // Charger les conversations temporaires
+      loadTempConversations();
+      
+      // Nettoyer les anciennes conversations temporaires
+      cleanupOldConversations();
+    }
+  }, [isClient, isAuthenticated, loadTempConversations, cleanupOldConversations]);
 
 
 

@@ -16,18 +16,12 @@ function convertValueForSQLite(value) {
 class DatabaseService {
   constructor() {
     this.db = null;
-    this.dbPath = path.join(process.cwd(), 'database', 'whatsapp.db');
+    this.dbPath = path.join(process.cwd(), 'whatsapp.db');
     this.init();
   }
 
   init() {
     try {
-      // Créer le dossier database s'il n'existe pas
-      const dbDir = path.dirname(this.dbPath);
-      if (!fs.existsSync(dbDir)) {
-        fs.mkdirSync(dbDir, { recursive: true });
-      }
-
       // Initialiser la connexion à la base de données
       this.db = new Database(this.dbPath);
       

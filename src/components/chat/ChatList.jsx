@@ -9,6 +9,7 @@ import { useChatContextMenu } from '@/hooks';
 import { useGoogleContacts } from '@/hooks';
 import { useContacts } from '@/hooks';
 import apiInterceptor from '@/utils/apiInterceptor';
+import { API_ENDPOINTS } from '@/utils/config';
 
 export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect, currentUser }) {
   const [isClient, setIsClient] = useState(false);
@@ -65,42 +66,98 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect,
       // Vérifier si l'utilisateur est authentifié
       const token = localStorage.getItem('accessToken');
       if (!token) {
-        // Si pas d'authentification, créer un chat temporaire
-        const fallbackChat = {
-          id: `temp-${Date.now()}`,
-          name: contact.displayName || contact.name || 'Nouveau contact',
-          avatar: contact.photos?.[0]?.url || '/default-avatar.png',
-          lastMessage: {
-            text: 'Nouvelle conversation',
-            type: 'text',
-            time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+              // Si pas d'authentification, créer un chat temporaire dans la base de données
+      try {
+        const response = await fetch(API_ENDPOINTS.CONVERSATIONS, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
           },
-          lastMessageTime: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
-          unreadCount: 0,
-          isPinned: false,
-          isMuted: false,
-          isTyping: false,
-          contact: contact,
-          isNewConversation: true,
-          isTemporary: true
-        };
-
-        addUser(fallbackChat);
-        onChatSelect(fallbackChat);
-        setShowContacts(false);
-
-        setNotification({
-          type: 'success',
-          message: `Conversation temporaire créée avec ${fallbackChat.name}`,
-          timestamp: new Date()
+          body: JSON.stringify({
+            type: 'individual',
+            name: contact.displayName || contact.name || 'Nouveau contact',
+            avatar_url: contact.photos?.[0]?.url || '/default-avatar.png',
+            description: `Conversation avec ${contact.displayName || contact.name || 'Nouveau contact'}`,
+            created_by: currentUser?.id || 1,
+            is_temporary: true,
+            custom_settings: JSON.stringify({ 
+              isTemporary: true, 
+              contact: contact 
+            })
+          })
         });
-        setTimeout(() => setNotification(null), 3000);
 
-        return;
+        if (!response.ok) {
+          throw new Error('Erreur lors de la création de la conversation temporaire');
+        }
+
+        const data = await response.json();
+        const tempConversation = data.conversation;
+
+          const fallbackChat = {
+            id: tempConversation.id,
+            name: tempConversation.name,
+            avatar: tempConversation.avatar,
+            lastMessage: {
+              text: 'Nouvelle conversation',
+              type: 'text',
+              time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+            },
+            lastMessageTime: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+            unreadCount: 0,
+            isPinned: false,
+            isMuted: false,
+            isTyping: false,
+            contact: tempConversation.contact,
+            isNewConversation: true,
+            isTemporary: true
+          };
+
+          // Ajouter le chat temporaire à la liste
+          addUser(fallbackChat);
+          onChatSelect(fallbackChat);
+          setShowContacts(false);
+
+          setNotification({
+            type: 'success',
+            message: `Conversation temporaire créée avec ${fallbackChat.name}`,
+            timestamp: new Date()
+          });
+          setTimeout(() => setNotification(null), 3000);
+
+          return;
+        } catch (error) {
+          console.error('❌ Erreur lors de la création de la conversation temporaire:', error);
+          
+          // Fallback en cas d'erreur
+          const fallbackChat = {
+            id: `temp-${Date.now()}`,
+            name: contact.displayName || contact.name || 'Nouveau contact',
+            avatar: contact.photos?.[0]?.url || '/default-avatar.png',
+            lastMessage: {
+              text: 'Nouvelle conversation',
+              type: 'text',
+              time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+            },
+            lastMessageTime: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+            unreadCount: 0,
+            isPinned: false,
+            isMuted: false,
+            isTyping: false,
+            contact: contact,
+            isNewConversation: true,
+            isTemporary: true
+          };
+
+          addUser(fallbackChat);
+          onChatSelect(fallbackChat);
+          setShowContacts(false);
+        }
       }
 
-      // Créer le contact dans notre base de données locale
-      const contactData = {
+      // Créer un contact temporaire directement
+      const newContact = {
+        id: `temp-contact-${Date.now()}`,
         first_name: contact.displayName?.split(' ')[0] || contact.name?.split(' ')[0] || 'Contact',
         last_name: contact.displayName?.split(' ').slice(1).join(' ') || contact.name?.split(' ').slice(1).join(' ') || '',
         email: contact.emails?.[0]?.value || '',
@@ -113,50 +170,32 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect,
         job_title: '',
         birthday: null,
         address: '',
-        website: ''
+        website: '',
+        isTemporary: true
       };
 
-      // Créer le contact via notre API
-      let newContact;
-      try {
-        newContact = await createContact(contactData);
-      } catch (contactError) {
-        console.warn('⚠️ Erreur lors de la création du contact, utilisation du contact temporaire:', contactError);
-        // Utiliser le contact original comme fallback
-        newContact = {
-          id: `temp-contact-${Date.now()}`,
-          ...contactData,
-          isTemporary: true
-        };
-      }
-
-      // Créer une conversation avec ce contact
-      const conversationData = {
-        type: 'individual',
-        name: contact.displayName || contact.name || 'Nouveau contact',
-        description: '',
-        created_by: currentUser?.id || 1, // Utilisateur actuel
-        avatar_url: contact.photos?.[0]?.url || '/default-avatar.png',
-        custom_settings: {}
-      };
-
-      // Appeler l'API pour créer la conversation
-      const response = await apiInterceptor.fetch('/api/conversations', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          conversation_type: 'individual',
-          title: conversationData.name,
-          description: conversationData.description,
-          is_group: false,
-          participants: [newContact.id] // Ajouter le contact comme participant
-        })
-      });
+      // Créer une conversation temporaire avec ce contact
+                      const response = await fetch(API_ENDPOINTS.CONVERSATIONS, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            type: 'individual',
+            name: contact.displayName || contact.name || 'Nouveau contact',
+            avatar_url: contact.photos?.[0]?.url || '/default-avatar.png',
+            description: `Conversation avec ${contact.displayName || contact.name || 'Nouveau contact'}`,
+            created_by: currentUser?.id || 1,
+            is_temporary: true,
+            custom_settings: JSON.stringify({ 
+              isTemporary: true, 
+              contact: newContact 
+            })
+          })
+        });
 
       if (!response.ok) {
-        throw new Error('Erreur lors de la création de la conversation');
+        throw new Error('Erreur lors de la création de la conversation temporaire');
       }
 
       const { conversation } = await response.json();
@@ -211,9 +250,9 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect,
       setTimeout(() => setNotification(null), 3000);
 
     } catch (error) {
-      console.error('❌ Erreur lors de la création de la conversation:', error);
+      console.error('❌ Erreur lors de la création de la conversation temporaire:', error);
       
-      // Fallback: créer un chat temporaire
+      // Fallback: créer un chat temporaire en mémoire
       const fallbackChat = {
         id: `temp-${Date.now()}`,
         name: contact.displayName || contact.name || 'Nouveau contact',
@@ -237,6 +276,14 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect,
       addUser(fallbackChat);
       onChatSelect(fallbackChat);
       setShowContacts(false);
+
+      // Afficher une notification d'erreur
+      setNotification({
+        type: 'error',
+        message: `Conversation temporaire créée (mode fallback)`,
+        timestamp: new Date()
+      });
+      setTimeout(() => setNotification(null), 3000);
     }
   };
 

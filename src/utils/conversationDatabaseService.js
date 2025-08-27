@@ -5,6 +5,190 @@ class ConversationDatabaseService {
     this.db = databaseService;
   }
 
+  // ===== GESTION DES CONVERSATIONS TEMPORAIRES =====
+
+  async createTempConversation(conversationData) {
+    try {
+      const {
+        name,
+        avatar_url,
+        description,
+        created_by = 1,
+        is_temporary = true,
+        custom_settings = {}
+      } = conversationData;
+
+      // Vérifier si l'utilisateur existe, sinon le créer
+      let userId = created_by;
+      const existingUser = await this.db.get(`
+        SELECT id FROM users WHERE id = ?
+      `, [created_by]);
+
+      if (!existingUser) {
+        // Créer un utilisateur par défaut
+        const newUser = await this.db.run(`
+          INSERT INTO users (
+            username, email, phone, first_name, last_name, 
+            avatar_url, is_active, created_at, updated_at
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+          'user_default',
+          'default@whatsapp.local',
+          '+33000000000',
+          'Utilisateur',
+          'Par Défaut',
+          '/default-avatar.png',
+          1,
+          new Date().toISOString(),
+          new Date().toISOString()
+        ]);
+        userId = newUser.lastInsertRowid;
+      }
+
+      // Créer la conversation
+      const conversation = await this.db.run(`
+        INSERT INTO conversations (
+          type, name, description, created_by, avatar_url, 
+          custom_settings, is_temporary, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `, [
+        'individual',
+        name,
+        description,
+        userId,
+        avatar_url,
+        JSON.stringify(custom_settings),
+        is_temporary ? 1 : 0,
+        new Date().toISOString(),
+        new Date().toISOString()
+      ]);
+
+      const conversationId = conversation.lastInsertRowid;
+
+      // Ajouter le créateur comme participant
+      await this.db.run(`
+        INSERT INTO conversation_participants (
+          conversation_id, user_id, role, is_active, 
+          notification_settings, joined_at
+        ) VALUES (?, ?, ?, ?, ?, ?)
+      `, [
+        conversationId,
+        userId,
+        'member',
+        1,
+        JSON.stringify({ muted: false, sound: true, vibration: true }),
+        new Date().toISOString()
+      ]);
+
+      // Si un contact est fourni dans custom_settings, l'ajouter comme participant virtuel
+      if (custom_settings.contact) {
+        await this.db.run(`
+          INSERT INTO conversation_participants (
+            conversation_id, user_id, role, is_active, 
+            notification_settings, joined_at, is_virtual_contact
+          ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        `, [
+          conversationId,
+          `virtual_${custom_settings.contact.id || Date.now()}`,
+          'member',
+          1,
+          JSON.stringify({ muted: false, sound: true, vibration: true }),
+          new Date().toISOString(),
+          1
+        ]);
+      }
+
+      return {
+        id: conversationId,
+        name,
+        avatar_url,
+        custom_settings,
+        is_temporary: true,
+        created_at: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('❌ Erreur lors de la création de la conversation temporaire:', error);
+      throw error;
+    }
+  }
+
+  async getTempConversations() {
+    try {
+      const conversations = await this.db.all(`
+        SELECT 
+          c.id,
+          c.name,
+          c.avatar_url,
+          c.custom_settings,
+          c.created_at,
+          c.updated_at,
+          c.is_temporary
+        FROM conversations c
+        WHERE c.is_temporary = 1
+        ORDER BY c.updated_at DESC
+      `);
+
+      return conversations.map(conv => ({
+        ...conv,
+        custom_settings: JSON.parse(conv.custom_settings || '{}'),
+        contact: JSON.parse(conv.custom_settings || '{}').contact || null
+      }));
+    } catch (error) {
+      console.error('❌ Erreur lors de la récupération des conversations temporaires:', error);
+      return [];
+    }
+  }
+
+  async cleanupOldTempConversations() {
+    try {
+      const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      
+      // Récupérer les conversations à supprimer
+      const oldConversations = await this.db.all(`
+        SELECT id FROM conversations 
+        WHERE is_temporary = 1 AND updated_at < ?
+      `, [sevenDaysAgo]);
+
+      // Supprimer chaque conversation
+      for (const conv of oldConversations) {
+        await this.deleteTempConversation(conv.id);
+      }
+
+      console.log(`🧹 Nettoyage: ${oldConversations.length} conversations temporaires supprimées`);
+      return oldConversations.length;
+    } catch (error) {
+      console.error('❌ Erreur lors du nettoyage des conversations temporaires:', error);
+      return 0;
+    }
+  }
+
+  async deleteTempConversation(conversationId) {
+    try {
+      // Supprimer les participants
+      await this.db.run(`
+        DELETE FROM conversation_participants 
+        WHERE conversation_id = ?
+      `, [conversationId]);
+
+      // Supprimer les messages
+      await this.db.run(`
+        DELETE FROM messages 
+        WHERE conversation_id = ?
+      `, [conversationId]);
+
+      // Supprimer la conversation
+      await this.db.run(`
+        DELETE FROM conversations 
+        WHERE id = ? AND is_temporary = 1
+      `, [conversationId]);
+
+      return true;
+    } catch (error) {
+      console.error('❌ Erreur lors de la suppression de la conversation temporaire:', error);
+      throw error;
+    }
+  }
+
   // ===== GESTION DES CONVERSATIONS =====
 
   async createConversation(conversationData) {

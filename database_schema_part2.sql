@@ -20,6 +20,7 @@ CREATE TABLE conversations (
     last_activity_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     is_archived BOOLEAN DEFAULT FALSE,
     is_muted BOOLEAN DEFAULT FALSE,
+    is_temporary BOOLEAN DEFAULT FALSE, -- Pour les conversations temporaires
     theme VARCHAR(50) DEFAULT 'default',
     custom_settings JSON,
     
@@ -30,6 +31,7 @@ CREATE INDEX idx_conversations_type ON conversations(type);
 CREATE INDEX idx_conversations_created_by ON conversations(created_by);
 CREATE INDEX idx_conversations_last_activity ON conversations(last_activity_at);
 CREATE INDEX idx_conversations_archived ON conversations(is_archived);
+CREATE INDEX idx_conversations_temporary ON conversations(is_temporary);
 
 -- Table des participants aux conversations
 CREATE TABLE conversation_participants (
