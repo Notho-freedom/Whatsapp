@@ -92,8 +92,15 @@ export default function WhatsApp() {
     isInitialized: cacheInitialized,
     cacheStats,
     syncWithCache,
-    preloadData
+    preloadData,
+    getAllConversations,
+    getMessages,
+    getLastMessages
   } = useLocalCache();
+  
+  // État pour gérer les phases de chargement
+  const [loadingPhase, setLoadingPhase] = React.useState(1); // 1: Cache local, 2: Synchronisation
+  const [isSyncing, setIsSyncing] = React.useState(false);
   
   const { 
     selectedChat, 
@@ -104,7 +111,8 @@ export default function WhatsApp() {
     activeTab,
     setActiveTab,
     users,
-    getUserStatuses
+    getUserStatuses,
+    actions
   } = useAppContext();
 
   React.useEffect(() => {
@@ -167,18 +175,62 @@ export default function WhatsApp() {
     }
   }, [isAuthenticated, currentUserId, users.length, listenToUserPresence]);
 
-  // Synchroniser les données avec le cache local
+  // Stratégie de chargement en deux phases : Cache local d'abord, puis synchronisation
   React.useEffect(() => {
     if (cacheInitialized && isAuthenticated) {
-      // Synchroniser les utilisateurs/conversations avec le cache
-      if (users.length > 0) {
-        syncWithCache(users, 'users');
+      // PHASE 1 : Chargement instantané depuis le cache local
+      console.log('🚀 Phase 1 : Chargement depuis le cache local...');
+      setLoadingPhase(1);
+      
+              // Charger les conversations depuis le cache local
+        const cachedConversations = getAllConversations();
+        if (cachedConversations.length > 0) {
+          console.log(`📦 ${cachedConversations.length} conversations chargées depuis le cache local`);
+          // Transformer les conversations en utilisateurs pour la compatibilité avec le contexte
+          const transformedConversations = cachedConversations.map(conv => ({
+            id: conv.id,
+            name: conv.name || 'Conversation',
+            avatar: conv.avatar || '/default-avatar.png',
+            lastMessage: conv.lastMessage || '',
+            lastMessageTime: conv.lastMessageTime || new Date().toISOString(),
+            unreadCount: conv.unreadCount || 0,
+            isConversation: true
+          }));
+          
+          // Mettre à jour l'état avec les conversations transformées
+          actions.setUsers(transformedConversations);
+          
+          // Charger les derniers messages pour chaque conversation (optimisé)
+          cachedConversations.forEach(conv => {
+            const lastMessages = getLastMessages(conv.id, 5); // 5 derniers messages optimisés
+            if (lastMessages.length > 0) {
+              actions.setMessages(conv.id, lastMessages);
+              console.log(`📝 ${lastMessages.length} derniers messages chargés pour ${conv.id}`);
+            }
+          });
+        
+        // Marquer la phase 1 comme terminée
+        setLoadingPhase(2);
       }
       
-      // Précharger les données fréquemment utilisées
-      preloadData();
+      // PHASE 2 : Synchronisation furtive en arrière-plan
+      console.log('🔄 Phase 2 : Lancement de la synchronisation furtive...');
+      setIsSyncing(true);
+      
+      setTimeout(() => {
+        // Synchroniser les utilisateurs avec le cache
+        if (users.length > 0) {
+          syncWithCache(users, 'users');
+        }
+        
+        // Précharger et synchroniser les données
+        preloadData().finally(() => {
+          setIsSyncing(false);
+          console.log('✅ Synchronisation furtive terminée');
+        });
+      }, 100); // Délai minimal pour laisser l'interface se charger
     }
-  }, [cacheInitialized, isAuthenticated, users, syncWithCache, preloadData]);
+  }, [cacheInitialized, isAuthenticated, users, syncWithCache, preloadData, getAllConversations, getMessages, actions]);
 
 
 
@@ -218,12 +270,22 @@ export default function WhatsApp() {
     );
   }
 
-  // Indicateur de chargement subtil en haut de l'écran
-  const LoadingIndicator = () => (
+  // Indicateur de chargement intelligent avec phases
+  const LoadingIndicator = ({ phase = 1, isSyncing = false }) => (
     <div className="absolute top-0 left-0 right-0 z-50 bg-whatsapp-primary/90 text-white py-2 px-4 text-center text-sm">
       <div className="flex items-center justify-center space-x-2">
-        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-        <span>Chargement des conversations...</span>
+        {phase === 1 ? (
+          <>
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+            <span>Chargement depuis le cache local...</span>
+          </>
+        ) : (
+          <>
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            <span>Synchronisation furtive en cours...</span>
+            {isSyncing && <span className="text-xs opacity-75">(arrière-plan)</span>}
+          </>
+        )}
       </div>
     </div>
   );
@@ -302,8 +364,8 @@ export default function WhatsApp() {
 
   return (
     <div className="h-screen w-screen flex flex-col bg-[#202020] font-segoe overflow-hidden rounded-md relative">
-      {/* Indicateur de chargement subtil */}
-      {loading && <LoadingIndicator />}
+      {/* Indicateur de chargement intelligent avec phases */}
+      {loading && <LoadingIndicator phase={loadingPhase} isSyncing={isSyncing} />}
       
       {/* Titlebar */}
       <Titlebar />

@@ -89,9 +89,20 @@ export function useLocalCache() {
     }
   }, [updateCacheStats]);
 
-  // Récupérer les messages d'une conversation
+  // Récupérer les messages d'une conversation avec optimisation
   const getMessages = useCallback((conversationId, limit = 50, offset = 0) => {
     return localCacheService.getMessages(conversationId, limit, offset);
+  }, []);
+  
+  // Récupérer les derniers messages d'une conversation (optimisé pour l'affichage)
+  const getLastMessages = useCallback((conversationId, count = 5) => {
+    try {
+      const messages = localCacheService.getMessages(conversationId, count, 0);
+      return messages.sort((a, b) => new Date(b.timestamp || b.time) - new Date(a.timestamp || a.time));
+    } catch (error) {
+      console.warn(`Erreur lors de la récupération des derniers messages pour ${conversationId}:`, error);
+      return [];
+    }
   }, []);
 
   // Ajouter un nouveau message
@@ -317,26 +328,51 @@ export function useLocalCache() {
    * Préchargement intelligent
    */
   
-  // Précharger les données fréquemment utilisées
+  // Précharger les données fréquemment utilisées de manière optimisée
   const preloadData = useCallback(async () => {
     try {
-      console.log('🚀 Préchargement des données fréquemment utilisées...');
+      console.log('🚀 Préchargement optimisé des données fréquemment utilisées...');
       
-      // Précharger les conversations récentes
+      // Précharger les conversations récentes (priorité haute)
       const recentConversations = getAllConversations().slice(0, 10);
+      console.log(`📦 ${recentConversations.length} conversations récentes identifiées`);
       
-      // Précharger les messages des conversations récentes
-      for (const conv of recentConversations) {
-        const messages = getMessages(conv.id, 20, 0);
-        if (messages.length === 0) {
-          // Si pas de messages en cache, on pourrait les charger depuis l'API
-          console.log(`📥 Préchargement des messages pour ${conv.id}`);
+      // Précharger les messages des conversations récentes en parallèle
+      const preloadPromises = recentConversations.map(async (conv) => {
+        try {
+          const messages = getMessages(conv.id, 20, 0); // 20 derniers messages
+          if (messages.length === 0) {
+            console.log(`📥 Pas de messages en cache pour ${conv.id} - à charger depuis l'API`);
+            // Ici on pourrait déclencher un chargement depuis l'API
+            return { conversationId: conv.id, status: 'needs_loading' };
+          } else {
+            console.log(`✅ ${messages.length} messages déjà en cache pour ${conv.id}`);
+            return { conversationId: conv.id, status: 'cached', count: messages.length };
+          }
+        } catch (error) {
+          console.warn(`⚠️ Erreur lors du préchargement pour ${conv.id}:`, error);
+          return { conversationId: conv.id, status: 'error', error: error.message };
         }
-      }
+      });
       
-      console.log('✅ Préchargement terminé');
+      // Attendre que tous les préchargements soient terminés
+      const results = await Promise.allSettled(preloadPromises);
+      
+      // Analyser les résultats
+      const summary = {
+        total: recentConversations.length,
+        cached: results.filter(r => r.status === 'fulfilled' && r.value.status === 'cached').length,
+        needsLoading: results.filter(r => r.status === 'fulfilled' && r.value.status === 'needs_loading').length,
+        errors: results.filter(r => r.status === 'rejected').length
+      };
+      
+      console.log('📊 Résumé du préchargement:', summary);
+      console.log('✅ Préchargement optimisé terminé');
+      
+      return summary;
     } catch (error) {
-      console.error('Erreur lors du préchargement:', error);
+      console.error('❌ Erreur lors du préchargement optimisé:', error);
+      throw error;
     }
   }, [getAllConversations, getMessages]);
 
@@ -364,12 +400,13 @@ export function useLocalCache() {
     getConversation,
     getAllConversations,
     
-    // Gestion des messages
-    saveMessages,
-    getMessages,
-    addMessage,
-    updateMessage,
-    deleteMessage,
+         // Gestion des messages
+     saveMessages,
+     getMessages,
+     getLastMessages,
+     addMessage,
+     updateMessage,
+     deleteMessage,
     
     // Gestion des utilisateurs
     saveUser,

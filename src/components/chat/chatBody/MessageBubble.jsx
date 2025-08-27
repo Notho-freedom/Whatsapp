@@ -395,9 +395,9 @@ const MessageBubble = memo(function MessageBubble({ message, isFirstInGroup, isL
               {isMe && (
               <span className="wa-message-status ml-1" aria-label={message.read ? 'Read' : 'Delivered'}>
                   {message.read ? (
-                  <BsCheck2All className="text-[#53bdeb]" style={{ width: isMobile ? '14px' : '16px', height: isMobile ? '10px' : '11px' }} />
+                  <BsCheck2All className="text-[#53bdeb]" style={{ width: isMobile ? '14px' : '20px', height: isMobile ? '10px' : '15px' }} />
                   ) : (
-                  <BsCheck2All className="text-[#8b9a9f]" style={{ width: isMobile ? '14px' : '16px', height: isMobile ? '10px' : '11px' }} />
+                  <BsCheck2All className="text-[#8b9a9f]" style={{ width: isMobile ? '14px' : '20px', height: isMobile ? '10px' : '15px' }} />
                   )}
                 </span>
               )}
