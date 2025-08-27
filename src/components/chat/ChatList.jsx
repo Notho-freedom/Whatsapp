@@ -7,12 +7,15 @@ import { StatusCircle } from '@/components/ui';
 import Lenis from '@studio-freight/lenis';
 import { useChatContextMenu } from '@/hooks';
 import { useGoogleContacts } from '@/hooks';
+import { useContacts } from '@/hooks';
 
 export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect, currentUser }) {
   const [isClient, setIsClient] = useState(false);
   const [showContacts, setShowContacts] = useState(false);
-  const { filteredUsers, searchQuery, setSearchQuery } = useAppContext();
+  const [notification, setNotification] = useState(null);
+  const { filteredUsers, searchQuery, setSearchQuery, addUser } = useAppContext();
   const { contacts, isLoading: contactsLoading, error: contactsError } = useGoogleContacts();
+  const { createContact, fetchContacts } = useContacts();
   const scrollRef = useRef(null);
   
   // Hook pour les menus contextuels natifs d'Electron
@@ -53,6 +56,188 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect,
 
   const handleSearchChange = (e) => {
     setSearchQuery(e.target.value);
+  };
+
+  // Fonction pour créer une conversation avec un contact
+  const createConversationWithContact = async (contact) => {
+    try {
+      // Vérifier si l'utilisateur est authentifié
+      const token = localStorage.getItem('accessToken');
+      if (!token) {
+        // Si pas d'authentification, créer un chat temporaire
+        const fallbackChat = {
+          id: `temp-${Date.now()}`,
+          name: contact.displayName || contact.name || 'Nouveau contact',
+          avatar: contact.photos?.[0]?.url || '/default-avatar.png',
+          lastMessage: {
+            text: 'Nouvelle conversation',
+            type: 'text',
+            time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+          },
+          lastMessageTime: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+          unreadCount: 0,
+          isPinned: false,
+          isMuted: false,
+          isTyping: false,
+          contact: contact,
+          isNewConversation: true,
+          isTemporary: true
+        };
+
+        addUser(fallbackChat);
+        onChatSelect(fallbackChat);
+        setShowContacts(false);
+
+        setNotification({
+          type: 'success',
+          message: `Conversation temporaire créée avec ${fallbackChat.name}`,
+          timestamp: new Date()
+        });
+        setTimeout(() => setNotification(null), 3000);
+
+        return;
+      }
+
+      // Créer le contact dans notre base de données locale
+      const contactData = {
+        first_name: contact.displayName?.split(' ')[0] || contact.name?.split(' ')[0] || 'Contact',
+        last_name: contact.displayName?.split(' ').slice(1).join(' ') || contact.name?.split(' ').slice(1).join(' ') || '',
+        email: contact.emails?.[0]?.value || '',
+        phone: contact.phones?.[0]?.value || '',
+        avatar_url: contact.photos?.[0]?.url || '/default-avatar.png',
+        is_favorite: false,
+        labels: [],
+        notes: '',
+        company: '',
+        job_title: '',
+        birthday: null,
+        address: '',
+        website: ''
+      };
+
+      // Créer le contact via notre API
+      let newContact;
+      try {
+        newContact = await createContact(contactData);
+      } catch (contactError) {
+        console.warn('⚠️ Erreur lors de la création du contact, utilisation du contact temporaire:', contactError);
+        // Utiliser le contact original comme fallback
+        newContact = {
+          id: `temp-contact-${Date.now()}`,
+          ...contactData,
+          isTemporary: true
+        };
+      }
+
+      // Créer une conversation avec ce contact
+      const conversationData = {
+        type: 'individual',
+        name: contact.displayName || contact.name || 'Nouveau contact',
+        description: '',
+        created_by: currentUser?.id || 1, // Utilisateur actuel
+        avatar_url: contact.photos?.[0]?.url || '/default-avatar.png',
+        custom_settings: {}
+      };
+
+      // Appeler l'API pour créer la conversation
+      const response = await fetch('/api/conversations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken') || ''}`
+        },
+        body: JSON.stringify({
+          conversation_type: 'individual',
+          title: conversationData.name,
+          description: conversationData.description,
+          is_group: false,
+          participants: [newContact.id] // Ajouter le contact comme participant
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Erreur lors de la création de la conversation');
+      }
+
+      const { conversation } = await response.json();
+
+      // Créer un objet chat pour l'interface
+      const newChat = {
+        id: conversation.id,
+        name: conversation.name || contact.displayName || contact.name,
+        avatar: conversation.avatar_url || contact.photos?.[0]?.url || '/default-avatar.png',
+        lastMessage: {
+          text: 'Nouvelle conversation',
+          type: 'text',
+          time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+        },
+        lastMessageTime: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+        unreadCount: 0,
+        isPinned: false,
+        isMuted: false,
+        isTyping: false,
+        contact: newContact,
+        isNewConversation: true
+      };
+
+      // Ajouter le nouveau chat à la liste des conversations
+      addUser(newChat);
+
+      // Sélectionner le nouveau chat
+      onChatSelect(newChat);
+
+      // Fermer la vue contacts et revenir aux chats
+      setShowContacts(false);
+
+      // Émettre un événement pour notifier l'application
+      window.dispatchEvent(new CustomEvent('conversation-created', { 
+        detail: { 
+          conversation: newChat,
+          contact: newContact,
+          timestamp: new Date()
+        } 
+      }));
+
+      console.log('✅ Conversation créée avec succès:', newChat);
+
+      // Afficher une notification de succès
+      setNotification({
+        type: 'success',
+        message: `Conversation créée avec ${newChat.name}`,
+        timestamp: new Date()
+      });
+
+      // Masquer la notification après 3 secondes
+      setTimeout(() => setNotification(null), 3000);
+
+    } catch (error) {
+      console.error('❌ Erreur lors de la création de la conversation:', error);
+      
+      // Fallback: créer un chat temporaire
+      const fallbackChat = {
+        id: `temp-${Date.now()}`,
+        name: contact.displayName || contact.name || 'Nouveau contact',
+        avatar: contact.photos?.[0]?.url || '/default-avatar.png',
+        lastMessage: {
+          text: 'Nouvelle conversation',
+          type: 'text',
+          time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+        },
+        lastMessageTime: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+        unreadCount: 0,
+        isPinned: false,
+        isMuted: false,
+        isTyping: false,
+        contact: contact,
+        isNewConversation: true,
+        isTemporary: true
+      };
+
+      // Ajouter le chat temporaire à la liste
+      addUser(fallbackChat);
+      onChatSelect(fallbackChat);
+      setShowContacts(false);
+    }
   };
 
   // Priorité : pinned > non pinned, puis par temps
@@ -114,7 +299,29 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect,
 
 
   return (
-    <div className="h-full flex flex-col pl-1.5">
+    <div className="h-full flex flex-col pl-1.5 relative">
+      {/* Notification */}
+      {notification && (
+        <div className={`absolute top-4 left-4 right-4 z-50 p-3 rounded-lg shadow-lg transition-all duration-300 ${
+          notification.type === 'success' 
+            ? 'bg-green-600 text-white' 
+            : 'bg-red-600 text-white'
+        }`}>
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">
+              {notification.type === 'success' ? '✅ ' : '❌ '}
+              {notification.message}
+            </span>
+            <button
+              onClick={() => setNotification(null)}
+              className="ml-2 text-white hover:text-gray-200"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <div className="pl-4 pt-4 pr-2 mb-4">
         <div className="flex items-center justify-between mb-4">
@@ -199,17 +406,7 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect,
               contacts.map((contact) => (
                 <div
                   key={contact.id}
-                  onClick={() => {
-                    // Créer un nouveau chat avec ce contact
-                    const newChat = {
-                      id: `contact-${contact.id}`,
-                      name: contact.displayName || contact.name || 'Contact sans nom',
-                      avatar: contact.photos?.[0]?.url || '/default-avatar.png',
-                      isNewContact: true,
-                      contact: contact
-                    };
-                    onChatSelect(newChat);
-                  }}
+                  onClick={() => createConversationWithContact(contact)}
                   className="flex items-center gap-3 p-2 mt-1 cursor-pointer rounded-lg hover:bg-neutral-700/50 transition-colors"
                 >
                   {/* Avatar du contact */}

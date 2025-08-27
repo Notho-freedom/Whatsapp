@@ -24,6 +24,7 @@ const ACTIONS = {
   CLEAR_REPLY_TO: 'CLEAR_REPLY_TO',
   TOGGLE_MESSAGE_STAR: 'TOGGLE_MESSAGE_STAR',
   TOGGLE_CHAT_PIN: 'TOGGLE_CHAT_PIN',
+  ADD_USER: 'ADD_USER',
   // Nouvelles actions pour les statuts
   SET_STATUSES: 'SET_STATUSES',
   ADD_STATUS: 'ADD_STATUS',
@@ -239,6 +240,12 @@ function appReducer(state, action) {
         )
       };
     
+    case ACTIONS.ADD_USER:
+      return {
+        ...state,
+        users: [action.payload, ...state.users]
+      };
+    
     // Nouvelles actions pour les statuts
     case ACTIONS.SET_STATUSES:
       return { ...state, statuses: action.payload };
@@ -305,6 +312,7 @@ export function AppProvider({ children }) {
     clearReplyTo: () => dispatch({ type: ACTIONS.CLEAR_REPLY_TO }),
     toggleMessageStar: (chatId, messageId) => dispatch({ type: ACTIONS.TOGGLE_MESSAGE_STAR, payload: { chatId, messageId } }),
     toggleChatPin: (chatId) => dispatch({ type: ACTIONS.TOGGLE_CHAT_PIN, payload: { chatId } }),
+    addUser: (user) => dispatch({ type: ACTIONS.ADD_USER, payload: user }),
     // Nouvelles actions pour les statuts
     setStatuses: (statuses) => dispatch({ type: ACTIONS.SET_STATUSES, payload: statuses }),
     addStatus: (status) => dispatch({ type: ACTIONS.ADD_STATUS, payload: status }),
@@ -850,6 +858,7 @@ function getRandomLastMessage() {
     clearReplyTo: actions.clearReplyTo,
     toggleMessageStar: actions.toggleMessageStar,
     toggleChatPin: actions.toggleChatPin,
+    addUser: actions.addUser,
     // Nouvelles actions pour les statuts
     setStatuses: actions.setStatuses,
     addStatus: actions.addStatus,
