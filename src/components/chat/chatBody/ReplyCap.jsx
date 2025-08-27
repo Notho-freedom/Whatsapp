@@ -19,27 +19,44 @@ const ReplyCap = memo(function ReplyCap({ replyTo, onCancelReply, currentUser, s
   };
 
   const getMessagePreview = () => {
+    // Priorité au texte du message
     if (replyTo.text) return truncateText(replyTo.text);
 
+    // Ensuite les médias avec des descriptions plus détaillées
     if (replyTo.media && replyTo.media.length > 0) {
       const mediaType = replyTo.media[0].type;
       switch (mediaType) {
         case 'image': return '📷 Image';
-        case 'video': return '🎥 Video';
-        case 'audio': return '🎵 Audio';
+        case 'video': return '🎥 Vidéo';
+        case 'audio': return '🎵 Message vocal';
         case 'document': return '📄 Document';
-        default: return '📎 Media';
+        case 'file': return '📎 Fichier';
+        default: return `📎 ${mediaType}`;
       }
     }
 
-    if (replyTo.link) return '🔗 Link';
-    return 'Message';
+    // Liens
+    if (replyTo.link) {
+      if (replyTo.link.title) return `🔗 ${truncateText(replyTo.link.title, 40)}`;
+      return '🔗 Lien';
+    }
+
+    // Appels
+    if (replyTo.type === 'call') return '📞 Appel';
+
+    // Messages système
+    if (replyTo.type === 'system') return 'ℹ️ Message système';
+
+    // Fallback intelligent basé sur le type
+    if (replyTo.type) return `💬 ${replyTo.type}`;
+    
+    return '💬 Message';
   };
 
   const getSenderName = () => {
-    // Si c'est l'utilisateur actuel
+    // Si c'est l'utilisateur actuel (réponse à ses propres messages)
     if (replyTo.sender === 'me' || replyTo.sender === currentUser?.id) {
-      return currentUser?.name || 'You';
+      return currentUser?.name || 'Vous';
     }
 
     // Si on a un nom d'expéditeur direct
@@ -61,11 +78,11 @@ const ReplyCap = memo(function ReplyCap({ replyTo, onCancelReply, currentUser, s
     }
 
     // Fallback
-    return 'Unknown';
+    return 'Inconnu';
   };
 
   const getSenderAvatar = () => {
-    // Si c'est l'utilisateur actuel
+    // Si c'est l'utilisateur actuel (réponse à ses propres messages)
     if (replyTo.sender === 'me' || replyTo.sender === currentUser?.id) {
       return currentUser?.picture || null;
     }
@@ -134,7 +151,7 @@ const ReplyCap = memo(function ReplyCap({ replyTo, onCancelReply, currentUser, s
         case 'video': return <Video size={12} className="text-red-400" />;
         case 'audio': return <Mic size={12} className="text-green-400" />;
         case 'document': return <FileText size={12} className="text-orange-400" />;
-        default: return <MessageCircle size={12} className="text-gray-400" />;
+        default: return <FileText size={12} className="text-gray-400" />;
       }
     }
     if (replyTo.link) return <Link size={12} className="text-blue-400" />;
@@ -205,6 +222,74 @@ const ReplyCap = memo(function ReplyCap({ replyTo, onCancelReply, currentUser, s
     });
   };
 
+  // Aperçu des médias avec thumbnails réduits
+  const getMediaPreview = () => {
+    if (!replyTo.media || replyTo.media.length === 0) return null;
+
+    const media = replyTo.media[0];
+    
+    // Pour les images, essayer de montrer un aperçu réduit
+    if (media.type === 'image' && media.url) {
+      return (
+        <div className="w-8 h-8 rounded overflow-hidden flex-shrink-0 bg-white/10 flex items-center justify-center">
+          <img 
+            src={media.url} 
+            alt="Aperçu image"
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              e.target.style.display = 'none';
+              e.target.nextSibling.style.display = 'flex';
+            }}
+          />
+          <div className="hidden text-base text-[#8696a0] items-center justify-center w-full h-full">
+            📷
+          </div>
+        </div>
+      );
+    }
+
+    // Pour les autres types de médias, utiliser des icônes avec couleurs
+    const getMediaIcon = () => {
+      switch (media.type) {
+        case 'video': return <Video size={16} className="text-red-400" />;
+        case 'audio': return <Mic size={16} className="text-green-400" />;
+        case 'document': return <FileText size={16} className="text-orange-400" />;
+        case 'file': return <FileText size={16} className="text-blue-400" />;
+        default: return <FileText size={16} className="text-gray-400" />;
+      }
+    };
+
+    return (
+      <div className="w-8 h-8 rounded overflow-hidden flex-shrink-0 bg-white/10 flex items-center justify-center">
+        {getMediaIcon()}
+      </div>
+    );
+  };
+
+  // Aperçu des liens avec thumbnails
+  const getLinkPreview = () => {
+    if (!replyTo.link) return null;
+
+    return (
+      <div className="w-8 h-8 rounded overflow-hidden flex-shrink-0 bg-white/10 flex items-center justify-center">
+        {replyTo.link.thumbnail ? (
+          <img 
+            src={replyTo.link.thumbnail} 
+            alt="Aperçu lien"
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              e.target.style.display = 'none';
+              e.target.nextSibling.style.display = 'flex';
+            }}
+          />
+        ) : null}
+        <div className={`text-base text-[#8696a0] items-center justify-center w-full h-full ${replyTo.link.thumbnail ? 'hidden' : 'flex'}`}>
+          🔗
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="relative w-full bg-[#2c2c2c] animate-[replyCapSlideIn_0.2s_ease-out]">
       {/* Barre de réponse */}
@@ -262,35 +347,8 @@ const ReplyCap = memo(function ReplyCap({ replyTo, onCancelReply, currentUser, s
               {getMessagePreview()}
             </div>
             
-            {/* Thumbnail pour media */}
-            {replyTo.media && replyTo.media.length > 0 && (
-              <div className="w-8 h-8 rounded overflow-hidden flex-shrink-0 bg-white/10 flex items-center justify-center">
-                {replyTo.media[0].type === 'image' ? (
-                  <img 
-                    src={replyTo.media[0].url} 
-                    alt="Media preview"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="text-base text-[#8696a0]">
-                    {replyTo.media[0].type === 'video' && '🎥'}
-                    {replyTo.media[0].type === 'audio' && '🎵'}
-                    {replyTo.media[0].type === 'document' && '📄'}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Thumbnail pour lien */}
-            {replyTo.link?.thumbnail && (
-              <div className="w-8 h-8 rounded overflow-hidden flex-shrink-0 bg-white/10 flex items-center justify-center">
-                <img 
-                  src={replyTo.link.thumbnail} 
-                  alt="Link preview"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            )}
+            {/* Thumbnail pour media ou lien */}
+            {getMediaPreview() || getLinkPreview()}
           </div>
           
           {/* Informations supplémentaires si disponibles */}

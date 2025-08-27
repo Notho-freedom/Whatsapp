@@ -423,13 +423,33 @@ class FirebaseService {
       const messagesRef = collection(this.db, 'messages');
       
       // Créer une requête pour récupérer les messages de cette conversation
-      const q = query(
+      let q = query(
         messagesRef,
         where('conversation_id', '==', conversationId),
-        orderBy('created_at', 'desc'),
-        limit(limit),
-        startAfter(offset)
+        orderBy('created_at', 'desc')
       );
+
+      // Appliquer la limite si spécifiée
+      if (limit && limit > 0) {
+        q = query(q, limit(limit));
+      }
+
+      // Appliquer l'offset si spécifié (pour la pagination)
+      if (offset && offset > 0) {
+        // Pour startAfter, nous devons d'abord récupérer le document de référence
+        const offsetQuery = query(
+          messagesRef,
+          where('conversation_id', '==', conversationId),
+          orderBy('created_at', 'desc'),
+          limit(offset)
+        );
+        const offsetSnapshot = await getDocs(offsetQuery);
+        
+        if (offsetSnapshot.docs.length > 0) {
+          const lastDoc = offsetSnapshot.docs[offsetSnapshot.docs.length - 1];
+          q = query(q, startAfter(lastDoc));
+        }
+      }
       
       const querySnapshot = await getDocs(q);
       const messages = [];
