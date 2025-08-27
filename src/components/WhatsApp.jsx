@@ -13,6 +13,7 @@ import {
   ClientOnly,
   Notification 
 } from '@/components/common';
+import CacheStats from '@/components/common/CacheStats';
 import RealtimeNotification from '@/components/common/RealtimeNotification';
 import { 
   StatusCircle, 
@@ -350,6 +351,9 @@ export default function WhatsApp() {
           console.log('Notification fermée:', notificationId);
         }}
       />
+
+      {/* Statistiques du cache (en mode développement) */}
+      {process.env.NODE_ENV === 'development' && <CacheStats />}
 
     </div>
   );

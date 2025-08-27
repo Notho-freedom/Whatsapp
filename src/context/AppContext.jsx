@@ -1,6 +1,8 @@
 'use client';
 
 import { createContext, useContext, useReducer, useEffect, useCallback, useMemo } from 'react';
+import cachedFirebaseService from '@/utils/cachedFirebaseService';
+import localStorageService from '@/utils/localStorageService';
 
 // Types d'actions
 const ACTIONS = {
@@ -511,7 +513,48 @@ export function AppProvider({ children }) {
     return selected;
   }, []);
 
-  // Méthodes métier optimisées
+  // Méthodes métier optimisées avec cache
+  const loadMessages = useCallback(async (chatId) => {
+    try {
+      actions.setLoading(true);
+      
+      // Charger les messages depuis le service de cache
+      const messages = await cachedFirebaseService.getMessages(chatId, 50, 0);
+      
+      if (messages && messages.length > 0) {
+        const transformedMessages = messages.map(msg => ({
+          id: msg.id,
+          sender: msg.sender,
+          senderName: msg.sender_name,
+          text: msg.text,
+          media: msg.media,
+          time: msg.time || new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+          date: msg.date || new Date().toLocaleDateString('fr-FR'),
+          read: msg.is_read || false,
+          reactions: msg.reactions || [],
+          replyTo: msg.reply_to,
+          type: msg.type || 'text',
+          isStarred: msg.is_starred || false,
+          edited: msg.edited || false,
+          forwarded: msg.forwarded || false,
+          link: msg.link
+        }));
+        
+        actions.setMessages(chatId, transformedMessages);
+        console.log(`✅ ${transformedMessages.length} messages chargés avec cache pour la conversation ${chatId}`);
+      } else {
+        // Si pas de messages, initialiser avec un tableau vide
+        actions.setMessages(chatId, []);
+        console.log(`📭 Aucun message trouvé pour la conversation ${chatId}`);
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des messages:', error);
+      actions.setError(error.message);
+    } finally {
+      actions.setLoading(false);
+    }
+  }, [actions]);
+
   const sendMessage = useCallback(async (chatId, messageData, replyTo = null) => {
     // Gérer les différents types de messages
     let message;
@@ -555,22 +598,10 @@ export function AppProvider({ children }) {
       };
     }
 
-    // Sauvegarder le message dans Firebase
+    // Sauvegarder le message avec le service de cache
     try {
-      const response = await fetch(`/api/conversations/${chatId}/messages`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(firebaseData)
-      });
-
-      if (response.ok) {
-        const savedMessage = await response.json();
-        console.log('✅ Message sauvegardé dans Firebase:', savedMessage);
-      } else {
-        console.error('❌ Erreur lors de la sauvegarde du message');
-      }
+      const savedMessage = await cachedFirebaseService.saveMessage(chatId, firebaseData);
+      console.log('✅ Message sauvegardé avec cache:', savedMessage);
     } catch (error) {
       console.error('❌ Erreur lors de la sauvegarde du message:', error);
     }
@@ -603,7 +634,7 @@ export function AppProvider({ children }) {
         }
       );
 
-      // Sauvegarder la réponse dans Firebase
+      // Sauvegarder la réponse avec le service de cache
       try {
         const replyData = {
           text: replyText,
@@ -618,20 +649,8 @@ export function AppProvider({ children }) {
           }
         };
 
-        const replyResponse = await fetch(`/api/conversations/${chatId}/messages`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(replyData)
-        });
-
-        if (replyResponse.ok) {
-          const savedReply = await replyResponse.json();
-          console.log('✅ Réponse sauvegardée dans Firebase:', savedReply);
-        } else {
-          console.error('❌ Erreur lors de la sauvegarde de la réponse');
-        }
+        const savedReply = await cachedFirebaseService.saveMessage(chatId, replyData);
+        console.log('✅ Réponse sauvegardée avec cache:', savedReply);
       } catch (error) {
         console.error('❌ Erreur lors de la sauvegarde de la réponse:', error);
       }
@@ -646,6 +665,13 @@ export function AppProvider({ children }) {
       });
     }, 1000 + Math.random() * 2000);
   }, [createTextMessage, getRandomMessageText, actions, state.users]);
+
+  // Charger les messages quand une conversation est sélectionnée
+  useEffect(() => {
+    if (state.selectedChat?.id) {
+      loadMessages(state.selectedChat.id);
+    }
+  }, [state.selectedChat?.id, loadMessages]);
 
   const selectChat = useCallback(async (chat) => {
     actions.setSelectedChat(chat);
@@ -756,13 +782,14 @@ export function AppProvider({ children }) {
     return state.users.filter(user => user.isContact);
   }, [state.users]);
 
-  // Charger les utilisateurs depuis l'API (seulement les contacts, pas les conversations)
+  // Charger les utilisateurs et conversations avec cache
   useEffect(() => {
-    async function fetchUsers() {
+    async function fetchUsersAndConversations() {
       try {
         actions.setLoading(true);
         actions.setError(null);
         
+        // Charger les contacts depuis l'API externe
         const response = await fetch('https://randomuser.me/api/?results=20&nat=fr,us,gb,ca,au');
         const data = await response.json();
         
@@ -771,7 +798,7 @@ export function AppProvider({ children }) {
         }
       
         // Transformer les données pour correspondre à notre structure (seulement les contacts)
-        const transformedUsers = data.results.map((user, index) => {
+        const transformedContacts = data.results.map((user, index) => {
           const userName = Math.random() > 0.95 ? '+'+user.phone : `${user.name.first} ${user.name.last}`;
           // Réduire la probabilité d'avoir des statuts (seulement 30% des utilisateurs)
           const hasStatuses = Math.random() > 0.7;
@@ -793,21 +820,44 @@ export function AppProvider({ children }) {
           };
         });
 
-        actions.setUsers(transformedUsers);
+        // Charger les conversations depuis le service de cache
+        const currentUserId = 'default-user'; // À remplacer par l'ID utilisateur réel
+        const conversations = await cachedFirebaseService.getConversations(currentUserId, 50, 0);
+        
+        // Transformer les conversations en utilisateurs pour la compatibilité
+        const transformedConversations = conversations.map(conv => ({
+          id: conv.id,
+          name: conv.name || 'Conversation',
+          avatar: conv.avatar || `https://ui-avatars.com/api/?name=${conv.name || 'C'}&background=6a7175&color=fff&size=40`,
+          status: conv.status || 'en ligne',
+          lastMessage: conv.last_message,
+          lastMessageTime: conv.last_message_time,
+          unreadCount: conv.unread_count || 0,
+          isPinned: conv.is_pinned || false,
+          isContact: false,
+          isConversation: true
+        }));
+
+        // Combiner contacts et conversations
+        const allUsers = [...transformedContacts, ...transformedConversations];
+        actions.setUsers(allUsers);
         
         // Stocker tous les statuts dans le contexte
-        const allStatuses = transformedUsers.flatMap(user => user.statuses);
+        const allStatuses = transformedContacts.flatMap(user => user.statuses);
         actions.setStatuses(allStatuses);
+
+        // Précharger les données fréquemment utilisées
+        await cachedFirebaseService.preloadData(currentUserId);
         
       } catch (error) {
-        console.error('Erreur lors du chargement des utilisateurs:', error);
+        console.error('Erreur lors du chargement des utilisateurs et conversations:', error);
         actions.setError(error.message);
       } finally {
         actions.setLoading(false);
       }
     }
 
-    fetchUsers();
+    fetchUsersAndConversations();
   }, []); // Exécuter seulement au montage
 
   // Fonctions utilitaires pour les données initiales
@@ -980,6 +1030,9 @@ function getRandomLastMessage() {
     setLoading: actions.setLoading,
     setUsers: actions.setUsers,
     setSelectedChat: actions.setSelectedChat,
+    loadMessages,
+    getCacheStats: () => cachedFirebaseService.getCacheStats(),
+    clearCache: () => cachedFirebaseService.clearCache(),
     addMessage: actions.addMessage,
     updateMessage: actions.updateMessage,
     deleteMessage: actions.deleteMessage,
