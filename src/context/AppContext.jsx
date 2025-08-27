@@ -556,114 +556,159 @@ export function AppProvider({ children }) {
   }, [actions]);
 
   const sendMessage = useCallback(async (chatId, messageData, replyTo = null) => {
-    // Gérer les différents types de messages
-    let message;
-    let firebaseData;
-
-    if (messageData.type === 'media') {
-      // Message média
-      message = createMediaMessage(chatId, 'me', messageData.media, {
-        replyTo: replyTo
-      });
-      
-      firebaseData = {
-        text: messageData.text || `📎 ${messageData.media[0]?.fileName || 'fichier'}`,
-        sender: 'me',
-        type: 'media',
-        media: messageData.media,
-        replyTo: replyTo,
-        reactions: [],
-        isStarred: false,
-        isRead: false,
-        metadata: {}
-      };
-    } else {
-      // Message texte
-      if (!messageData.text?.trim()) return;
-      
-      message = createTextMessage(chatId, 'me', messageData.text.trim(), {
-        replyTo: replyTo
-      });
-      
-      firebaseData = {
-        text: messageData.text.trim(),
-        sender: 'me',
-        type: 'text',
-        media: null,
-        replyTo: replyTo,
-        reactions: [],
-        isStarred: false,
-        isRead: false,
-        metadata: {}
-      };
-    }
-
-    // Sauvegarder le message avec le service de cache
     try {
-      const savedMessage = await cachedFirebaseService.saveMessage(chatId, firebaseData);
-      console.log('✅ Message sauvegardé avec cache:', savedMessage);
-    } catch (error) {
-      console.error('❌ Erreur lors de la sauvegarde du message:', error);
-    }
+      // Gérer les différents types de messages
+      let message;
+      let firebaseData;
 
-    // Ajouter le message à l'état local
-    actions.addMessage(chatId, message);
-
-    // Mettre à jour le dernier message de l'utilisateur
-    let lastMessageText = '';
-    if (messageData.text?.trim()) {
-      lastMessageText = messageData.text.trim();
-    } else if (messageData.media && messageData.media.length > 0) {
-      lastMessageText = `📎 ${messageData.media[0]?.fileName || 'fichier'}`;
-    }
-    
-    actions.updateLastMessage(chatId, {
-      text: lastMessageText,
-      type: messageData.type || 'text'
-    });
-
-    // Simuler une réponse après un délai
-    setTimeout(async () => {
-      const replyText = getRandomMessageText();
-      const reply = createTextMessage(
-        chatId,
-        'other',
-        replyText,
-        {
-          senderName: state.users.find(u => u.id === chatId)?.name
-        }
-      );
-
-      // Sauvegarder la réponse avec le service de cache
-      try {
-        const replyData = {
-          text: replyText,
-          sender: 'other',
-          type: 'text',
-          replyTo: null,
+      if (messageData.type === 'media') {
+        // Message média
+        message = createMediaMessage(chatId, 'me', messageData.media, {
+          replyTo: replyTo
+        });
+        
+        firebaseData = {
+          text: messageData.text || `📎 ${messageData.media[0]?.fileName || 'fichier'}`,
+          sender: 'me',
+          type: 'media',
+          media: messageData.media,
+          replyTo: replyTo,
           reactions: [],
           isStarred: false,
           isRead: false,
-          metadata: {
-            senderName: state.users.find(u => u.id === chatId)?.name
-          }
+          metadata: {}
         };
-
-        const savedReply = await cachedFirebaseService.saveMessage(chatId, replyData);
-        console.log('✅ Réponse sauvegardée avec cache:', savedReply);
-      } catch (error) {
-        console.error('❌ Erreur lors de la sauvegarde de la réponse:', error);
+      } else {
+        // Message texte
+        if (!messageData.text?.trim()) return;
+        
+        message = createTextMessage(chatId, 'me', messageData.text.trim(), {
+          replyTo: replyTo
+        });
+        
+        firebaseData = {
+          text: messageData.text.trim(),
+          sender: 'me',
+          type: 'text',
+          media: null,
+          replyTo: replyTo,
+          reactions: [],
+          isStarred: false,
+          isRead: false,
+          metadata: {}
+        };
       }
 
-      // Ajouter la réponse à l'état local
-      actions.addMessage(chatId, reply);
+      // PHASE 1 : Ajout immédiat au cache local pour l'affichage instantané
+      try {
+        // Utiliser le service de cache local pour un affichage immédiat
+        const localCacheService = require('@/utils/localCacheService').default;
+        localCacheService.addMessage(chatId, message);
+        console.log('✅ Message ajouté au cache local immédiatement');
+      } catch (error) {
+        console.warn('⚠️ Erreur lors de l\'ajout au cache local:', error);
+      }
+
+      // PHASE 2 : Synchronisation avec Firebase via le service intelligent
+      try {
+        // Importer dynamiquement le service intelligent
+        const smartCacheService = require('@/utils/smartCacheService').default;
+        await smartCacheService.addMessage(chatId, firebaseData);
+        console.log('✅ Message synchronisé avec Firebase via smartCacheService');
+      } catch (error) {
+        console.error('❌ Erreur lors de la synchronisation avec Firebase:', error);
+        
+        // Fallback : utiliser le service Firebase direct
+        try {
+          const cachedFirebaseService = require('@/utils/cachedFirebaseService').default;
+          const savedMessage = await cachedFirebaseService.saveMessage(chatId, firebaseData);
+          console.log('✅ Message sauvegardé avec fallback Firebase:', savedMessage);
+        } catch (fallbackError) {
+          console.error('❌ Échec du fallback Firebase:', fallbackError);
+          // Le message reste en cache local et sera synchronisé plus tard
+        }
+      }
+
+      // Ajouter le message à l'état local
+      actions.addMessage(chatId, message);
+
+      // Mettre à jour le dernier message de l'utilisateur
+      let lastMessageText = '';
+      if (messageData.text?.trim()) {
+        lastMessageText = messageData.text.trim();
+      } else if (messageData.media && messageData.media.length > 0) {
+        lastMessageText = `📎 ${messageData.media[0]?.fileName || 'fichier'}`;
+      }
       
-      // Mettre à jour le dernier message
       actions.updateLastMessage(chatId, {
-        text: reply.text,
-        type: 'text'
+        text: lastMessageText,
+        type: messageData.type || 'text'
       });
-    }, 1000 + Math.random() * 2000);
+
+      // Simuler une réponse après un délai
+      setTimeout(async () => {
+        const replyText = getRandomMessageText();
+        const reply = createTextMessage(
+          chatId,
+          'other',
+          replyText,
+          {
+            senderName: state.users.find(u => u.id === chatId)?.name
+          }
+        );
+
+        // PHASE 1 : Ajouter la réponse au cache local
+        try {
+          const localCacheService = require('@/utils/localCacheService').default;
+          localCacheService.addMessage(chatId, reply);
+        } catch (error) {
+          console.warn('⚠️ Erreur lors de l\'ajout de la réponse au cache local:', error);
+        }
+
+        // PHASE 2 : Synchroniser la réponse avec Firebase
+        try {
+          const replyData = {
+            text: replyText,
+            sender: 'other',
+            type: 'text',
+            replyTo: null,
+            reactions: [],
+            isStarred: false,
+            isRead: false,
+            metadata: {
+              senderName: state.users.find(u => u.id === chatId)?.name
+            }
+          };
+
+          const smartCacheService = require('@/utils/smartCacheService').default;
+          await smartCacheService.addMessage(chatId, replyData);
+          console.log('✅ Réponse synchronisée avec Firebase');
+        } catch (error) {
+          console.error('❌ Erreur lors de la synchronisation de la réponse:', error);
+          
+          // Fallback Firebase
+          try {
+            const cachedFirebaseService = require('@/utils/cachedFirebaseService').default;
+            await cachedFirebaseService.saveMessage(chatId, replyData);
+          } catch (fallbackError) {
+            console.error('❌ Échec du fallback Firebase pour la réponse:', fallbackError);
+          }
+        }
+
+        // Ajouter la réponse à l'état local
+        actions.addMessage(chatId, reply);
+        
+        // Mettre à jour le dernier message
+        actions.updateLastMessage(chatId, {
+          text: reply.text,
+          type: 'text'
+        });
+      }, 1000 + Math.random() * 2000);
+
+    } catch (error) {
+      console.error('❌ Erreur générale lors de l\'envoi du message:', error);
+      // Ici vous pourriez notifier l'utilisateur de l'erreur
+    }
   }, [createTextMessage, getRandomMessageText, actions, state.users]);
 
   // Charger les messages quand une conversation est sélectionnée

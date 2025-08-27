@@ -4,12 +4,12 @@
  */
 
 import localCacheService from './localCacheService';
-import cachedFirebaseService from './cachedFirebaseService';
+import firebaseService from './firebaseService';
 
 class SmartCacheService {
   constructor() {
     this.localCache = localCacheService;
-    this.firebaseService = cachedFirebaseService;
+    this.firebaseService = firebaseService;
     this.syncQueue = new Map();
     this.isSyncing = false;
   }
@@ -223,13 +223,20 @@ class SmartCacheService {
   }
 
   /**
-   * Synchronisation en arrière-plan
+   * Synchronisation en arrière-plan avec retry et gestion d'erreur
    */
   async syncInBackground(type, data) {
     const syncKey = `${type}:${Date.now()}`;
     
-    // Ajouter à la queue de synchronisation
-    this.syncQueue.set(syncKey, { type, data, timestamp: Date.now() });
+    // Ajouter à la queue de synchronisation avec métadonnées
+    this.syncQueue.set(syncKey, { 
+      type, 
+      data, 
+      timestamp: Date.now(),
+      retryCount: 0,
+      maxRetries: 3,
+      lastError: null
+    });
     
     // Démarrer la synchronisation si pas déjà en cours
     if (!this.isSyncing) {
@@ -238,7 +245,7 @@ class SmartCacheService {
   }
 
   /**
-   * Traiter la queue de synchronisation
+   * Traiter la queue de synchronisation avec retry
    */
   async processSyncQueue() {
     if (this.isSyncing || this.syncQueue.size === 0) return;
@@ -248,23 +255,91 @@ class SmartCacheService {
     try {
       const entries = Array.from(this.syncQueue.entries());
       
-      for (const [key, { type, data }] of entries) {
+      for (const [key, syncItem] of entries) {
         try {
-          await this.syncWithFirebase(type, data);
+          await this.syncWithFirebase(syncItem.type, syncItem.data);
           this.syncQueue.delete(key);
-          console.log(`✅ Synchronisation réussie: ${type}`);
+          console.log(`✅ Synchronisation réussie: ${syncItem.type}`);
         } catch (error) {
-          console.error(`❌ Erreur de synchronisation pour ${type}:`, error);
-          // Garder dans la queue pour réessayer plus tard
+          console.error(`❌ Erreur de synchronisation pour ${syncItem.type}:`, error);
+          
+          // Gestion du retry
+          syncItem.retryCount++;
+          syncItem.lastError = error.message;
+          
+          if (syncItem.retryCount >= syncItem.maxRetries) {
+            console.error(`❌ Échec définitif après ${syncItem.maxRetries} tentatives pour ${syncItem.type}`);
+            // Optionnel : notifier l'utilisateur de l'échec de synchronisation
+            this.notifySyncFailure(syncItem);
+            this.syncQueue.delete(key);
+          } else {
+            // Programmer une nouvelle tentative avec délai exponentiel
+            const delay = Math.pow(2, syncItem.retryCount) * 1000; // 2s, 4s, 8s
+            console.log(`🔄 Nouvelle tentative dans ${delay}ms pour ${syncItem.type}`);
+            setTimeout(() => {
+              this.processSyncQueue();
+            }, delay);
+          }
         }
       }
     } finally {
       this.isSyncing = false;
       
-      // Reprocesser la queue s'il y a de nouveaux éléments
+      // Continuer le traitement s'il y a encore des éléments dans la queue
       if (this.syncQueue.size > 0) {
         setTimeout(() => this.processSyncQueue(), 1000);
       }
+    }
+  }
+
+  /**
+   * Notifier l'échec de synchronisation
+   */
+  notifySyncFailure(syncItem) {
+    // Ici vous pouvez implémenter une notification utilisateur
+    console.warn(`⚠️ Échec de synchronisation pour ${syncItem.type}:`, syncItem.lastError);
+    
+    // Optionnel : stocker les échecs pour une synchronisation manuelle ultérieure
+    this.storeFailedSync(syncItem);
+  }
+
+  /**
+   * Stocker les échecs de synchronisation pour récupération ultérieure
+   */
+  storeFailedSync(syncItem) {
+    const failedSyncs = JSON.parse(localStorage.getItem('failedSyncs') || '[]');
+    failedSyncs.push({
+      ...syncItem,
+      failedAt: new Date().toISOString()
+    });
+    localStorage.setItem('failedSyncs', JSON.stringify(failedSyncs));
+  }
+
+  /**
+   * Récupérer et traiter les synchronisations échouées
+   */
+  async retryFailedSyncs() {
+    try {
+      const failedSyncs = JSON.parse(localStorage.getItem('failedSyncs') || '[]');
+      
+      if (failedSyncs.length === 0) return;
+      
+      console.log(`🔄 Tentative de récupération de ${failedSyncs.length} synchronisations échouées`);
+      
+      for (const failedSync of failedSyncs) {
+        try {
+          await this.syncWithFirebase(failedSync.type, failedSync.data);
+          console.log(`✅ Récupération réussie pour ${failedSync.type}`);
+          
+          // Supprimer de la liste des échecs
+          const updatedFailedSyncs = failedSyncs.filter(fs => fs !== failedSync);
+          localStorage.setItem('failedSyncs', JSON.stringify(updatedFailedSyncs));
+        } catch (error) {
+          console.error(`❌ Échec de récupération pour ${failedSync.type}:`, error);
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération des synchronisations échouées:', error);
     }
   }
 

@@ -97,10 +97,64 @@ export default function WhatsApp() {
     getMessages,
     getLastMessages
   } = useLocalCache();
-  
+
   // État pour gérer les phases de chargement
   const [loadingPhase, setLoadingPhase] = React.useState(1); // 1: Cache local, 2: Synchronisation
   const [isSyncing, setIsSyncing] = React.useState(false);
+  const [syncErrors, setSyncErrors] = React.useState([]);
+
+  // Fonction pour vérifier la synchronisation avec Firebase
+  const checkFirebaseSync = React.useCallback(async () => {
+    try {
+      console.log('🔍 Vérification de la synchronisation avec Firebase...');
+      
+      // Importer le service intelligent
+      const smartCacheService = require('@/utils/smartCacheService').default;
+      
+      // Vérifier les statistiques de synchronisation
+      const stats = smartCacheService.getPerformanceStats();
+      console.log('📊 Statistiques de synchronisation:', stats);
+      
+      // Vérifier s'il y a des synchronisations échouées
+      const failedSyncs = JSON.parse(localStorage.getItem('failedSyncs') || '[]');
+      if (failedSyncs.length > 0) {
+        console.warn(`⚠️ ${failedSyncs.length} synchronisations échouées détectées`);
+        setSyncErrors(failedSyncs);
+        
+        // Tenter de récupérer les synchronisations échouées
+        await smartCacheService.retryFailedSyncs();
+      } else {
+        console.log('✅ Aucune synchronisation échouée détectée');
+        setSyncErrors([]);
+      }
+      
+    } catch (error) {
+      console.error('❌ Erreur lors de la vérification de la synchronisation:', error);
+    }
+  }, []);
+
+  // Fonction pour forcer la synchronisation
+  const forceSync = React.useCallback(async () => {
+    try {
+      setIsSyncing(true);
+      console.log('🔄 Synchronisation forcée en cours...');
+      
+      // Importer le service intelligent
+      const smartCacheService = require('@/utils/smartCacheService').default;
+      
+      // Traiter la queue de synchronisation
+      await smartCacheService.processSyncQueue();
+      
+      // Vérifier la synchronisation
+      await checkFirebaseSync();
+      
+      console.log('✅ Synchronisation forcée terminée');
+    } catch (error) {
+      console.error('❌ Erreur lors de la synchronisation forcée:', error);
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [checkFirebaseSync]);
   
   const { 
     selectedChat, 
@@ -174,6 +228,19 @@ export default function WhatsApp() {
       });
     }
   }, [isAuthenticated, currentUserId, users.length, listenToUserPresence]);
+
+  // Vérification périodique de la synchronisation
+  React.useEffect(() => {
+    if (cacheInitialized && isAuthenticated) {
+      // Vérifier la synchronisation toutes les 30 secondes
+      const syncInterval = setInterval(checkFirebaseSync, 30000);
+      
+      // Vérification initiale
+      checkFirebaseSync();
+      
+      return () => clearInterval(syncInterval);
+    }
+  }, [cacheInitialized, isAuthenticated, checkFirebaseSync]);
 
   // Stratégie de chargement en deux phases : Cache local d'abord, puis synchronisation
   React.useEffect(() => {
@@ -366,6 +433,32 @@ export default function WhatsApp() {
     <div className="h-screen w-screen flex flex-col bg-[#202020] font-segoe overflow-hidden rounded-md relative">
       {/* Indicateur de chargement intelligent avec phases */}
       {loading && <LoadingIndicator phase={loadingPhase} isSyncing={isSyncing} />}
+      
+      {/* Indicateur de synchronisation Firebase */}
+      {syncErrors.length > 0 && (
+        <div className="absolute top-16 left-0 right-0 z-40 bg-yellow-600/90 text-white py-2 px-4 text-center text-sm">
+          <div className="flex items-center justify-center space-x-2">
+            <div className="animate-pulse">⚠️</div>
+            <span>{syncErrors.length} erreur(s) de synchronisation détectée(s)</span>
+            <button 
+              onClick={forceSync}
+              className="ml-2 px-3 py-1 bg-yellow-700 hover:bg-yellow-800 rounded text-xs"
+            >
+              Réessayer
+            </button>
+          </div>
+        </div>
+      )}
+      
+      {/* Indicateur de synchronisation en cours */}
+      {isSyncing && (
+        <div className="absolute top-20 left-0 right-0 z-40 bg-blue-600/90 text-white py-2 px-4 text-center text-sm">
+          <div className="flex items-center justify-center space-x-2">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+            <span>Synchronisation avec Firebase en cours...</span>
+          </div>
+        </div>
+      )}
       
       {/* Titlebar */}
       <Titlebar />

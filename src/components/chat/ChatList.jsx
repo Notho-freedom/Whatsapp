@@ -339,10 +339,10 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect,
       <>
         <MessageIcon type={chat.lastMessage.type} />
         <span className="truncate">
-          {chat.lastMessage.type === 'voice' && `Voice message (${chat.lastMessage.duration || '0:23'})`}
-          {chat.lastMessage.type === 'video' && `Video (${chat.lastMessage.duration || '1:45'})`}
-          {chat.lastMessage.type === 'audio' && `Audio (${chat.lastMessage.duration || '3:12'})`}
-          {chat.lastMessage.type === 'document' && `${chat.lastMessage.text} • ${chat.lastMessage.size || '2.4 MB'}`}
+          {((chat.lastMessage.type === 'voice') || (chat.lastMessage.type === 'voices')) && `Voice message (${chat.lastMessage.duration || '0:23'})`}
+          {((chat.lastMessage.type === 'video') || (chat.lastMessage.type === 'videos')) && `Video (${chat.lastMessage.duration || '1:45'})`}
+          {((chat.lastMessage.type === 'audio') || (chat.lastMessage.type === 'audios')) && `Audio (${chat.lastMessage.duration || '3:12'})`}
+          {((chat.lastMessage.type === 'document') || (chat.lastMessage.type === 'documents')) && `${chat.lastMessage.text} • ${chat.lastMessage.size || '2.4 MB'}`}
           {!['voice', 'video', 'audio', 'document'].includes(chat.lastMessage.type) && chat.lastMessage.text}
         </span>
       </>

@@ -21,6 +21,63 @@ class FirebaseService {
     this.db = db;
   }
 
+  // ===== GESTION DES MESSAGES =====
+
+  async addMessage(conversationId, messageData) {
+    try {
+      const messagesRef = collection(this.db, 'messages');
+      const messageWithTimestamp = {
+        ...messageData,
+        conversation_id: conversationId,
+        created_at: serverTimestamp(),
+        updated_at: serverTimestamp()
+      };
+
+      const docRef = await addDoc(messagesRef, messageWithTimestamp);
+      
+      console.log(`✅ Message ajouté dans Firebase: ${docRef.id}`);
+      
+      return {
+        id: docRef.id,
+        ...messageData,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('❌ Erreur lors de l\'ajout du message:', error);
+      throw error;
+    }
+  }
+
+  async updateMessage(conversationId, messageId, updates) {
+    try {
+      const messageRef = doc(this.db, 'messages', messageId);
+      await updateDoc(messageRef, {
+        ...updates,
+        updated_at: serverTimestamp()
+      });
+      
+      console.log(`✅ Message ${messageId} mis à jour dans Firebase`);
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Erreur lors de la mise à jour du message:', error);
+      throw error;
+    }
+  }
+
+  async deleteMessage(conversationId, messageId) {
+    try {
+      const messageRef = doc(this.db, 'messages', messageId);
+      await deleteDoc(messageRef);
+      
+      console.log(`✅ Message ${messageId} supprimé de Firebase`);
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Erreur lors de la suppression du message:', error);
+      throw error;
+    }
+  }
+
   // ===== GESTION DES CONVERSATIONS TEMPORAIRES =====
 
   async createTempConversation(conversationData) {
@@ -346,6 +403,52 @@ class FirebaseService {
     } catch (error) {
       console.error('❌ Erreur lors de la récupération des participants:', error);
       return [];
+    }
+  }
+
+  // ===== MÉTHODES DE COMPATIBILITÉ POUR SMART CACHE =====
+
+  async getConversations(userId, limit = 50, offset = 0) {
+    try {
+      return await this.getConversationsByUserId(userId, limit, offset);
+    } catch (error) {
+      console.error('❌ Erreur lors de la récupération des conversations:', error);
+      throw error;
+    }
+  }
+
+  async getMessages(conversationId, limit = 50, offset = 0) {
+    try {
+      // Créer une référence à la collection messages
+      const messagesRef = collection(this.db, 'messages');
+      
+      // Créer une requête pour récupérer les messages de cette conversation
+      const q = query(
+        messagesRef,
+        where('conversation_id', '==', conversationId),
+        orderBy('created_at', 'desc'),
+        limit(limit),
+        startAfter(offset)
+      );
+      
+      const querySnapshot = await getDocs(q);
+      const messages = [];
+      
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        messages.push({
+          id: doc.id,
+          ...data,
+          created_at: data.created_at?.toDate?.() || data.created_at,
+          updated_at: data.updated_at?.toDate?.() || data.updated_at
+        });
+      });
+      
+      console.log(`✅ ${messages.length} messages récupérés pour la conversation ${conversationId}`);
+      return messages;
+    } catch (error) {
+      console.error('❌ Erreur lors de la récupération des messages:', error);
+      throw error;
     }
   }
 }
