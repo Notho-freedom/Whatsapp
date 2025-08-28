@@ -12,7 +12,8 @@ import {
   limit, 
   startAfter,
   serverTimestamp,
-  Timestamp 
+  Timestamp,
+  setDoc 
 } from 'firebase/firestore';
 import { db } from './firebaseConfig';
 
@@ -406,6 +407,198 @@ class FirebaseService {
     }
   }
 
+  // Méthodes pour la gestion des utilisateurs
+  async createUser(userData) {
+    try {
+      const userRef = doc(this.db, 'users', userData.id);
+      const userDoc = {
+        ...userData,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        lastLoginAt: new Date(),
+        loginCount: 1
+      };
+      
+      await setDoc(userRef, userDoc);
+      console.log('✅ Utilisateur créé avec succès:', userData.id);
+      return userDoc;
+    } catch (error) {
+      console.error('❌ Erreur lors de la création de l\'utilisateur:', error);
+      throw error;
+    }
+  }
+
+  async getUserById(userId) {
+    try {
+      const userRef = doc(this.db, 'users', userId);
+      const userSnap = await getDoc(userRef);
+      
+      if (userSnap.exists()) {
+        return { id: userSnap.id, ...userSnap.data() };
+      }
+      return null;
+    } catch (error) {
+      console.error('❌ Erreur lors de la récupération de l\'utilisateur:', error);
+      throw error;
+    }
+  }
+
+  async getUserByGoogleId(googleId) {
+    try {
+      const usersRef = collection(this.db, 'users');
+      const q = query(usersRef, where('googleId', '==', googleId));
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        const userDoc = querySnapshot.docs[0];
+        return { id: userDoc.id, ...userDoc.data() };
+      }
+      return null;
+    } catch (error) {
+      console.error('❌ Erreur lors de la recherche par Google ID:', error);
+      throw error;
+    }
+  }
+
+  async getUserByEmail(email) {
+    try {
+      const usersRef = collection(this.db, 'users');
+      const q = query(usersRef, where('email', '==', email));
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        const userDoc = querySnapshot.docs[0];
+        return { id: userDoc.id, ...userDoc.data() };
+      }
+      return null;
+    } catch (error) {
+      console.error('❌ Erreur lors de la recherche par email:', error);
+      throw error;
+    }
+  }
+
+  async updateUser(userId, updates) {
+    try {
+      const userRef = doc(this.db, 'users', userId);
+      const updateData = {
+        ...updates,
+        updatedAt: new Date()
+      };
+      
+      await updateDoc(userRef, updateData);
+      console.log('✅ Utilisateur mis à jour avec succès:', userId);
+      return true;
+    } catch (error) {
+      console.error('❌ Erreur lors de la mise à jour de l\'utilisateur:', error);
+      throw error;
+    }
+  }
+
+  async updateUserLastSeen(userId, isOnline = false) {
+    try {
+      const userRef = doc(this.db, 'users', userId);
+      const updateData = {
+        isOnline,
+        lastSeen: isOnline ? null : new Date(),
+        lastSeenTimestamp: isOnline ? null : Date.now(),
+        updatedAt: new Date()
+      };
+      
+      await updateDoc(userRef, updateData);
+      return true;
+    } catch (error) {
+      console.error('❌ Erreur lors de la mise à jour du statut:', error);
+      throw error;
+    }
+  }
+
+  async updateUserLoginInfo(userId) {
+    try {
+      const userRef = doc(this.db, 'users', userId);
+      const userSnap = await getDoc(userRef);
+      
+      if (userSnap.exists()) {
+        const currentData = userSnap.data();
+        const updateData = {
+          lastLoginAt: new Date(),
+          loginCount: (currentData.loginCount || 0) + 1,
+          isOnline: true,
+          lastSeen: null,
+          lastSeenTimestamp: null,
+          updatedAt: new Date()
+        };
+        
+        await updateDoc(userRef, updateData);
+        return true;
+      }
+      return false;
+    } catch (error) {
+      console.error('❌ Erreur lors de la mise à jour des infos de connexion:', error);
+      throw error;
+    }
+  }
+
+  async deleteUser(userId) {
+    try {
+      const userRef = doc(this.db, 'users', userId);
+      await deleteDoc(userRef);
+      console.log('✅ Utilisateur supprimé avec succès:', userId);
+      return true;
+    } catch (error) {
+      console.error('❌ Erreur lors de la suppression de l\'utilisateur:', error);
+      throw error;
+    }
+  }
+
+  async searchUsers(query, limit = 20) {
+    try {
+      const usersRef = collection(this.db, 'users');
+      const q = query(
+        usersRef,
+        where('displayName', '>=', query),
+        where('displayName', '<=', query + '\uf8ff'),
+        limit(limit)
+      );
+      
+      const querySnapshot = await getDocs(q);
+      const users = [];
+      
+      querySnapshot.forEach((doc) => {
+        users.push({ id: doc.id, ...doc.data() });
+      });
+      
+      return users;
+    } catch (error) {
+      console.error('❌ Erreur lors de la recherche d\'utilisateurs:', error);
+      throw error;
+    }
+  }
+
+  async getUsersByIds(userIds) {
+    try {
+      if (!userIds || userIds.length === 0) return [];
+      
+      const users = [];
+      const batchSize = 10; // Firestore limite les requêtes "in" à 10 éléments
+      
+      for (let i = 0; i < userIds.length; i += batchSize) {
+        const batch = userIds.slice(i, i + batchSize);
+        const usersRef = collection(this.db, 'users');
+        const q = query(usersRef, where('__name__', 'in', batch));
+        const querySnapshot = await getDocs(q);
+        
+        querySnapshot.forEach((doc) => {
+          users.push({ id: doc.id, ...doc.data() });
+        });
+      }
+      
+      return users;
+    } catch (error) {
+      console.error('❌ Erreur lors de la récupération des utilisateurs par IDs:', error);
+      throw error;
+    }
+  }
+
   // ===== MÉTHODES DE COMPATIBILITÉ POUR SMART CACHE =====
 
   async getConversations(userId, limit = 50, offset = 0) {
@@ -417,21 +610,21 @@ class FirebaseService {
     }
   }
 
-  async getMessages(conversationId, limit = 50, offset = 0) {
+  async getMessages(conversationId, limitCount = 50, offset = 0) {
     try {
       // Créer une référence à la collection messages
       const messagesRef = collection(this.db, 'messages');
       
-      // Créer une requête pour récupérer les messages de cette conversation
+      // TEMPORAIRE : Utiliser une requête simple sans orderBy pour éviter l'erreur d'index
+      // TODO: Créer l'index Firebase et remettre orderBy('created_at', 'desc')
       let q = query(
         messagesRef,
-        where('conversation_id', '==', conversationId),
-        orderBy('created_at', 'desc')
+        where('conversation_id', '==', conversationId)
       );
 
       // Appliquer la limite si spécifiée
-      if (limit && limit > 0) {
-        q = query(q, limit(limit));
+      if (limitCount && limitCount > 0) {
+        q = query(q, limit(limitCount));
       }
 
       // Appliquer l'offset si spécifié (pour la pagination)
@@ -440,7 +633,6 @@ class FirebaseService {
         const offsetQuery = query(
           messagesRef,
           where('conversation_id', '==', conversationId),
-          orderBy('created_at', 'desc'),
           limit(offset)
         );
         const offsetSnapshot = await getDocs(offsetQuery);
@@ -464,7 +656,14 @@ class FirebaseService {
         });
       });
       
-      console.log(`✅ ${messages.length} messages récupérés pour la conversation ${conversationId}`);
+      // Tri côté client en attendant l'index Firebase
+      messages.sort((a, b) => {
+        const dateA = new Date(a.created_at || 0);
+        const dateB = new Date(b.created_at || 0);
+        return dateB - dateA; // Tri décroissant (plus récent en premier)
+      });
+      
+      console.log(`✅ ${messages.length} messages récupérés pour la conversation ${conversationId} (tri côté client)`);
       return messages;
     } catch (error) {
       console.error('❌ Erreur lors de la récupération des messages:', error);

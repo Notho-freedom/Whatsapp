@@ -54,58 +54,47 @@ const ReplyCap = memo(function ReplyCap({ replyTo, onCancelReply, currentUser, s
   };
 
   const getSenderName = () => {
-    // Si c'est l'utilisateur actuel (réponse à ses propres messages)
+    // Si c'est l'utilisateur actuel qui a envoyé le message
     if (replyTo.sender === 'me' || replyTo.sender === currentUser?.id) {
       return currentUser?.name || 'Vous';
     }
 
-    // Si on a un nom d'expéditeur direct
+    // Si on a un nom directement dans replyTo
     if (replyTo.senderName) {
       return replyTo.senderName;
     }
 
-    // Si on a un ID d'expéditeur, chercher dans la liste des utilisateurs
-    if (replyTo.sender && users && users.length > 0) {
-      const senderUser = users.find(u => u.id === replyTo.sender);
-      if (senderUser) {
-        return senderUser.name;
-      }
+    // Chercher dans la liste des utilisateurs
+    const senderUser = users?.find(u => u.id === replyTo.sender);
+    if (senderUser) {
+      return senderUser.name;
     }
 
-    // Si on a un chat sélectionné et que ce n'est pas l'utilisateur actuel
-    if (selectedChat && selectedChat.id !== currentUser?.id) {
-      return selectedChat.name || 'Contact';
+    // Fallback si l'expéditeur est l'ID du chat sélectionné (pour les chats individuels)
+    if (replyTo.sender === selectedChat?.id) {
+      return selectedChat?.name;
     }
 
-    // Fallback
-    return 'Inconnu';
+    return 'Unknown';
   };
 
   const getSenderAvatar = () => {
-    // Si c'est l'utilisateur actuel (réponse à ses propres messages)
+    // Si c'est l'utilisateur actuel qui a envoyé le message
     if (replyTo.sender === 'me' || replyTo.sender === currentUser?.id) {
-      return currentUser?.picture || null;
+      return currentUser?.picture || currentUser?.avatar || 'https://via.placeholder.com/40x40/4F46E5/FFFFFF?text=Vous';
     }
-
-    // Si on a un avatar direct
+    
     if (replyTo.senderAvatar) {
       return replyTo.senderAvatar;
     }
-
-    // Si on a un ID d'expéditeur, chercher dans la liste des utilisateurs
-    if (replyTo.sender && users && users.length > 0) {
-      const senderUser = users.find(u => u.id === replyTo.sender);
-      if (senderUser) {
-        return senderUser.avatar;
-      }
+    const senderUser = users?.find(u => u.id === replyTo.sender);
+    if (senderUser) {
+      return senderUser.avatar || senderUser.picture;
     }
-
-    // Si on a un chat sélectionné et que ce n'est pas l'utilisateur actuel
-    if (selectedChat && selectedChat.id !== currentUser?.id) {
-      return selectedChat.avatar || null;
+    if (replyTo.sender === selectedChat?.id) {
+      return selectedChat?.avatar;
     }
-
-    return null;
+    return 'https://via.placeholder.com/40x40/CCCCCC/FFFFFF?text=NA';
   };
 
   const isOwnMessage = replyTo.sender === 'me' || replyTo.sender === currentUser?.id;

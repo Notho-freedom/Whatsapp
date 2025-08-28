@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-const messageService = require('@/utils/messageDatabaseService');
-const conversationService = require('@/utils/conversationDatabaseService');
-const authService = require('@/utils/authDatabaseService');
+import messageService from '@/utils/messageDatabaseService';
+import conversationService from '@/utils/conversationDatabaseService';
+import authService from '@/utils/authDatabaseService';
 
 // GET /api/conversations/[conversationId]/messages/[messageId] - Récupérer un message spécifique
 export async function GET(request, { params }) {

@@ -71,7 +71,80 @@ export default function GoogleAuth() {
         // Valider le token avec Google
         const userInfo = await validateGoogleToken(token);
         if (userInfo) {
-          setUser(userInfo);
+          // Essayer de récupérer l'utilisateur depuis Firebase
+          try {
+            const userService = (await import('@/utils/userService')).default;
+            const existingUser = await userService.getUserByGoogleId(userInfo.sub);
+            
+            if (existingUser) {
+              // Mettre à jour les informations de connexion
+              await userService.updateUserLoginInfo(existingUser.id);
+              console.log('✅ Utilisateur existant récupéré depuis Firebase:', existingUser);
+              setUser(existingUser);
+              setAuthStep('success');
+              return;
+            }
+          } catch (firebaseError) {
+            console.log('⚠️ Erreur Firebase, utilisation des données locales:', firebaseError);
+          }
+          
+          // Fallback vers les données locales
+          const localUserData = localStorage.getItem('userData');
+          if (localUserData) {
+            try {
+              const parsedUser = JSON.parse(localUserData);
+              setUser(parsedUser);
+              setAuthStep('success');
+              return;
+            } catch (parseError) {
+              console.log('⚠️ Erreur de parsing des données locales');
+            }
+          }
+          
+          // Créer un utilisateur temporaire avec les infos Google
+          const tempUser = {
+            id: userInfo.sub,
+            googleId: userInfo.sub,
+            email: userInfo.email,
+            name: userInfo.name,
+            firstName: userInfo.name ? userInfo.name.split(' ')[0] : '',
+            lastName: userInfo.name ? userInfo.name.split(' ').slice(1).join(' ') : '',
+            displayName: userInfo.name,
+            username: userInfo.email ? userInfo.email.split('@')[0] : `user_${Date.now()}`,
+            avatar: userInfo.picture,
+            avatarUrl: userInfo.picture,
+            avatarThumbnail: userInfo.picture,
+            status: 'Disponible',
+            statusMessage: 'Salut ! Je suis sur WhatsApp.',
+            isOnline: true,
+            lastSeen: null,
+            lastSeenTimestamp: null,
+            bio: '',
+            location: '',
+            website: '',
+            birthday: null,
+            gender: '',
+            isVerified: false,
+            isPremium: false,
+            twoFactorEnabled: false,
+            backupEnabled: false,
+            contacts: [],
+            blockedUsers: [],
+            favoriteContacts: [],
+            pushTokens: [],
+            syncPreferences: {
+              contacts: true,
+              messages: true,
+              media: true,
+              settings: true
+            },
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            lastLoginAt: new Date(),
+            loginCount: 1
+          };
+          
+          setUser(tempUser);
           setAuthStep('success');
           return;
         }
@@ -190,27 +263,84 @@ export default function GoogleAuth() {
       const userInfo = await getUserInfo(response.access_token);
       console.log('Informations utilisateur récupérées:', userInfo);
       
-      const userData = {
-        id: userInfo.sub,
-        email: userInfo.email,
-        name: userInfo.name,
-        picture: userInfo.picture,
-        token: response.access_token
-      };
-
-      console.log('Données utilisateur finales:', userData);
-
-      // Sauvegarder le token
-      localStorage.setItem('googleAuthToken', response.access_token);
-      
-      setUser(userData);
-      setAuthStep('success');
-      setIsLoading(false);
-      
-      // Émettre un événement de connexion réussie
-      window.dispatchEvent(new CustomEvent('google-auth-success', {
-        detail: { user: userData, type: 'login' }
-      }));
+      // Créer ou mettre à jour l'utilisateur dans Firebase
+      try {
+        const userService = (await import('@/utils/userService')).default;
+        const userData = await userService.createOrUpdateGoogleUser(userInfo);
+        console.log('✅ Utilisateur synchronisé avec Firebase:', userData);
+        
+        // Sauvegarder le token et les données utilisateur
+        localStorage.setItem('googleAuthToken', response.access_token);
+        localStorage.setItem('userData', JSON.stringify(userData));
+        
+        setUser(userData);
+        setAuthStep('success');
+        setIsLoading(false);
+        
+        // Émettre un événement de connexion réussie
+        window.dispatchEvent(new CustomEvent('google-auth-success', {
+          detail: { user: userData, type: 'login' }
+        }));
+        
+      } catch (firebaseError) {
+        console.error('❌ Erreur lors de la synchronisation Firebase:', firebaseError);
+        
+        // Fallback : utiliser les données locales si Firebase échoue
+        const fallbackUserData = {
+          id: userInfo.sub,
+          googleId: userInfo.sub,
+          email: userInfo.email,
+          name: userInfo.name,
+          firstName: userInfo.name ? userInfo.name.split(' ')[0] : '',
+          lastName: userInfo.name ? userInfo.name.split(' ').slice(1).join(' ') : '',
+          displayName: userInfo.name,
+          username: userInfo.email ? userInfo.email.split('@')[0] : `user_${Date.now()}`,
+          avatar: userInfo.picture,
+          avatarUrl: userInfo.picture,
+          avatarThumbnail: userInfo.picture,
+          status: 'Disponible',
+          statusMessage: 'Salut ! Je suis sur WhatsApp.',
+          isOnline: true,
+          lastSeen: null,
+          lastSeenTimestamp: null,
+          bio: '',
+          location: '',
+          website: '',
+          birthday: null,
+          gender: '',
+          isVerified: false,
+          isPremium: false,
+          twoFactorEnabled: false,
+          backupEnabled: false,
+          contacts: [],
+          blockedUsers: [],
+          favoriteContacts: [],
+          pushTokens: [],
+          syncPreferences: {
+            contacts: true,
+            messages: true,
+            media: true,
+            settings: true
+          },
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          lastLoginAt: new Date(),
+          loginCount: 1
+        };
+        
+        // Sauvegarder le token et les données utilisateur
+        localStorage.setItem('googleAuthToken', response.access_token);
+        localStorage.setItem('userData', JSON.stringify(fallbackUserData));
+        
+        setUser(fallbackUserData);
+        setAuthStep('success');
+        setIsLoading(false);
+        
+        // Émettre un événement de connexion réussie
+        window.dispatchEvent(new CustomEvent('google-auth-success', {
+          detail: { user: fallbackUserData, type: 'login' }
+        }));
+      }
 
     } catch (error) {
       console.error('Erreur lors du traitement de la réponse:', error);

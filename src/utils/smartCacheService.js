@@ -80,7 +80,7 @@ class SmartCacheService {
   /**
    * Récupération des messages - PRIORITÉ AU CACHE LOCAL
    */
-  async getMessages(conversationId, options = {}) {
+  async getMessagesFromCache(conversationId, options = {}) {
     try {
       // 1. Récupérer immédiatement depuis le cache local
       const cachedMessages = this.localCache.getMessages(conversationId, options.limit || 50, options.offset || 0);
