@@ -114,8 +114,8 @@ export const NAMED_EXPORTS = {
 // Fonction utilitaire pour importer dynamiquement
 export const dynamicImport = async (modulePath) => {
   try {
-    const module = await import(modulePath);
-    return module.default || module;
+    const importedModule = await import(modulePath);
+    return importedModule.default || importedModule;
   } catch (error) {
     console.error(`Erreur lors de l'import de ${modulePath}:`, error);
     return null;

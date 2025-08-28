@@ -4,15 +4,15 @@ import ffmpeg from 'fluent-ffmpeg';
 import { v4 as uuidv4 } from 'uuid';
 
 export class MediaService {
-  static readonly MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
-  static readonly MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB
-  static readonly MAX_AUDIO_SIZE = 20 * 1024 * 1024; // 20MB
-  static readonly MAX_DOCUMENT_SIZE = 50 * 1024 * 1024; // 50MB
+  static MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
+  static MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100MB
+  static MAX_AUDIO_SIZE = 20 * 1024 * 1024; // 20MB
+  static MAX_DOCUMENT_SIZE = 50 * 1024 * 1024; // 50MB
   
-  static readonly ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-  static readonly ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
-  static readonly ALLOWED_AUDIO_TYPES = ['audio/mpeg', 'audio/mp4', 'audio/webm', 'audio/ogg'];
-  static readonly ALLOWED_DOCUMENT_TYPES = [
+  static ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+  static ALLOWED_VIDEO_TYPES = ['video/mp4', 'video/webm', 'video/quicktime'];
+  static ALLOWED_AUDIO_TYPES = ['audio/mpeg', 'audio/mp4', 'audio/webm', 'audio/ogg'];
+  static ALLOWED_DOCUMENT_TYPES = [
     'application/pdf',
     'application/msword',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',

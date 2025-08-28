@@ -5,19 +5,18 @@ const admin = require('firebase-admin');
 admin.initializeApp();
 
 const db = admin.firestore();
-const storage = admin.storage();
 
-// Cloud Function pour nettoyer les notifications expirées
+// Cloud Function simple pour nettoyer les notifications expirées
 exports.cleanupExpiredNotifications = functions.pubsub
   .schedule('every 24 hours')
   .timeZone('Europe/Paris')
   .onRun(async (context) => {
     console.log('Nettoyage des notifications expirées...');
     
-    const batch = db.batch();
-    const now = admin.firestore.Timestamp.now();
-    
     try {
+      const batch = db.batch();
+      const now = admin.firestore.Timestamp.now();
+      
       const snapshot = await db
         .collection('notifications')
         .where('expiresAt', '<=', now)
@@ -38,42 +37,29 @@ exports.cleanupExpiredNotifications = functions.pubsub
     }
   });
 
-// Cloud Function pour nettoyer les statuts expirés (24h)
+// Cloud Function simple pour nettoyer les statuts expirés
 exports.cleanupExpiredStatus = functions.pubsub
   .schedule('every hour')
   .timeZone('Europe/Paris')
   .onRun(async (context) => {
     console.log('Nettoyage des statuts expirés...');
     
-    const batch = db.batch();
-    const twentyFourHoursAgo = new Date();
-    twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
-    
     try {
+      const batch = db.batch();
+      const twentyFourHoursAgo = new Date();
+      twentyFourHoursAgo.setHours(twentyFourHoursAgo.getHours() - 24);
+      
       const snapshot = await db
         .collection('status')
         .where('createdAt', '<=', twentyFourHoursAgo)
         .limit(100)
         .get();
       
-      // Supprimer aussi les fichiers associés
-      const deletePromises = [];
-      
       snapshot.forEach(doc => {
         batch.delete(doc.ref);
-        
-        const statusData = doc.data();
-        if (statusData.mediaUrl) {
-          // Extraire le chemin du fichier de l'URL
-          const path = `status/${statusData.userId}/${doc.id}/`;
-          deletePromises.push(deleteStorageFolder(path));
-        }
       });
       
-      await Promise.all([
-        batch.commit(),
-        ...deletePromises
-      ]);
+      await batch.commit();
       
       console.log(`${snapshot.size} statuts expirés supprimés`);
       return null;
@@ -83,91 +69,7 @@ exports.cleanupExpiredStatus = functions.pubsub
     }
   });
 
-// Cloud Function pour gérer la suppression d'utilisateur
-exports.onUserDeleted = functions.auth.user().onDelete(async (user) => {
-  console.log('Suppression utilisateur:', user.uid);
-  
-  const batch = db.batch();
-  
-  try {
-    // Supprimer le profil utilisateur
-    batch.delete(db.collection('users').doc(user.uid));
-    
-    // Supprimer les conversations où l'utilisateur est le seul participant
-    const conversationsSnapshot = await db
-      .collection('conversations')
-      .where('participantIds', 'array-contains', user.uid)
-      .get();
-    
-    for (const doc of conversationsSnapshot.docs) {
-      const conversation = doc.data();
-      
-      if (conversation.participantIds.length === 1) {
-        // Conversation individuelle avec utilisateur supprimé
-        batch.delete(doc.ref);
-        
-        // Supprimer les messages associés
-        const messagesSnapshot = await db
-          .collection('messages')
-          .where('conversationId', '==', doc.id)
-          .get();
-        
-        messagesSnapshot.forEach(msgDoc => {
-          batch.delete(msgDoc.ref);
-        });
-      } else {
-        // Retirer l'utilisateur de la conversation
-        batch.update(doc.ref, {
-          participantIds: admin.firestore.FieldValue.arrayRemove(user.uid),
-          participants: conversation.participants.filter(p => p.uid !== user.uid)
-        });
-      }
-    }
-    
-    // Supprimer les notifications
-    const notificationsSnapshot = await db
-      .collection('notifications')
-      .where('userId', '==', user.uid)
-      .get();
-    
-    notificationsSnapshot.forEach(doc => {
-      batch.delete(doc.ref);
-    });
-    
-    // Supprimer les fichiers de l'utilisateur
-    await deleteStorageFolder(`users/${user.uid}/`);
-    
-    await batch.commit();
-    
-    console.log('Suppression utilisateur terminée');
-    return null;
-  } catch (error) {
-    console.error('Erreur suppression utilisateur:', error);
-    throw error;
-  }
-});
-
-// Cloud Function pour optimiser les images uploadées
-exports.optimizeUploadedImage = functions.storage.object().onFinalize(async (object) => {
-  const filePath = object.name;
-  const contentType = object.contentType;
-  
-  // Vérifier que c'est une image et pas déjà une miniature
-  if (!contentType.startsWith('image/') || filePath.includes('thumb_')) {
-    return null;
-  }
-  
-  console.log('Optimisation image:', filePath);
-  
-  // TODO: Implémenter l'optimisation avec sharp
-  // - Créer une miniature
-  // - Compresser l'image originale si nécessaire
-  // - Mettre à jour les métadonnées
-  
-  return null;
-});
-
-// Cloud Function pour mettre à jour les compteurs en temps réel
+// Cloud Function simple pour mettre à jour les compteurs de messages
 exports.updateMessageCount = functions.firestore
   .document('messages/{messageId}')
   .onCreate(async (snap, context) => {
@@ -189,25 +91,7 @@ exports.updateMessageCount = functions.firestore
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
       });
       
-      // Incrémenter les compteurs non-lus pour les autres participants
-      const conversationDoc = await db.collection('conversations').doc(conversationId).get();
-      const conversation = conversationDoc.data();
-      
-      const batch = db.batch();
-      const otherParticipants = conversation.participantIds.filter(id => id !== message.sender.uid);
-      
-      for (const participantId of otherParticipants) {
-        const readRef = db.collection('conversations').doc(conversationId)
-          .collection('reads').doc(participantId);
-        
-        batch.set(readRef, {
-          unreadCount: admin.firestore.FieldValue.increment(1),
-          lastMessageId: context.params.messageId
-        }, { merge: true });
-      }
-      
-      await batch.commit();
-      
+      console.log('Compteur de messages mis à jour');
       return null;
     } catch (error) {
       console.error('Erreur mise à jour compteurs:', error);
@@ -215,7 +99,7 @@ exports.updateMessageCount = functions.firestore
     }
   });
 
-// Cloud Function pour gérer les appels manqués
+// Cloud Function simple pour gérer les appels manqués
 exports.handleMissedCall = functions.firestore
   .document('calls/{callId}')
   .onUpdate(async (change, context) => {
@@ -261,26 +145,6 @@ exports.handleMissedCall = functions.firestore
     return null;
   });
 
-// Fonction helper pour supprimer un dossier dans Storage
-async function deleteStorageFolder(path) {
-  const bucket = storage.bucket();
-  
-  try {
-    const [files] = await bucket.getFiles({ prefix: path });
-    
-    if (files.length === 0) {
-      return;
-    }
-    
-    const deletePromises = files.map(file => file.delete());
-    await Promise.all(deletePromises);
-    
-    console.log(`${files.length} fichiers supprimés dans ${path}`);
-  } catch (error) {
-    console.error(`Erreur suppression dossier ${path}:`, error);
-  }
-}
-
 // Fonction helper pour obtenir l'aperçu d'un message
 function getMessagePreview(message) {
   switch (message.type) {
@@ -301,12 +165,4 @@ function getMessagePreview(message) {
   }
 }
 
-// Export des fonctions
-module.exports = {
-  cleanupExpiredNotifications,
-  cleanupExpiredStatus,
-  onUserDeleted,
-  optimizeUploadedImage,
-  updateMessageCount,
-  handleMissedCall
-};
+// Les fonctions sont exportées individuellement avec exports.functionName
