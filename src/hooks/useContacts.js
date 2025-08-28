@@ -3,7 +3,7 @@
 import { useEffect, useCallback } from 'react';
 import useContactStore from '@/stores/contactStore';
 
-const useContacts = () => {
+export const useContacts = () => {
   const {
     contacts,
     contactGroups,
@@ -264,5 +264,3 @@ const useContacts = () => {
     reset: handleReset
   };
 };
-
-export default useContacts;

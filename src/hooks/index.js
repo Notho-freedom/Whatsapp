@@ -1,14 +1,22 @@
-// Hooks personnalisés React
+// Hooks personnalisés
+export { useAuth } from './useAuth';
+export { useChat } from './useChat';
+export { useContacts } from './useContacts';
 export { useEventManager, useAudioEventManager } from './useEventManager';
 export { useGoogleAuth } from './useGoogleAuth';
 export { useGoogleContacts } from './useGoogleContacts';
-export { useNativeContextMenu, useChatContextMenu, useMediaContextMenu, useMessageContextMenu, useUserContextMenu } from './useNativeContextMenu';
-export { useAuth } from './useAuth';
-export { useUser } from './useUser';
-export { useChat } from './useChat';
-export { default as useContacts } from './useContacts';
-export { useNotification } from './useNotification';
-export { useTokenRefresh } from './useTokenRefresh';
-export { useTempConversations } from './useTempConversations';
-export { useRealtime } from './useRealtime';
 export { useLocalCache } from './useLocalCache';
+export { 
+  useNativeContextMenu, 
+  useMessageContextMenu, 
+  useChatContextMenu, 
+  useMediaContextMenu, 
+  useUserContextMenu,
+  useGlobalShortcuts 
+} from './useNativeContextMenu';
+export { useNotification } from './useNotification';
+export { useRealtime } from './useRealtime';
+export { useTempConversations } from './useTempConversations';
+export { useTokenRefresh } from './useTokenRefresh';
+export { useUser } from './useUser';
+export { useAttachments } from './useAttachments';

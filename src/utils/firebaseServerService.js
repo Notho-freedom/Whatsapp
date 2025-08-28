@@ -33,6 +33,7 @@ class FirebaseServerService {
       } = conversationData;
 
       // Créer la conversation dans Firestore
+      const currentTimestamp = new Date();
       const conversationRef = await addDoc(collection(this.db, 'conversations'), {
         type: 'individual',
         name,
@@ -41,8 +42,8 @@ class FirebaseServerService {
         avatar_url,
         custom_settings,
         is_temporary,
-        created_at: serverTimestamp(),
-        updated_at: serverTimestamp()
+        created_at: currentTimestamp,
+        updated_at: currentTimestamp
       });
 
       // Ajouter le créateur comme participant
@@ -56,25 +57,25 @@ class FirebaseServerService {
           sound: true,
           vibration: true
         },
-        joined_at: serverTimestamp()
+        joined_at: currentTimestamp
       });
 
-      // Si un contact est fourni dans custom_settings, l'ajouter comme participant virtuel
-      if (custom_settings.contact) {
-        await addDoc(collection(this.db, 'conversation_participants'), {
-          conversation_id: conversationRef.id,
-          user_id: `virtual_${custom_settings.contact.id || Date.now()}`,
-          role: 'member',
-          is_active: true,
-          notification_settings: {
-            muted: false,
-            sound: true,
-            vibration: true
-          },
-          joined_at: serverTimestamp(),
-          is_virtual_contact: true
-        });
-      }
+              // Si un contact est fourni dans custom_settings, l'ajouter comme participant virtuel
+        if (custom_settings.contact) {
+          await addDoc(collection(this.db, 'conversation_participants'), {
+            conversation_id: conversationRef.id,
+            user_id: `virtual_${custom_settings.contact.id || Date.now()}`,
+            role: 'member',
+            is_active: true,
+            notification_settings: {
+              muted: false,
+              sound: true,
+              vibration: true
+            },
+            joined_at: currentTimestamp,
+            is_virtual_contact: true
+          });
+        }
 
       console.log(`✅ Conversation temporaire créée dans Firestore avec l'ID: ${conversationRef.id}`);
       
@@ -192,6 +193,7 @@ class FirebaseServerService {
       } = messageData;
 
       // Créer le message dans Firestore avec la structure compatible
+      const currentTimestamp = new Date();
       const messageRef = await addDoc(collection(this.db, 'messages'), {
         conversation_id: conversationId,
         text,
@@ -205,20 +207,21 @@ class FirebaseServerService {
         metadata,
         time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
         date: new Date().toLocaleDateString('fr-FR'),
-        created_at: serverTimestamp(),
-        updated_at: serverTimestamp()
+        created_at: currentTimestamp,
+        updated_at: currentTimestamp
       });
 
       // Mettre à jour la conversation avec le dernier message
       const conversationRef = doc(this.db, 'conversations', conversationId);
+      const messageTimestamp = new Date();
       await updateDoc(conversationRef, {
         last_message: {
           text: text || (media ? `📎 ${media[0]?.type || 'fichier'}` : ''),
           type,
           sender,
-          timestamp: serverTimestamp()
+          timestamp: messageTimestamp
         },
-        updated_at: serverTimestamp()
+        updated_at: messageTimestamp
       });
 
       console.log(`✅ Message sauvegardé dans Firestore avec l'ID: ${messageRef.id}`);
@@ -294,7 +297,7 @@ class FirebaseServerService {
       const messageRef = doc(this.db, 'messages', messageId);
       await updateDoc(messageRef, {
         ...updates,
-        updated_at: serverTimestamp()
+        updated_at: new Date()
       });
 
       console.log(`✅ Message ${messageId} mis à jour dans Firestore`);
@@ -331,6 +334,7 @@ class FirebaseServerService {
         custom_settings = {}
       } = conversationData;
 
+      const currentTimestamp = new Date();
       const conversationRef = await addDoc(collection(this.db, 'conversations'), {
         type,
         name,
@@ -339,8 +343,8 @@ class FirebaseServerService {
         avatar_url,
         custom_settings,
         is_temporary: false,
-        created_at: serverTimestamp(),
-        updated_at: serverTimestamp()
+        created_at: currentTimestamp,
+        updated_at: currentTimestamp
       });
 
       return {
@@ -437,7 +441,7 @@ class FirebaseServerService {
           sound: true,
           vibration: true
         },
-        joined_at: serverTimestamp()
+        joined_at: new Date()
       });
 
       return true;

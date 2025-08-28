@@ -32,15 +32,15 @@ export const useAudioEventManager = () => {
   
   const updateAudioState = useCallback((messageId, audioState) => {
     setAudioStates(prev => new Map(prev).set(messageId, audioState));
-  });
+  }, []);
   
   const getAudioState = useCallback((messageId) => {
     return audioStates.get(messageId) || { isPlaying: false, currentTime: 0 };
-  });
+  }, [audioStates]);
   
   const stopAllAudio = useCallback(() => {
     setAudioStates(new Map());
-  });
+  }, []);
   
   return {
     audioStates,

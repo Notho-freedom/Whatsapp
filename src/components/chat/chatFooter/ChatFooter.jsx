@@ -7,14 +7,27 @@ import { useRealtime } from '@/hooks';
 import ReplyCap from '../chatBody/ReplyCap';
 import AttachmentMenu from './AttachmentMenu';
 import EmojiPicker from './EmojiPicker';
-import MediaUpload from './MediaUpload';
+import MediaPicker from './MediaPicker';
+import CameraCapture from './CameraCapture';
+import DocumentPicker from './DocumentPicker';
+import ContactPicker from './ContactPicker';
+import PollCreator from './PollCreator';
+import DrawingBoard from './DrawingBoard';
 
 export default function ChatFooter({ selectedChat, onSendMessage, currentUser }) {
   const [message, setMessage] = useState('');
   const [isClient, setIsClient] = useState(false);
   const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false);
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
-  const [isMediaUploadOpen, setIsMediaUploadOpen] = useState(false);
+  
+  // États pour les composants d'attachement
+  const [isMediaPickerOpen, setIsMediaPickerOpen] = useState(false);
+  const [isCameraCaptureOpen, setIsCameraCaptureOpen] = useState(false);
+  const [isDocumentPickerOpen, setIsDocumentPickerOpen] = useState(false);
+  const [isContactPickerOpen, setIsContactPickerOpen] = useState(false);
+  const [isPollCreatorOpen, setIsPollCreatorOpen] = useState(false);
+  const [isDrawingBoardOpen, setIsDrawingBoardOpen] = useState(false);
+  
   const { replyTo, clearReplyTo, users } = useAppContext();
   
   // Hook temps réel pour les indicateurs de frappe
@@ -96,61 +109,31 @@ export default function ChatFooter({ selectedChat, onSendMessage, currentUser })
   const handleAttachmentOptionSelect = (option) => {
     console.log('Selected attachment option:', option);
     
-    // Gérer les différentes options d'attachement
-    if (option.action === 'media') {
-      setIsMediaUploadOpen(true);
-      setIsAttachmentMenuOpen(false);
-    } else {
-      // Émettre un événement personnalisé pour l'action sélectionnée
-      window.dispatchEvent(new CustomEvent('attachment-action', {
-        detail: {
-          action: option.action,
-          option: option,
-          chatId: selectedChat?.id
-        }
-      }));
-
-      // Actions spécifiques selon l'option
-      switch (option.action) {
-        case 'select-media':
-          // Ouvrir le sélecteur de fichiers pour photos/vidéos
-          window.dispatchEvent(new CustomEvent('open-media-picker', {
-            detail: { chatId: selectedChat?.id }
-          }));
-          break;
-        case 'open-camera':
-          // Ouvrir la caméra
-          window.dispatchEvent(new CustomEvent('open-camera', {
-            detail: { chatId: selectedChat?.id }
-          }));
-          break;
-        case 'select-document':
-          // Ouvrir le sélecteur de documents
-          window.dispatchEvent(new CustomEvent('open-document-picker', {
-            detail: { chatId: selectedChat?.id }
-          }));
-          break;
-        case 'select-contact':
-          // Ouvrir le sélecteur de contacts
-          window.dispatchEvent(new CustomEvent('open-contact-picker', {
-            detail: { chatId: selectedChat?.id }
-          }));
-          break;
-        case 'create-poll':
-          // Ouvrir l'interface de création de sondage
-          window.dispatchEvent(new CustomEvent('open-poll-creator', {
-            detail: { chatId: selectedChat?.id }
-          }));
-          break;
-        case 'open-drawing':
-          // Ouvrir l'interface de dessin
-          window.dispatchEvent(new CustomEvent('open-drawing-board', {
-            detail: { chatId: selectedChat?.id }
-          }));
-          break;
-        default:
-          break;
-      }
+    // Fermer le menu d'attachement
+    setIsAttachmentMenuOpen(false);
+    
+    // Actions spécifiques selon l'option
+    switch (option.action) {
+      case 'select-media':
+        setIsMediaPickerOpen(true);
+        break;
+      case 'open-camera':
+        setIsCameraCaptureOpen(true);
+        break;
+      case 'select-document':
+        setIsDocumentPickerOpen(true);
+        break;
+      case 'select-contact':
+        setIsContactPickerOpen(true);
+        break;
+      case 'create-poll':
+        setIsPollCreatorOpen(true);
+        break;
+      case 'open-drawing':
+        setIsDrawingBoardOpen(true);
+        break;
+      default:
+        break;
     }
   };
 
@@ -168,15 +151,6 @@ export default function ChatFooter({ selectedChat, onSendMessage, currentUser })
 
   const handleEmojiSelect = (emoji) => {
     setMessage(prev => prev + emoji);
-  };
-
-  const handleMediaUpload = (mediaData) => {
-    // Envoyer le média comme un message
-    onSendMessage(mediaData);
-  };
-
-  const handleMediaUploadClose = () => {
-    setIsMediaUploadOpen(false);
   };
 
   if (!isClient) {
@@ -274,14 +248,48 @@ export default function ChatFooter({ selectedChat, onSendMessage, currentUser })
         </button>
       </footer>
 
-      {/* Composant d'upload de médias */}
-      {isMediaUploadOpen && (
-        <MediaUpload
-          conversationId={selectedChat.id}
-          onMediaUpload={handleMediaUpload}
-          onClose={handleMediaUploadClose}
-        />
-      )}
+      {/* Composants d'attachement */}
+      <MediaPicker
+        isOpen={isMediaPickerOpen}
+        onClose={() => setIsMediaPickerOpen(false)}
+        conversationId={selectedChat.id}
+        userId={currentUserId}
+      />
+      
+      <CameraCapture
+        isOpen={isCameraCaptureOpen}
+        onClose={() => setIsCameraCaptureOpen(false)}
+        conversationId={selectedChat.id}
+        userId={currentUserId}
+      />
+      
+      <DocumentPicker
+        isOpen={isDocumentPickerOpen}
+        onClose={() => setIsDocumentPickerOpen(false)}
+        conversationId={selectedChat.id}
+        userId={currentUserId}
+      />
+      
+      <ContactPicker
+        isOpen={isContactPickerOpen}
+        onClose={() => setIsContactPickerOpen(false)}
+        conversationId={selectedChat.id}
+        userId={currentUserId}
+      />
+      
+      <PollCreator
+        isOpen={isPollCreatorOpen}
+        onClose={() => setIsPollCreatorOpen(false)}
+        conversationId={selectedChat.id}
+        userId={currentUserId}
+      />
+      
+      <DrawingBoard
+        isOpen={isDrawingBoardOpen}
+        onClose={() => setIsDrawingBoardOpen(false)}
+        conversationId={selectedChat.id}
+        userId={currentUserId}
+      />
     </div>
   );
 }
