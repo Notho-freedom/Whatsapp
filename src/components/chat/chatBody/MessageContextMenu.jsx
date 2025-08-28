@@ -120,7 +120,7 @@ const MessageContextMenu = ({
       id: 'reply',
       label: 'Reply',
       icon: FaReply,
-      action: () => onAction('reply', message),
+      action: () => onAction('reply', {message}),
       color: 'text-blue-400'
     },
     {
