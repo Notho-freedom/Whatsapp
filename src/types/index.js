@@ -81,16 +81,114 @@ export const createStatusInterface = () => ({
 
 // Interface pour un utilisateur
 export const createUserInterface = () => ({
+  // Identifiants
   id: '',
-  name: '',
+  googleId: '', // ID Google OAuth
   email: '',
   phone: '',
+  
+  // Informations de base
+  name: '',
+  firstName: '',
+  lastName: '',
+  displayName: '',
+  username: '',
+  
+  // Avatar et médias
   avatar: '',
+  avatarUrl: '',
+  avatarThumbnail: '',
+  
+  // Statut et présence
   status: '',
-  lastSeen: null,
+  statusMessage: '',
   isOnline: false,
-  settings: {},
-  preferences: {}
+  lastSeen: null,
+  lastSeenTimestamp: null,
+  
+  // Informations personnelles
+  bio: '',
+  location: '',
+  website: '',
+  birthday: null,
+  gender: '',
+  
+  // Paramètres et préférences
+  settings: {
+    theme: 'dark',
+    language: 'fr',
+    notifications: {
+      enabled: true,
+      sound: true,
+      vibration: true,
+      showPreview: true,
+      showSenderName: true,
+      showMessageContent: true,
+      quietHours: {
+        enabled: false,
+        start: '22:00',
+        end: '08:00'
+      }
+    },
+    privacy: {
+      lastSeen: 'everyone', // everyone, contacts, nobody
+      profilePhoto: 'everyone', // everyone, contacts, nobody
+      status: 'everyone', // everyone, contacts, nobody
+      readReceipts: true,
+      typingIndicator: true,
+      onlineStatus: true
+    },
+    chat: {
+      enterToSend: true,
+      mediaAutoDownload: true,
+      fontSize: 'medium',
+      bubbleStyle: 'default',
+      wallpaper: 'default'
+    },
+    calls: {
+      incomingCallSound: true,
+      outgoingCallSound: true,
+      videoCallQuality: 'auto'
+    }
+  },
+  
+  // Statistiques
+  stats: {
+    totalMessages: 0,
+    totalCalls: 0,
+    totalContacts: 0,
+    totalGroups: 0,
+    joinDate: null,
+    lastActive: null
+  },
+  
+  // Sécurité et authentification
+  isVerified: false,
+  isPremium: false,
+  twoFactorEnabled: false,
+  backupEnabled: false,
+  
+  // Métadonnées
+  createdAt: new Date(),
+  updatedAt: new Date(),
+  lastLoginAt: null,
+  loginCount: 0,
+  
+  // Relations
+  contacts: [],
+  blockedUsers: [],
+  favoriteContacts: [],
+  
+  // Notifications push
+  pushTokens: [],
+  
+  // Préférences de synchronisation
+  syncPreferences: {
+    contacts: true,
+    messages: true,
+    media: true,
+    settings: true
+  }
 });
 
 // Interface pour les paramètres

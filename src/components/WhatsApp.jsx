@@ -423,25 +423,7 @@ export default function WhatsApp() {
     );
   }
 
-  // Indicateur de chargement intelligent avec phases
-  const LoadingIndicator = ({ phase = 1, isSyncing = false }) => (
-    <div className="absolute top-0 left-0 right-0 z-50 bg-whatsapp-primary/90 text-white py-2 px-4 text-center text-sm">
-      <div className="flex items-center justify-center space-x-2">
-        {phase === 1 ? (
-          <>
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-            <span>Chargement depuis le cache local...</span>
-          </>
-        ) : (
-          <>
-            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            <span>Synchronisation furtive en cours...</span>
-            {isSyncing && <span className="text-xs opacity-75">(arrière-plan)</span>}
-          </>
-        )}
-      </div>
-    </div>
-  );
+
 
   if (error) {
     return (
@@ -514,6 +496,26 @@ export default function WhatsApp() {
   const handleSplitterResize = (newWidth) => {
     setChatListWidth(newWidth);
   };
+
+  // Indicateur de chargement intelligent avec phases
+  const LoadingIndicator = ({ phase = 1, isSyncing = false }) => (
+    <div className="absolute top-0 left-0 right-0 z-50 bg-whatsapp-primary/90 text-white py-2 px-4 text-center text-sm">
+      <div className="flex items-center justify-center space-x-2">
+        {phase === 1 ? (
+          <>
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+            <span>Chargement depuis le cache local...</span>
+          </>
+        ) : (
+          <>
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            <span>Synchronisation furtive en cours...</span>
+            {isSyncing && <span className="text-xs opacity-75">(arrière-plan)</span>}
+          </>
+        )}
+      </div>
+    </div>
+  );
 
   return (
     <div className="h-screen w-screen flex flex-col bg-[#202020] font-segoe overflow-hidden rounded-md relative">

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-const conversationService = require('@/utils/conversationDatabaseService');
-const authService = require('@/utils/authDatabaseService');
+import conversationService from '@/utils/conversationDatabaseService';
+import authService from '@/utils/authDatabaseService';
 
 // GET /api/conversations/[conversationId] - Récupérer une conversation spécifique
 export async function GET(request, { params }) {
