@@ -9,8 +9,7 @@ import {
   getDocs, 
   query, 
   where, 
-  orderBy,
-  serverTimestamp 
+  orderBy
 } from 'firebase/firestore';
 
 class PollService {
@@ -24,8 +23,8 @@ class PollService {
     try {
       const poll = {
         ...pollData,
-        created_at: serverTimestamp(),
-        updated_at: serverTimestamp(),
+        created_at: new Date(),
+        updated_at: new Date(),
         total_votes: 0,
         is_active: true
       };
@@ -98,7 +97,7 @@ class PollService {
         // Mettre à jour le vote existant
         await updateDoc(doc(db, this.votesCollection, existingVote.id), {
           option_id: optionId,
-          updated_at: serverTimestamp()
+          updated_at: new Date()
         });
       } else {
         // Créer un nouveau vote
@@ -106,7 +105,7 @@ class PollService {
           poll_id: pollId,
           user_id: userId,
           option_id: optionId,
-          created_at: serverTimestamp()
+          created_at: new Date()
         });
       }
 
@@ -168,7 +167,7 @@ class PollService {
       await updateDoc(doc(db, this.pollsCollection, pollId), {
         total_votes: totalVotes,
         option_votes: voteCounts,
-        updated_at: serverTimestamp()
+        updated_at: new Date()
       });
     } catch (error) {
       console.error('Erreur lors de la mise à jour des statistiques:', error);
@@ -186,8 +185,8 @@ class PollService {
 
       await updateDoc(doc(db, this.pollsCollection, pollId), {
         is_active: false,
-        closed_at: serverTimestamp(),
-        updated_at: serverTimestamp()
+        closed_at: new Date(),
+        updated_at: new Date()
       });
 
       return true;

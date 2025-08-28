@@ -9,8 +9,7 @@ import {
   getDocs, 
   query, 
   where, 
-  orderBy,
-  serverTimestamp 
+  orderBy
 } from 'firebase/firestore';
 import { 
   ref, 
@@ -66,8 +65,8 @@ class CameraService {
           timestamp: timestamp,
           device_info: await this.getDeviceInfo()
         },
-        created_at: serverTimestamp(),
-        updated_at: serverTimestamp(),
+        created_at: new Date(),
+        updated_at: new Date(),
         is_active: true,
         status: 'captured'
       };
@@ -125,8 +124,8 @@ class CameraService {
           timestamp: timestamp,
           device_info: await this.getDeviceInfo()
         },
-        created_at: serverTimestamp(),
-        updated_at: serverTimestamp(),
+        created_at: new Date(),
+        updated_at: new Date(),
         is_active: true,
         status: 'recorded'
       };
@@ -200,8 +199,8 @@ class CameraService {
             timestamp: timestamp,
             device_info: await this.getDeviceInfo()
           },
-          created_at: serverTimestamp(),
-          updated_at: serverTimestamp(),
+          created_at: new Date(),
+          updated_at: new Date(),
           is_active: true,
           status: 'selected'
         };
@@ -456,8 +455,8 @@ class CameraService {
         deletePromises.push(
           updateDoc(doc.ref, {
             is_active: false,
-            deleted_at: serverTimestamp(),
-            updated_at: serverTimestamp()
+            deleted_at: new Date(),
+            updated_at: new Date()
           })
         );
       });

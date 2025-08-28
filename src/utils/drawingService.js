@@ -9,8 +9,7 @@ import {
   getDocs, 
   query, 
   where, 
-  orderBy,
-  serverTimestamp 
+  orderBy
 } from 'firebase/firestore';
 import { 
   ref, 
@@ -30,8 +29,8 @@ class DrawingService {
     try {
       const drawing = {
         ...drawingData,
-        created_at: serverTimestamp(),
-        updated_at: serverTimestamp(),
+        created_at: new Date(),
+        updated_at: new Date(),
         is_active: true
       };
 
@@ -63,8 +62,8 @@ class DrawingService {
         image_url: downloadURL,
         storage_path: uploadResult.ref.fullPath,
         conversation_id: conversationId,
-        created_at: serverTimestamp(),
-        updated_at: serverTimestamp(),
+        created_at: new Date(),
+        updated_at: new Date(),
         is_active: true
       };
 
@@ -137,7 +136,7 @@ class DrawingService {
 
       await updateDoc(doc(db, this.drawingsCollection, drawingId), {
         ...updates,
-        updated_at: serverTimestamp()
+        updated_at: new Date()
       });
 
       return true;
@@ -259,7 +258,7 @@ class DrawingService {
 
       await updateDoc(doc(db, this.drawingsCollection, drawingId), {
         tags: newTags,
-        updated_at: serverTimestamp()
+        updated_at: new Date()
       });
 
       return true;

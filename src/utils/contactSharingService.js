@@ -9,8 +9,7 @@ import {
   getDocs, 
   query, 
   where, 
-  orderBy,
-  serverTimestamp 
+  orderBy
 } from 'firebase/firestore';
 
 class ContactSharingService {
@@ -26,7 +25,7 @@ class ContactSharingService {
         ...contactData,
         conversation_id: conversationId,
         sender_id: senderId,
-        shared_at: serverTimestamp(),
+        shared_at: new Date(),
         is_active: true,
         status: 'shared'
       };
@@ -98,8 +97,8 @@ class ContactSharingService {
       await updateDoc(doc(db, this.sharedContactsCollection, sharedContactId), {
         status: 'accepted',
         accepted_by: userId,
-        accepted_at: serverTimestamp(),
-        updated_at: serverTimestamp()
+        accepted_at: new Date(),
+        updated_at: new Date()
       });
 
       // Créer une demande de contact
@@ -118,8 +117,8 @@ class ContactSharingService {
       await updateDoc(doc(db, this.sharedContactsCollection, sharedContactId), {
         status: 'declined',
         declined_by: userId,
-        declined_at: serverTimestamp(),
-        updated_at: serverTimestamp()
+        declined_at: new Date(),
+        updated_at: new Date()
       });
 
       return true;
@@ -147,8 +146,8 @@ class ContactSharingService {
         conversation_id: sharedContact.conversation_id,
         sender_id: sharedContact.sender_id,
         status: 'pending',
-        created_at: serverTimestamp(),
-        updated_at: serverTimestamp()
+        created_at: new Date(),
+        updated_at: new Date()
       };
 
       const docRef = await addDoc(collection(db, this.contactRequestsCollection), contactRequest);
@@ -205,8 +204,8 @@ class ContactSharingService {
 
       await updateDoc(doc(db, this.contactRequestsCollection, requestId), {
         status: 'approved',
-        approved_at: serverTimestamp(),
-        updated_at: serverTimestamp()
+        approved_at: new Date(),
+        updated_at: new Date()
       });
 
       return true;
@@ -227,8 +226,8 @@ class ContactSharingService {
 
       await updateDoc(doc(db, this.contactRequestsCollection, requestId), {
         status: 'rejected',
-        rejected_at: serverTimestamp(),
-        updated_at: serverTimestamp()
+        rejected_at: new Date(),
+        updated_at: new Date()
       });
 
       return true;
@@ -268,8 +267,8 @@ class ContactSharingService {
 
       await updateDoc(doc(db, this.sharedContactsCollection, sharedContactId), {
         is_active: false,
-        deleted_at: serverTimestamp(),
-        updated_at: serverTimestamp()
+        deleted_at: new Date(),
+        updated_at: new Date()
       });
 
       return true;

@@ -9,8 +9,7 @@ import {
   getDocs, 
   query, 
   where, 
-  orderBy,
-  serverTimestamp 
+  orderBy
 } from 'firebase/firestore';
 import { 
   ref, 
@@ -88,10 +87,16 @@ class DocumentService {
         metadata: {
           ...metadata,
           lastModified: file.lastModified,
-          storage_metadata: fileMetadata
+          storage_metadata: {
+            name: fileMetadata.name || fileName,
+            size: fileMetadata.size || file.size,
+            contentType: fileMetadata.contentType || file.type,
+            timeCreated: fileMetadata.timeCreated || new Date().toISOString(),
+            updated: fileMetadata.updated || new Date().toISOString()
+          }
         },
-        created_at: serverTimestamp(),
-        updated_at: serverTimestamp(),
+        created_at: new Date(),
+        updated_at: new Date(),
         is_active: true,
         status: 'uploaded'
       };
@@ -197,7 +202,7 @@ class DocumentService {
 
       await updateDoc(doc(db, this.documentsCollection, documentId), {
         ...updates,
-        updated_at: serverTimestamp()
+        updated_at: new Date()
       });
 
       return true;
@@ -418,8 +423,8 @@ class DocumentService {
         deletePromises.push(
           updateDoc(doc.ref, {
             is_active: false,
-            deleted_at: serverTimestamp(),
-            updated_at: serverTimestamp()
+            deleted_at: new Date(),
+            updated_at: new Date()
           })
         );
       });
