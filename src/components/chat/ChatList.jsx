@@ -491,13 +491,12 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect,
               </div>
             )
           ) : (
-            // Mode Chats
-            filteredUsers.length === 0 ? (
-              <div className="p-4 text-center text-gray-400">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#1DAA61] mx-auto mb-2"></div>
-                <p>Chargement des conversations...</p>
-              </div>
-            ) : sortedUsers.length === 0 ? (
+                         // Mode Chats
+             filteredUsers.length === 0 ? (
+               <div className="flex items-center justify-center h-full">
+                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1DAA61] mt-[45%]"></div>
+               </div>
+             ) : sortedUsers.length === 0 ? (
               <div className="p-4 text-center text-gray-400">
                 <p>Aucune conversation trouvée</p>
               </div>
