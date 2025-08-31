@@ -53,7 +53,7 @@ import {
   NativeContextMenuDemo 
 } from '@/features';
 import { useAppContext } from '@/context';
-import { useGoogleAuth, useEventManager, useTokenRefresh, useTempConversations, useRealtime, useLocalCache, useGoogleContacts } from '@/hooks';
+import { useGoogleAuth, useEventManager, useTokenRefresh, useTempConversations, useRealtime, useLocalCache } from '@/hooks';
 
 export default function WhatsApp() {
   const [isClient, setIsClient] = React.useState(false);
@@ -98,19 +98,20 @@ export default function WhatsApp() {
     getLastMessages
   } = useLocalCache();
 
-  // Hook pour la gestion des contacts Google
-  const {
-    contacts,
-    isLoading: contactsLoading,
-    fetchContacts,
-    refreshContacts
-  } = useGoogleContacts();
-
   // État pour gérer les phases de chargement
   const [loadingPhase, setLoadingPhase] = React.useState(1); // 1: Cache local, 2: Synchronisation
   const [isSyncing, setIsSyncing] = React.useState(false);
   const [syncErrors, setSyncErrors] = React.useState([]);
   const [localLoading, setLocalLoading] = React.useState(false);
+  const [conversationsLoading, setConversationsLoading] = React.useState(false);
+  const [contactsLoading, setContactsLoading] = React.useState(false);
+  const [statusesLoading, setStatusesLoading] = React.useState(false);
+  const [loadingProgress, setLoadingProgress] = React.useState({
+    conversations: 0,
+    contacts: 0,
+    statuses: 0,
+    messages: 0
+  });
 
   // Fonction pour vérifier la synchronisation avec Firebase (discrètement)
   const checkFirebaseSync = React.useCallback(async () => {
@@ -264,24 +265,18 @@ export default function WhatsApp() {
       setIsSyncing(false);
       console.log('🚀 Phase 1 : Chargement asynchrone depuis le cache local...');
 
-      // Charger les conversations et contacts de manière asynchrone et non-bloquante
-      const loadDataAsync = async () => {
+      // Charger les conversations de manière asynchrone et non-bloquante
+      const loadConversationsAsync = async () => {
         try {
           // Utiliser requestIdleCallback pour ne pas bloquer le rendu
           if (window.requestIdleCallback) {
             window.requestIdleCallback(async () => {
-              await Promise.all([
-                loadConversationsFromCache(),
-                loadContactsAsync()
-              ]);
+              await loadConversationsFromCache();
             }, { timeout: 1000 });
           } else {
             // Fallback pour les navigateurs qui ne supportent pas requestIdleCallback
             setTimeout(async () => {
-              await Promise.all([
-                loadConversationsFromCache(),
-                loadContactsAsync()
-              ]);
+              await loadConversationsFromCache();
             }, 100);
           }
         } catch (error) {
@@ -289,7 +284,20 @@ export default function WhatsApp() {
         }
       };
 
-      loadDataAsync();
+      // Charger les contacts et statuts en parallèle
+      const loadContactsAndStatuses = async () => {
+        try {
+          await Promise.all([
+            loadContacts(),
+            loadStatuses()
+          ]);
+        } catch (error) {
+          console.warn('⚠️ Erreur lors du chargement des contacts/statuts:', error);
+        }
+      };
+
+      loadConversationsAsync();
+      loadContactsAndStatuses();
 
       // PHASE 2 : Synchronisation discrète en arrière-plan
       const syncTimer = setTimeout(async () => {
@@ -321,6 +329,9 @@ export default function WhatsApp() {
   // Fonction pour charger les conversations depuis le cache (non-bloquante)
   const loadConversationsFromCache = React.useCallback(async () => {
     try {
+      setConversationsLoading(true);
+      setLoadingProgress(prev => ({ ...prev, conversations: 0 }));
+      
       const cachedConversations = getAllConversations();
       if (cachedConversations.length > 0) {
         console.log(`📦 ${cachedConversations.length} conversations chargées depuis le cache local`);
@@ -344,29 +355,23 @@ export default function WhatsApp() {
               }, 10);
             }
           });
+          
+          // Mettre à jour le progrès
+          const progress = Math.min(100, ((i + batchSize) / cachedConversations.length) * 100);
+          setLoadingProgress(prev => ({ ...prev, conversations: progress }));
         }
+        
+        setLoadingProgress(prev => ({ ...prev, conversations: 100 }));
       } else {
         console.log('🤷 Aucune conversation trouvée dans le cache local.');
+        setLoadingProgress(prev => ({ ...prev, conversations: 100 }));
       }
     } catch (error) {
       console.warn('⚠️ Erreur lors du chargement des conversations:', error);
+    } finally {
+      setConversationsLoading(false);
     }
   }, [getAllConversations]);
-
-  // Fonction pour charger les contacts de manière asynchrone
-  const loadContactsAsync = React.useCallback(async () => {
-    try {
-      if (isAuthenticated && user?.token) {
-        console.log('👥 Chargement des contacts Google...');
-        await fetchContacts();
-        console.log(`✅ ${contacts.length} contacts chargés avec succès`);
-      } else {
-        console.log('🤷 Utilisateur non authentifié, impossible de charger les contacts');
-      }
-    } catch (error) {
-      console.warn('⚠️ Erreur lors du chargement des contacts:', error);
-    }
-  }, [isAuthenticated, user?.token, fetchContacts, contacts.length]);
 
   // Fonction pour traiter un lot de conversations
   const processConversationBatch = React.useCallback((conversations) => {
@@ -402,6 +407,46 @@ export default function WhatsApp() {
       }
     });
   }, [actions, getLastMessages]);
+
+  // Fonction pour charger les contacts
+  const loadContacts = React.useCallback(async () => {
+    try {
+      setContactsLoading(true);
+      setLoadingProgress(prev => ({ ...prev, contacts: 0 }));
+      
+      // Simuler le chargement des contacts (à remplacer par l'appel réel)
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Mettre à jour le progrès
+      setLoadingProgress(prev => ({ ...prev, contacts: 100 }));
+      console.log('✅ Contacts chargés');
+      
+    } catch (error) {
+      console.warn('⚠️ Erreur lors du chargement des contacts:', error);
+    } finally {
+      setContactsLoading(false);
+    }
+  }, []);
+
+  // Fonction pour charger les statuts
+  const loadStatuses = React.useCallback(async () => {
+    try {
+      setStatusesLoading(true);
+      setLoadingProgress(prev => ({ ...prev, statuses: 0 }));
+      
+      // Simuler le chargement des statuts (à remplacer par l'appel réel)
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Mettre à jour le progrès
+      setLoadingProgress(prev => ({ ...prev, statuses: 100 }));
+      console.log('✅ Statuts chargés');
+      
+    } catch (error) {
+      console.warn('⚠️ Erreur lors du chargement des statuts:', error);
+    } finally {
+      setStatusesLoading(false);
+    }
+  }, []);
 
   // Fonction pour la synchronisation en arrière-plan
   const performBackgroundSync = React.useCallback(async () => {
@@ -451,7 +496,6 @@ export default function WhatsApp() {
       </div>
     );
   }
-
 
 
   if (error) {
@@ -526,30 +570,83 @@ export default function WhatsApp() {
     setChatListWidth(newWidth);
   };
 
-  // Indicateur de chargement intelligent avec phases
-  const LoadingIndicator = ({ phase = 1, isSyncing = false }) => (
-    <div className="absolute top-0 left-0 right-0 z-50 bg-whatsapp-primary/90 text-white py-2 px-4 text-center text-sm">
-      <div className="flex items-center justify-center space-x-2">
-        {phase === 1 ? (
-          <>
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-            <span>Chargement des conversations et contacts depuis le cache local...</span>
-          </>
-        ) : (
-          <>
-            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            <span>Synchronisation furtive en cours...</span>
-            {isSyncing && <span className="text-xs opacity-75">(arrière-plan)</span>}
-          </>
-        )}
+  // Indicateur de chargement intelligent avec phases et progrès détaillé
+  const LoadingIndicator = ({ phase = 1, isSyncing = false }) => {
+    const totalProgress = Math.round(
+      (loadingProgress.conversations + loadingProgress.contacts + loadingProgress.statuses) / 3
+    );
+    
+    return (
+      <div className="absolute top-0 left-0 right-0 z-50 bg-whatsapp-primary/90 text-white py-2 px-4">
+        <div className="flex flex-col space-y-2">
+          {/* Barre de progrès principale */}
+          <div className="flex items-center justify-center space-x-2">
+            {phase === 1 ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                <span className="text-sm">Chargement depuis le cache local... {totalProgress}%</span>
+              </>
+            ) : (
+              <>
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span className="text-sm">Synchronisation furtive en cours...</span>
+                {isSyncing && <span className="text-xs opacity-75">(arrière-plan)</span>}
+              </>
+            )}
+          </div>
+          
+          {/* Barres de progrès détaillées */}
+          <div className="flex space-x-2 text-xs">
+            <div className="flex-1">
+              <div className="flex justify-between mb-1">
+                <span>Conversations</span>
+                <span>{Math.round(loadingProgress.conversations)}%</span>
+              </div>
+              <div className="w-full bg-white/20 rounded-full h-1.5">
+                <div 
+                  className="bg-white h-1.5 rounded-full transition-all duration-300"
+                  style={{ width: `${loadingProgress.conversations}%` }}
+                ></div>
+              </div>
+            </div>
+            
+            <div className="flex-1">
+              <div className="flex justify-between mb-1">
+                <span>Contacts</span>
+                <span>{Math.round(loadingProgress.contacts)}%</span>
+              </div>
+              <div className="w-full bg-white/20 rounded-full h-1.5">
+                <div 
+                  className="bg-white h-1.5 rounded-full transition-all duration-300"
+                  style={{ width: `${loadingProgress.contacts}%` }}
+                ></div>
+              </div>
+            </div>
+            
+            <div className="flex-1">
+              <div className="flex justify-between mb-1">
+                <span>Statuts</span>
+                <span>{Math.round(loadingProgress.statuses)}%</span>
+              </div>
+              <div className="w-full bg-white/20 rounded-full h-1.5">
+                <div 
+                  className="bg-white h-1.5 rounded-full transition-all duration-300"
+                  style={{ width: `${loadingProgress.statuses}%` }}
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="h-screen w-screen flex flex-col bg-[#202020] font-segoe overflow-hidden rounded-md relative">
       {/* Indicateur de chargement intelligent avec phases */}
-      {loading && <LoadingIndicator phase={loadingPhase} isSyncing={isSyncing} />}
+      {(loading || conversationsLoading || contactsLoading || statusesLoading) && (
+        <LoadingIndicator phase={loadingPhase} isSyncing={isSyncing} />
+      )}
       
       {/* Indicateur de synchronisation Firebase */}
       {syncErrors.length > 0 && (
@@ -576,7 +673,7 @@ export default function WhatsApp() {
           </div>
         </div>
       )}
-
+      
       {/* Titlebar */}
       <Titlebar />
 

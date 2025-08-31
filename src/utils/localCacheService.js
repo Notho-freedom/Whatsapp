@@ -249,30 +249,9 @@ class LocalCacheService {
     
     try {
       const storageKey = `whatsapp_cache_${type}`;
-      let existing = {};
-      
-      // Charger les données existantes avec validation
-      const existingData = localStorage.getItem(storageKey);
-      if (existingData && existingData.trim() !== '') {
-        try {
-          existing = JSON.parse(existingData);
-          if (!existing || typeof existing !== 'object') {
-            existing = {};
-          }
-        } catch (parseError) {
-          console.warn('Erreur lors du parsing des données existantes, réinitialisation:', parseError);
-          existing = {};
-        }
-      }
-      
-      // Ajouter les nouvelles données
+      const existing = JSON.parse(localStorage.getItem(storageKey) || '{}');
       existing[key] = data;
-      
-      // Sauvegarder avec validation
-      const jsonString = JSON.stringify(existing);
-      if (jsonString && jsonString !== '{}') {
-        localStorage.setItem(storageKey, jsonString);
-      }
+      localStorage.setItem(storageKey, JSON.stringify(existing));
     } catch (error) {
       console.warn('Erreur lors de la sauvegarde dans localStorage:', error);
     }
@@ -283,53 +262,23 @@ class LocalCacheService {
     if (!this.isLocalStorageAvailable) return;
     
     try {
-      // Charger les conversations avec validation
-      const conversationsData = localStorage.getItem('whatsapp_cache_conversations');
-      if (conversationsData && conversationsData.trim() !== '') {
-        try {
-          const conversations = JSON.parse(conversationsData);
-          if (conversations && typeof conversations === 'object') {
-            Object.entries(conversations).forEach(([key, data]) => {
-              this.conversationCache.set(key, data);
-            });
-          }
-        } catch (parseError) {
-          console.warn('Erreur lors du parsing des conversations, réinitialisation du cache:', parseError);
-          localStorage.removeItem('whatsapp_cache_conversations');
-        }
-      }
+      // Charger les conversations
+      const conversations = JSON.parse(localStorage.getItem('whatsapp_cache_conversations') || '{}');
+      Object.entries(conversations).forEach(([key, data]) => {
+        this.conversationCache.set(key, data);
+      });
       
-      // Charger les messages avec validation
-      const messagesData = localStorage.getItem('whatsapp_cache_messages');
-      if (messagesData && messagesData.trim() !== '') {
-        try {
-          const messages = JSON.parse(messagesData);
-          if (messages && typeof messages === 'object') {
-            Object.entries(messages).forEach(([key, data]) => {
-              this.messageCache.set(key, data);
-            });
-          }
-        } catch (parseError) {
-          console.warn('Erreur lors du parsing des messages, réinitialisation du cache:', parseError);
-          localStorage.removeItem('whatsapp_cache_messages');
-        }
-      }
+      // Charger les messages
+      const messages = JSON.parse(localStorage.getItem('whatsapp_cache_messages') || '{}');
+      Object.entries(messages).forEach(([key, data]) => {
+        this.messageCache.set(key, data);
+      });
       
-      // Charger les utilisateurs avec validation
-      const usersData = localStorage.getItem('whatsapp_cache_users');
-      if (usersData && usersData.trim() !== '') {
-        try {
-          const users = JSON.parse(usersData);
-          if (users && typeof users === 'object') {
-            Object.entries(users).forEach(([key, data]) => {
-              this.userCache.set(key, data);
-            });
-          }
-        } catch (parseError) {
-          console.warn('Erreur lors du parsing des utilisateurs, réinitialisation du cache:', parseError);
-          localStorage.removeItem('whatsapp_cache_users');
-        }
-      }
+      // Charger les utilisateurs
+      const users = JSON.parse(localStorage.getItem('whatsapp_cache_users') || '{}');
+      Object.entries(users).forEach(([key, data]) => {
+        this.userCache.set(key, data);
+      });
       
       console.log(`📦 Cache chargé: ${this.conversationCache.size} conversations, ${this.messageCache.size} conversations de messages, ${this.userCache.size} utilisateurs`);
     } catch (error) {
