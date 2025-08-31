@@ -35,7 +35,7 @@ let mockNotifications = [
 // GET - Récupérer une notification spécifique
 export async function GET(request, { params }) {
   try {
-    const { notificationId } = params;
+    const { notificationId } = await params;
     
     // Simulation d'un délai réseau
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -64,7 +64,7 @@ export async function GET(request, { params }) {
 // PUT - Mettre à jour une notification
 export async function PUT(request, { params }) {
   try {
-    const { notificationId } = params;
+    const { notificationId } = await params;
     const updates = await request.json();
     
     const notificationIndex = mockNotifications.findIndex(n => n.id === notificationId);
@@ -98,7 +98,7 @@ export async function PUT(request, { params }) {
 // DELETE - Supprimer une notification
 export async function DELETE(request, { params }) {
   try {
-    const { notificationId } = params;
+    const { notificationId } = await params;
     
     const notificationIndex = mockNotifications.findIndex(n => n.id === notificationId);
     

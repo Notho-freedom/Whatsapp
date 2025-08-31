@@ -53,7 +53,7 @@ import {
   NativeContextMenuDemo 
 } from '@/features';
 import { useAppContext } from '@/context';
-import { useGoogleAuth, useEventManager, useTokenRefresh, useTempConversations, useRealtime, useLocalCache } from '@/hooks';
+import { useGoogleAuth, useEventManager, useTokenRefresh, useTempConversations, useRealtime, useLocalCache, useGoogleContacts } from '@/hooks';
 
 export default function WhatsApp() {
   const [isClient, setIsClient] = React.useState(false);
@@ -97,6 +97,14 @@ export default function WhatsApp() {
     getMessages,
     getLastMessages
   } = useLocalCache();
+
+  // Hook pour la gestion des contacts Google
+  const {
+    contacts,
+    isLoading: contactsLoading,
+    fetchContacts,
+    refreshContacts
+  } = useGoogleContacts();
 
   // État pour gérer les phases de chargement
   const [loadingPhase, setLoadingPhase] = React.useState(1); // 1: Cache local, 2: Synchronisation
@@ -256,18 +264,24 @@ export default function WhatsApp() {
       setIsSyncing(false);
       console.log('🚀 Phase 1 : Chargement asynchrone depuis le cache local...');
 
-      // Charger les conversations de manière asynchrone et non-bloquante
-      const loadConversationsAsync = async () => {
+      // Charger les conversations et contacts de manière asynchrone et non-bloquante
+      const loadDataAsync = async () => {
         try {
           // Utiliser requestIdleCallback pour ne pas bloquer le rendu
           if (window.requestIdleCallback) {
             window.requestIdleCallback(async () => {
-              await loadConversationsFromCache();
+              await Promise.all([
+                loadConversationsFromCache(),
+                loadContactsAsync()
+              ]);
             }, { timeout: 1000 });
           } else {
             // Fallback pour les navigateurs qui ne supportent pas requestIdleCallback
             setTimeout(async () => {
-              await loadConversationsFromCache();
+              await Promise.all([
+                loadConversationsFromCache(),
+                loadContactsAsync()
+              ]);
             }, 100);
           }
         } catch (error) {
@@ -275,7 +289,7 @@ export default function WhatsApp() {
         }
       };
 
-      loadConversationsAsync();
+      loadDataAsync();
 
       // PHASE 2 : Synchronisation discrète en arrière-plan
       const syncTimer = setTimeout(async () => {
@@ -338,6 +352,21 @@ export default function WhatsApp() {
       console.warn('⚠️ Erreur lors du chargement des conversations:', error);
     }
   }, [getAllConversations]);
+
+  // Fonction pour charger les contacts de manière asynchrone
+  const loadContactsAsync = React.useCallback(async () => {
+    try {
+      if (isAuthenticated && user?.token) {
+        console.log('👥 Chargement des contacts Google...');
+        await fetchContacts();
+        console.log(`✅ ${contacts.length} contacts chargés avec succès`);
+      } else {
+        console.log('🤷 Utilisateur non authentifié, impossible de charger les contacts');
+      }
+    } catch (error) {
+      console.warn('⚠️ Erreur lors du chargement des contacts:', error);
+    }
+  }, [isAuthenticated, user?.token, fetchContacts, contacts.length]);
 
   // Fonction pour traiter un lot de conversations
   const processConversationBatch = React.useCallback((conversations) => {
@@ -504,7 +533,7 @@ export default function WhatsApp() {
         {phase === 1 ? (
           <>
             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-            <span>Chargement depuis le cache local...</span>
+            <span>Chargement des conversations et contacts depuis le cache local...</span>
           </>
         ) : (
           <>
@@ -547,7 +576,7 @@ export default function WhatsApp() {
           </div>
         </div>
       )}
-      
+
       {/* Titlebar */}
       <Titlebar />
 

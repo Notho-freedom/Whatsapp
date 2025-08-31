@@ -17,7 +17,7 @@ export async function GET(request, { params }) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
-    const { contactId } = params;
+    const { contactId } = await params;
 
     // Récupérer le contact
     const contact = await contactService.getContactById(contactId);
@@ -65,7 +65,7 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
 
-    const { contactId } = params;
+    const { contactId } = await params;
     const updateData = await request.json();
 
     // Vérifier que le contact existe et appartient à l'utilisateur
