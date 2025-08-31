@@ -23,7 +23,7 @@ export async function GET(request, { params }) {
       );
     }
 
-    const { conversationId } = params;
+    const { conversationId } = await params;
 
     // Récupérer la conversation
     const conversation = await conversationService.getConversationById(conversationId);
@@ -82,7 +82,7 @@ export async function PUT(request, { params }) {
       );
     }
 
-    const { conversationId } = params;
+    const { conversationId } = await params;
     const body = await request.json();
 
     // Vérifier que l'utilisateur est participant

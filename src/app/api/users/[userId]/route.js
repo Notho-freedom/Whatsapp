@@ -4,7 +4,7 @@ import firebaseServerService from '@/utils/firebaseServerService';
 // GET /api/users/[userId] - Récupérer un utilisateur spécifique
 export async function GET(request, { params }) {
   try {
-    const { userId } = params;
+    const { userId } = await params;
     
     if (!userId) {
       return NextResponse.json(
@@ -39,7 +39,7 @@ export async function GET(request, { params }) {
 // PUT /api/users/[userId] - Mettre à jour un utilisateur
 export async function PUT(request, { params }) {
   try {
-    const { userId } = params;
+    const { userId } = await params;
     const updateData = await request.json();
     
     if (!userId) {
@@ -89,7 +89,7 @@ export async function PUT(request, { params }) {
 // DELETE /api/users/[userId] - Supprimer un utilisateur
 export async function DELETE(request, { params }) {
   try {
-    const { userId } = params;
+    const { userId } = await params;
     
     if (!userId) {
       return NextResponse.json(
