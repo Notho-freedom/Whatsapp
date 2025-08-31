@@ -595,47 +595,6 @@ export default function WhatsApp() {
             )}
           </div>
           
-          {/* Barres de progrès détaillées */}
-          <div className="flex space-x-2 text-xs">
-            <div className="flex-1">
-              <div className="flex justify-between mb-1">
-                <span>Conversations</span>
-                <span>{Math.round(loadingProgress.conversations)}%</span>
-              </div>
-              <div className="w-full bg-white/20 rounded-full h-1.5">
-                <div 
-                  className="bg-white h-1.5 rounded-full transition-all duration-300"
-                  style={{ width: `${loadingProgress.conversations}%` }}
-                ></div>
-              </div>
-            </div>
-            
-            <div className="flex-1">
-              <div className="flex justify-between mb-1">
-                <span>Contacts</span>
-                <span>{Math.round(loadingProgress.contacts)}%</span>
-              </div>
-              <div className="w-full bg-white/20 rounded-full h-1.5">
-                <div 
-                  className="bg-white h-1.5 rounded-full transition-all duration-300"
-                  style={{ width: `${loadingProgress.contacts}%` }}
-                ></div>
-              </div>
-            </div>
-            
-            <div className="flex-1">
-              <div className="flex justify-between mb-1">
-                <span>Statuts</span>
-                <span>{Math.round(loadingProgress.statuses)}%</span>
-              </div>
-              <div className="w-full bg-white/20 rounded-full h-1.5">
-                <div 
-                  className="bg-white h-1.5 rounded-full transition-all duration-300"
-                  style={{ width: `${loadingProgress.statuses}%` }}
-                ></div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     );
