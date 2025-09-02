@@ -186,19 +186,7 @@ export default function ModernLogin() {
                   <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.242.489 1.668.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893A11.821 11.821 0 0020.885 3.488"/>
                 </svg>
               </div>
-              
-                             {/* Anneaux orbitaux déformés avec morphing continu */}
-               <div className="absolute inset-0 border-2 border-whatsapp-primary/40 animate-spin group-hover:border-whatsapp-primary/60 transition-colors duration-500 animate-morph-ring1" style={{ 
-                 animationDuration: '20s'
-               }}></div>
-               <div className="absolute inset-2 border border-whatsapp-secondary/30 animate-spin group-hover:border-whatsapp-secondary/50 transition-colors duration-500 animate-morph-ring2" style={{ 
-                 animationDuration: '15s', 
-                 animationDirection: 'reverse'
-               }}></div>
-               <div className="absolute inset-4 border border-whatsapp-primary/20 animate-spin group-hover:border-whatsapp-primary/40 transition-colors duration-500 animate-morph-ring3" style={{ 
-                 animationDuration: '25s', 
-                 animationDirection: 'normal'
-               }}></div>
+
             </div>
           </div>
         </div>
@@ -306,86 +294,162 @@ export default function ModernLogin() {
          
          @keyframes morph {
            0% { 
-             border-radius: 60% 40% 70% 30% / 50% 60% 40% 50%;
-             transform: rotate(-5deg) scale(1.1);
+             border-radius: 47% 53% 61% 39% / 52% 48% 52% 48%;
+             transform: rotate(-2deg) scale(1.05);
+           }
+           12.5% { 
+             border-radius: 73% 27% 59% 41% / 57% 43% 57% 43%;
+             transform: rotate(1deg) scale(1.12);
            }
            25% { 
-             border-radius: 70% 30% 60% 40% / 40% 70% 30% 60%;
-             transform: rotate(-2deg) scale(1.08);
+             border-radius: 31% 69% 41% 59% / 43% 57% 43% 57%;
+             transform: rotate(-3deg) scale(0.98);
+           }
+           37.5% { 
+             border-radius: 67% 33% 51% 49% / 49% 51% 49% 51%;
+             transform: rotate(2deg) scale(1.08);
            }
            50% { 
-             border-radius: 50% 50% 50% 50% / 50% 50% 50% 50%;
-             transform: rotate(0deg) scale(1.12);
+             border-radius: 53% 47% 39% 61% / 48% 52% 48% 52%;
+             transform: rotate(-1deg) scale(1.15);
+           }
+           62.5% { 
+             border-radius: 29% 71% 69% 31% / 51% 49% 51% 49%;
+             transform: rotate(3deg) scale(0.95);
            }
            75% { 
-             border-radius: 40% 60% 30% 70% / 60% 40% 60% 40%;
-             transform: rotate(3deg) scale(1.09);
+             border-radius: 71% 29% 33% 67% / 47% 53% 47% 53%;
+             transform: rotate(-2deg) scale(1.1);
+           }
+           87.5% { 
+             border-radius: 41% 59% 47% 53% / 54% 46% 54% 46%;
+             transform: rotate(1deg) scale(1.03);
            }
            100% { 
-             border-radius: 60% 40% 70% 30% / 50% 60% 40% 50%;
-             transform: rotate(-5deg) scale(1.1);
+             border-radius: 47% 53% 61% 39% / 52% 48% 52% 48%;
+             transform: rotate(-2deg) scale(1.05);
            }
          }
          
          .animate-morph {
-           animation: morph 8s ease-in-out infinite;
+           animation: morph 12s ease-in-out infinite;
          }
          
          @keyframes morph-ring1 {
            0% { 
-             border-radius: 65% 35% 75% 25% / 55% 65% 35% 45%;
-             transform: rotate(-8deg) scale(1.15);
+             border-radius: 58% 42% 68% 32% / 54% 46% 54% 46%;
+             transform: rotate(-1deg) scale(1.08);
            }
-           50% { 
-             border-radius: 35% 65% 25% 75% / 45% 35% 65% 55%;
-             transform: rotate(8deg) scale(1.05);
+           14.28% { 
+             border-radius: 42% 58% 32% 68% / 46% 54% 46% 54%;
+             transform: rotate(2deg) scale(1.15);
+           }
+           28.57% { 
+             border-radius: 72% 28% 62% 38% / 58% 42% 58% 42%;
+             transform: rotate(-3deg) scale(0.97);
+           }
+           42.85% { 
+             border-radius: 28% 72% 38% 62% / 42% 58% 42% 58%;
+             transform: rotate(1deg) scale(1.12);
+           }
+           57.14% { 
+             border-radius: 62% 38% 52% 48% / 48% 52% 48% 52%;
+             transform: rotate(-2deg) scale(1.06);
+           }
+           71.42% { 
+             border-radius: 38% 62% 48% 52% / 52% 48% 52% 48%;
+             transform: rotate(3deg) scale(1.18);
+           }
+           85.71% { 
+             border-radius: 68% 32% 58% 42% / 56% 44% 56% 44%;
+             transform: rotate(-1deg) scale(0.94);
            }
            100% { 
-             border-radius: 65% 35% 75% 25% / 55% 65% 35% 45%;
-             transform: rotate(-8deg) scale(1.15);
+             border-radius: 58% 42% 68% 32% / 54% 46% 54% 46%;
+             transform: rotate(-1deg) scale(1.08);
            }
          }
          
          @keyframes morph-ring2 {
            0% { 
-             border-radius: 55% 45% 65% 35% / 45% 55% 45% 55%;
-             transform: rotate(3deg) scale(1.1);
+             border-radius: 51% 49% 59% 41% / 49% 51% 49% 51%;
+             transform: rotate(1deg) scale(1.06);
            }
-           50% { 
-             border-radius: 45% 55% 35% 65% / 55% 45% 55% 45%;
-             transform: rotate(-3deg) scale(1.15);
+           14.28% { 
+             border-radius: 69% 31% 61% 39% / 51% 49% 51% 49%;
+             transform: rotate(-2deg) scale(1.13);
+           }
+           28.57% { 
+             border-radius: 31% 69% 39% 61% / 49% 51% 49% 51%;
+             transform: rotate(3deg) scale(0.99);
+           }
+           42.85% { 
+             border-radius: 61% 39% 51% 49% / 47% 53% 47% 53%;
+             transform: rotate(-1deg) scale(1.09);
+           }
+           57.14% { 
+             border-radius: 39% 61% 49% 51% / 53% 47% 53% 47%;
+             transform: rotate(2deg) scale(1.04);
+           }
+           71.42% { 
+             border-radius: 71% 29% 63% 37% / 55% 45% 55% 45%;
+             transform: rotate(-3deg) scale(1.16);
+           }
+           85.71% { 
+             border-radius: 29% 71% 37% 63% / 45% 55% 45% 55%;
+             transform: rotate(1deg) scale(0.96);
            }
            100% { 
-             border-radius: 55% 45% 65% 35% / 45% 55% 45% 55%;
-             transform: rotate(3deg) scale(1.1);
+             border-radius: 51% 49% 59% 41% / 49% 51% 49% 51%;
+             transform: rotate(1deg) scale(1.06);
            }
          }
          
          @keyframes morph-ring3 {
            0% { 
-             border-radius: 70% 30% 60% 40% / 40% 70% 30% 60%;
-             transform: rotate(-12deg) scale(1.05);
+             border-radius: 63% 37% 57% 43% / 45% 55% 45% 55%;
+             transform: rotate(-2deg) scale(1.03);
            }
-           50% { 
-             border-radius: 30% 70% 40% 60% / 60% 30% 70% 40%;
-             transform: rotate(12deg) scale(1.2);
+           14.28% { 
+             border-radius: 37% 63% 43% 57% / 55% 45% 55% 45%;
+             transform: rotate(1deg) scale(1.11);
+           }
+           28.57% { 
+             border-radius: 67% 33% 53% 47% / 43% 57% 43% 57%;
+             transform: rotate(-3deg) scale(0.98);
+           }
+           42.85% { 
+             border-radius: 33% 67% 47% 53% / 57% 43% 57% 43%;
+             transform: rotate(2deg) scale(1.14);
+           }
+           57.14% { 
+             border-radius: 57% 43% 47% 53% / 41% 59% 41% 59%;
+             transform: rotate(-1deg) scale(1.07);
+           }
+           71.42% { 
+             border-radius: 43% 57% 53% 47% / 59% 41% 59% 41%;
+             transform: rotate(3deg) scale(1.19);
+           }
+           85.71% { 
+             border-radius: 65% 35% 55% 45% / 47% 53% 47% 53%;
+             transform: rotate(-2deg) scale(0.93);
            }
            100% { 
-             border-radius: 70% 30% 60% 40% / 40% 70% 30% 60%;
-             transform: rotate(-12deg) scale(1.05);
+             border-radius: 63% 37% 57% 43% / 45% 55% 45% 55%;
+             transform: rotate(-2deg) scale(1.03);
            }
          }
          
          .animate-morph-ring1 {
-           animation: morph-ring1 12s ease-in-out infinite;
+           animation: morph-ring1 10s ease-in-out infinite;
          }
          
          .animate-morph-ring2 {
-           animation: morph-ring2 10s ease-in-out infinite;
+           animation: morph-ring2 14s ease-in-out infinite;
          }
          
          .animate-morph-ring3 {
-           animation: morph-ring3 15s ease-in-out infinite;
+           animation: morph-ring3 16s ease-in-out infinite;
          }
        `}</style>
     </div>
