@@ -172,8 +172,9 @@ export default function ModernLogin() {
             isHovered ? 'scale-105 rotate-2' : 'scale-100 rotate-0'
           } group-hover:shadow-2xl`}>
             <div className="relative w-full h-full">
-              {/* Cercle de fond avec gradient WhatsApp amélioré */}
-              <div className="absolute inset-0 bg-gradient-to-br from-whatsapp-primary via-[#00a884] to-[#008f72] rounded-full shadow-2xl group-hover:shadow-3xl transition-shadow duration-500"></div>
+                             {/* Cercle de fond avec effet verre et superposition verte WhatsApp */}
+               <div className="absolute inset-0 bg-white/20 backdrop-blur-xl rounded-full shadow-2xl group-hover:shadow-3xl transition-all duration-500 border border-white/30"></div>
+               <div className="absolute inset-0 bg-gradient-to-br from-whatsapp-primary/40 via-[#00a884]/30 to-[#008f72]/40 rounded-full"></div>
               
               {/* Logo WhatsApp centré avec effet de pulse au survol */}
               <div className="absolute inset-0 flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
