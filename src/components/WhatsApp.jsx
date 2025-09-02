@@ -21,10 +21,8 @@ import {
   Message 
 } from '@/components/ui';
 import { 
-  GoogleAuth, 
-  GoogleAuthDemo, 
-  AuthNavigation, 
-  GoogleContactsManager 
+  GoogleAuth,
+  ModernLogin
 } from '@/components/auth';
 import { 
   ChatList, 
@@ -468,20 +466,7 @@ export default function WhatsApp() {
   // Afficher l'authentification Google si l'utilisateur n'est pas connecté
   if (!isAuthenticated && !authLoading) {
     return (
-      <div className="h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
-        <div className="max-w-md w-full">
-          <div className="text-center mb-8">
-            <div className="text-6xl mb-4">💬</div>
-            <h1 className="text-3xl font-bold text-gray-800 mb-2">
-              WhatsApp Clone
-            </h1>
-            <p className="text-gray-600">
-              Connectez-vous pour commencer à discuter
-            </p>
-          </div>
-          <GoogleAuth />
-        </div>
-      </div>
+          <ModernLogin />
     );
   }
 
