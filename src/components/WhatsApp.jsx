@@ -20,9 +20,8 @@ import {
   StatusCircle, 
   Message 
 } from '@/components/ui';
-import { 
-  GoogleAuth,
-  ModernLogin
+import {
+  GoogleAuth
 } from '@/components/auth';
 import { 
   ChatList, 
@@ -466,7 +465,7 @@ export default function WhatsApp() {
   // Afficher l'authentification Google si l'utilisateur n'est pas connecté
   if (!isAuthenticated && !authLoading) {
     return (
-          <ModernLogin />
+          <GoogleAuth />
     );
   }
 
