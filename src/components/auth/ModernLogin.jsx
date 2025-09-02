@@ -168,13 +168,17 @@ export default function ModernLogin() {
       <div className="relative z-10 w-full max-w-md mx-auto text-center px-4">
         {/* Logo animé avec thème WhatsApp - centré */}
         <div className="mb-12 flex justify-center">
-          <div className={`w-32 h-32 transition-all duration-700 ease-out ${
-            isHovered ? 'scale-105 rotate-2' : 'scale-100 rotate-0'
-          } group-hover:shadow-2xl`}>
+                     <div className={`w-32 h-32 transition-all duration-700 ease-out ${
+             isHovered ? 'scale-105 rotate-2' : 'scale-100 rotate-0'
+           } group-hover:shadow-2xl animate-float`} style={{
+             animation: 'float 6s ease-in-out infinite'
+           }}>
             <div className="relative w-full h-full">
-                             {/* Cercle de fond avec effet verre et superposition verte WhatsApp */}
-               <div className="absolute inset-0 bg-white/20 backdrop-blur-xl rounded-full shadow-2xl group-hover:shadow-3xl transition-all duration-500 border border-white/30"></div>
-               <div className="absolute inset-0 bg-gradient-to-br from-whatsapp-primary/40 via-[#00a884]/30 to-[#008f72]/40 rounded-full"></div>
+                             {/* Goutte d'eau déformée avec effet verre et superposition verte WhatsApp - morphing continu */}
+               <div className="absolute inset-0 bg-white/20 backdrop-blur-xl shadow-2xl group-hover:shadow-3xl transition-all duration-500 border border-white/30 animate-morph" style={{
+                 filter: 'drop-shadow(0 0 20px rgba(255,255,255,0.1))'
+               }}></div>
+               <div className="absolute inset-0 bg-gradient-to-br from-whatsapp-primary/40 via-[#00a884]/30 to-[#008f72]/40 animate-morph"></div>
               
               {/* Logo WhatsApp centré avec effet de pulse au survol */}
               <div className="absolute inset-0 flex items-center justify-center group-hover:scale-110 transition-transform duration-500">
@@ -183,10 +187,18 @@ export default function ModernLogin() {
                 </svg>
               </div>
               
-              {/* Anneaux orbitaux améliorés */}
-              <div className="absolute inset-0 border-2 border-whatsapp-primary/40 rounded-full animate-spin group-hover:border-whatsapp-primary/60 transition-colors duration-500" style={{ animationDuration: '20s' }}></div>
-              <div className="absolute inset-2 border border-whatsapp-secondary/30 rounded-full animate-spin group-hover:border-whatsapp-secondary/50 transition-colors duration-500" style={{ animationDuration: '15s', animationDirection: 'reverse' }}></div>
-              <div className="absolute inset-4 border border-whatsapp-primary/20 rounded-full animate-spin group-hover:border-whatsapp-primary/40 transition-colors duration-500" style={{ animationDuration: '25s', animationDirection: 'normal' }}></div>
+                             {/* Anneaux orbitaux déformés avec morphing continu */}
+               <div className="absolute inset-0 border-2 border-whatsapp-primary/40 animate-spin group-hover:border-whatsapp-primary/60 transition-colors duration-500 animate-morph-ring1" style={{ 
+                 animationDuration: '20s'
+               }}></div>
+               <div className="absolute inset-2 border border-whatsapp-secondary/30 animate-spin group-hover:border-whatsapp-secondary/50 transition-colors duration-500 animate-morph-ring2" style={{ 
+                 animationDuration: '15s', 
+                 animationDirection: 'reverse'
+               }}></div>
+               <div className="absolute inset-4 border border-whatsapp-primary/20 animate-spin group-hover:border-whatsapp-primary/40 transition-colors duration-500 animate-morph-ring3" style={{ 
+                 animationDuration: '25s', 
+                 animationDirection: 'normal'
+               }}></div>
             </div>
           </div>
         </div>
@@ -263,16 +275,119 @@ export default function ModernLogin() {
         </div>
       </div>
 
-      {/* Styles CSS intégrés pour les animations */}
-      <style jsx>{`
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .animate-fadeIn {
-          animation: fadeIn 0.5s ease-out forwards;
-        }
-      `}</style>
+             {/* Styles CSS intégrés pour les animations */}
+       <style jsx>{`
+         @keyframes fadeIn {
+           from { opacity: 0; transform: translateY(10px); }
+           to { opacity: 1; transform: translateY(0); }
+         }
+         .animate-fadeIn {
+           animation: fadeIn 0.5s ease-out forwards;
+         }
+         
+         @keyframes float {
+           0%, 100% { 
+             transform: translateY(0px) rotate(-5deg) scale(1.1); 
+           }
+           25% { 
+             transform: translateY(-8px) rotate(-3deg) scale(1.08); 
+           }
+           50% { 
+             transform: translateY(-12px) rotate(-1deg) scale(1.12); 
+           }
+           75% { 
+             transform: translateY(-6px) rotate(-4deg) scale(1.09); 
+           }
+         }
+         
+         .animate-float {
+           animation: float 6s ease-in-out infinite;
+         }
+         
+         @keyframes morph {
+           0% { 
+             border-radius: 60% 40% 70% 30% / 50% 60% 40% 50%;
+             transform: rotate(-5deg) scale(1.1);
+           }
+           25% { 
+             border-radius: 70% 30% 60% 40% / 40% 70% 30% 60%;
+             transform: rotate(-2deg) scale(1.08);
+           }
+           50% { 
+             border-radius: 50% 50% 50% 50% / 50% 50% 50% 50%;
+             transform: rotate(0deg) scale(1.12);
+           }
+           75% { 
+             border-radius: 40% 60% 30% 70% / 60% 40% 60% 40%;
+             transform: rotate(3deg) scale(1.09);
+           }
+           100% { 
+             border-radius: 60% 40% 70% 30% / 50% 60% 40% 50%;
+             transform: rotate(-5deg) scale(1.1);
+           }
+         }
+         
+         .animate-morph {
+           animation: morph 8s ease-in-out infinite;
+         }
+         
+         @keyframes morph-ring1 {
+           0% { 
+             border-radius: 65% 35% 75% 25% / 55% 65% 35% 45%;
+             transform: rotate(-8deg) scale(1.15);
+           }
+           50% { 
+             border-radius: 35% 65% 25% 75% / 45% 35% 65% 55%;
+             transform: rotate(8deg) scale(1.05);
+           }
+           100% { 
+             border-radius: 65% 35% 75% 25% / 55% 65% 35% 45%;
+             transform: rotate(-8deg) scale(1.15);
+           }
+         }
+         
+         @keyframes morph-ring2 {
+           0% { 
+             border-radius: 55% 45% 65% 35% / 45% 55% 45% 55%;
+             transform: rotate(3deg) scale(1.1);
+           }
+           50% { 
+             border-radius: 45% 55% 35% 65% / 55% 45% 55% 45%;
+             transform: rotate(-3deg) scale(1.15);
+           }
+           100% { 
+             border-radius: 55% 45% 65% 35% / 45% 55% 45% 55%;
+             transform: rotate(3deg) scale(1.1);
+           }
+         }
+         
+         @keyframes morph-ring3 {
+           0% { 
+             border-radius: 70% 30% 60% 40% / 40% 70% 30% 60%;
+             transform: rotate(-12deg) scale(1.05);
+           }
+           50% { 
+             border-radius: 30% 70% 40% 60% / 60% 30% 70% 40%;
+             transform: rotate(12deg) scale(1.2);
+           }
+           100% { 
+             border-radius: 70% 30% 60% 40% / 40% 70% 30% 60%;
+             transform: rotate(-12deg) scale(1.05);
+           }
+         }
+         
+         .animate-morph-ring1 {
+           animation: morph-ring1 12s ease-in-out infinite;
+         }
+         
+         .animate-morph-ring2 {
+           animation: morph-ring2 10s ease-in-out infinite;
+         }
+         
+         .animate-morph-ring3 {
+           animation: morph-ring3 15s ease-in-out infinite;
+         }
+       `}</style>
     </div>
   );
 }
