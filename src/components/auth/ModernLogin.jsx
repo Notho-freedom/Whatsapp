@@ -213,7 +213,7 @@ export default function ModernLogin() {
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
               disabled={isLoading}
-              className="relative w-full bg-whatsapp-dark-700/90 backdrop-blur-xl border border-whatsapp-dark-500/30 text-white py-4 px-8 rounded-2xl font-medium focus:outline-none focus:ring-4 focus:ring-whatsapp-primary/50 focus:ring-offset-2 focus:ring-offset-whatsapp-dark-900 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-4 group-hover:bg-whatsapp-dark-600/90 group-hover:border-whatsapp-primary/30 group-hover:scale-[1.02] transform shadow-lg"
+                             className="relative w-full bg-white/10 backdrop-blur-xl border border-white/20 text-white py-4 px-8 rounded-2xl font-medium focus:outline-none focus:ring-4 focus:ring-whatsapp-primary/50 focus:ring-offset-2 focus:ring-offset-whatsapp-dark-900 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-4 group-hover:bg-white/20 group-hover:border-white/30 group-hover:scale-[1.02] transform shadow-lg"
             >
               {isLoading ? (
                 <>
