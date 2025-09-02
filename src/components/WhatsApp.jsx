@@ -12,6 +12,7 @@ import {
 } from '@/components/common';
 import CacheStats from '@/components/common/CacheStats';
 import RealtimeNotification from '@/components/common/RealtimeNotification';
+import { AvatarCacheStats } from '@/components/common';
 import {
   GoogleAuth
 } from '@/components/auth';
@@ -669,7 +670,12 @@ export default function WhatsApp() {
       />
 
       {/* Statistiques du cache (en mode développement) */}
-      {process.env.NODE_ENV === 'development' && <CacheStats />}
+      {process.env.NODE_ENV === 'development' && (
+        <>
+          <CacheStats />
+          <AvatarCacheStats />
+        </>
+      )}
 
       {/* Gestionnaire de cache local intégré dans ProfilePanel */}
     </div>

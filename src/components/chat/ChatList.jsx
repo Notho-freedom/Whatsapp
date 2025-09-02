@@ -4,11 +4,13 @@ import { useState, useEffect, useRef } from 'react';
 import { LucideEdit, Pin, BellOff, Star, Search, Mic, Video, Image, FileText, Link, Music, MapPinMinus, SmileIcon } from 'lucide-react';
 import { useAppContext } from '@/context';
 import { StatusCircle } from '@/components/ui';
+import Avatar from '@/components/ui/Avatar';
 import Lenis from '@studio-freight/lenis';
 import { useChatContextMenu } from '@/hooks';
 import { useGoogleContacts } from '@/hooks';
 import { useContacts } from '@/hooks';
 import { useRealtime } from '@/hooks';
+import { useAutoAvatarPreloader } from '@/hooks';
 import apiInterceptor from '@/utils/apiInterceptor';
 import { API_ENDPOINTS } from '@/utils/config';
 
@@ -24,6 +26,10 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect,
   const currentUserId = 'default-user'; // À remplacer par l'ID utilisateur réel
   const { presence, notifications, sendNotification } = useRealtime(currentUserId);
   const scrollRef = useRef(null);
+  
+  // Préchargement automatique des avatars
+  useAutoAvatarPreloader(filteredUsers, 'chats');
+  useAutoAvatarPreloader(googleContacts, 'contacts');
   
   // Hook pour les menus contextuels natifs d'Electron
   const nativeChatMenu = useChatContextMenu((actionId, data) => {
@@ -462,13 +468,13 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect,
                   className="flex items-center gap-3 p-2 mt-1 cursor-pointer rounded-lg hover:bg-neutral-700/50 transition-colors"
                 >
                   {/* Avatar du contact */}
-                  <div className="relative">
-                    <img
-                      src={contact.photos?.[0]?.url || '/default-avatar.png'}
-                      alt={`${contact.displayName || contact.name} profile picture`}
-                      className="w-12 h-12 rounded-full object-cover"
-                    />
-                  </div>
+                  <Avatar
+                    src={contact.photos?.[0]?.url}
+                    alt={`${contact.displayName || contact.name} profile picture`}
+                    name={contact.displayName || contact.name || 'Contact'}
+                    size={48}
+                    className="w-12 h-12"
+                  />
 
                   {/* Info du contact */}
                   <div className="flex-1 min-w-0">
@@ -548,10 +554,12 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect,
                   }}
                 >
                   <StatusCircle statusCircles={chat.statusCircles} size="default">
-                    <img
+                    <Avatar
                       src={chat.avatar}
                       alt={`${chat.name} profile picture`}
-                      className="w-full h-full p-0.5 rounded-full object-cover"
+                      name={chat.name}
+                      size={56}
+                      className="w-full h-full p-0.5"
                     />
                   </StatusCircle>
                 </div>

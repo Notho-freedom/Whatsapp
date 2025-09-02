@@ -20,3 +20,4 @@ export { useTempConversations } from './useTempConversations';
 export { useTokenRefresh } from './useTokenRefresh';
 export { useUser } from './useUser';
 export { useAttachments } from './useAttachments';
+export { useAvatarPreloader, useAutoAvatarPreloader } from './useAvatarPreloader';
