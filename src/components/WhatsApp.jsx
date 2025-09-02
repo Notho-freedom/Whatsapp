@@ -8,18 +8,10 @@ import {
 } from '@/components/layout';
 import { 
   Profile, 
-  ProfilePanel, 
-  WelcomeScreen,
-  ClientOnly,
-  Notification,
-  CacheManager
+  ProfilePanel
 } from '@/components/common';
 import CacheStats from '@/components/common/CacheStats';
 import RealtimeNotification from '@/components/common/RealtimeNotification';
-import { 
-  StatusCircle, 
-  Message 
-} from '@/components/ui';
 import {
   GoogleAuth
 } from '@/components/auth';
@@ -37,18 +29,9 @@ import {
   StatusView 
 } from '@/components/status';
 import { 
-  ActiveCall, 
-  CallManager, 
   CallPanel, 
-  CallScreen, 
-  CallWaiting, 
-  IncomingCall, 
-  OutgoingCall 
+  CallScreen
 } from '@/components/calls';
-import { 
-  NativeNotificationDemo, 
-  NativeContextMenuDemo 
-} from '@/features';
 import { useAppContext } from '@/context';
 import { useGoogleAuth, useEventManager, useTokenRefresh, useTempConversations, useRealtime, useLocalCache } from '@/hooks';
 
@@ -77,8 +60,6 @@ export default function WhatsApp() {
     updatePresence, 
     listenToUserPresence, 
     setTypingStatus,
-    markMessageAsRead,
-    sendNotification,
     presence,
     typingUsers,
     notifications
@@ -91,7 +72,6 @@ export default function WhatsApp() {
     syncWithCache,
     preloadData,
     getAllConversations,
-    getMessages,
     getLastMessages
   } = useLocalCache();
 

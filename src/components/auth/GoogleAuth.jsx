@@ -9,7 +9,7 @@ export default function GoogleAuth() {
   const [error, setError] = useState(null);
   const [authStep, setAuthStep] = useState('idle'); // 'idle', 'login', 'register', 'success'
   const [isHovered, setIsHovered] = useState(false);
-  const [isFocused, setIsFocused] = useState(false);
+
   const [showTerms, setShowTerms] = useState(false);
   
   const canvasRef = useRef(null);
@@ -529,14 +529,7 @@ export default function GoogleAuth() {
     window.dispatchEvent(new CustomEvent('google-auth-logout'));
   }, []);
 
-  // Composant de chargement amélioré
-  const LoadingSpinner = () => (
-    <div className="flex items-center justify-center space-x-3">
-      <div className="w-3 h-3 bg-whatsapp-primary rounded-full animate-bounce" style={{ animationDelay: '0s' }}></div>
-      <div className="w-3 h-3 bg-whatsapp-primary rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
-      <div className="w-3 h-3 bg-whatsapp-primary rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-    </div>
-  );
+
 
   // Rendu du bouton de connexion amélioré
   const renderLoginButton = () => (
@@ -549,8 +542,7 @@ export default function GoogleAuth() {
           onClick={handleGoogleLogin}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
+
           disabled={isLoading}
           className="relative w-full bg-white/10 backdrop-blur-xl border border-white/20 text-white py-4 px-8 rounded-2xl font-medium focus:outline-none focus:ring-4 focus:ring-whatsapp-primary/50 focus:ring-offset-2 focus:ring-offset-whatsapp-dark-900 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-4 group-hover:bg-white/20 group-hover:border-white/30 group-hover:scale-[1.02] transform shadow-lg"
         >
