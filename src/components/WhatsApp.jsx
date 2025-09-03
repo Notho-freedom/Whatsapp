@@ -629,7 +629,8 @@ export default function WhatsApp() {
           )}
           {activeTab === 'profile' && <ProfilePanel 
                 activeTab={profileActiveTab} 
-                onTabChange={setProfileActiveTab} 
+                onTabChange={setProfileActiveTab}
+                user={user}
               />}
         </div>
 
