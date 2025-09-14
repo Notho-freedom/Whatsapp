@@ -93,7 +93,7 @@ export default function IncomingCall({ callData, onAccept, onDecline, onMessage 
            {/* Avatar */}
            <div className="w-24 h-24 bg-[#3D3D3D] rounded-full flex items-center justify-center mx-auto mb-4 relative">
              <img 
-               src={callData?.participant?.avatar || '/default-avatar.jpg'} 
+               src={callData?.participant?.avatar || '/api/placeholder/80/80'} 
                alt={callData?.participant?.name}
                className="w-20 h-20 rounded-full object-cover"
              />

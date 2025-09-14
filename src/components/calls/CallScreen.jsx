@@ -45,27 +45,13 @@ export default function CallScreen() {
     };
   }, []);
 
-  // Simuler un appel entrant après 5 secondes
+  // Écouter les appels entrants réels
   useEffect(() => {
     if (!isClient) return; // Attendre que le client soit prêt
     
-    const incomingCallTimer = setTimeout(() => {
-      if (!currentCall && users.length > 0) {
-        const randomUser = users[Math.floor(Math.random() * users.length)];
-        setCurrentCall({
-          id: Date.now(),
-          type: Math.random() > 0.5 ? 'voice' : 'video',
-          isVideo: Math.random() > 0.5,
-          state: 'incoming',
-          participant: randomUser,
-          participants: [randomUser],
-          startTime: new Date()
-        });
-      }
-    }, 5000);
-
-    return () => clearTimeout(incomingCallTimer);
-  }, [isClient, currentCall, users]);
+    // Les appels entrants seront gérés par les événements du système
+    // Pas de simulation automatique d'appels entrants
+  }, [isClient]);
 
   if (!isClient) {
     return null;
@@ -97,7 +83,7 @@ export default function CallScreen() {
   const handleCreateCallLink = () => {
     console.log('Creating call link');
     
-    // Simuler la création d'un lien d'appel
+    // Créer un lien d'appel
     const callLink = `https://wa.me/call/${Date.now()}`;
     
     // Copier le lien dans le presse-papiers
@@ -228,25 +214,17 @@ export default function CallScreen() {
   );
 
   const RecentCallsTab = () => {
-    // Générer des appels récents basés sur les utilisateurs
-    const recentCalls = users.slice(0, 10).map((user, index) => {
-      const callTypes = ['incoming', 'outgoing', 'missed', 'video'];
-      const callType = callTypes[Math.floor(Math.random() * callTypes.length)];
-      const times = ['Just now', '2 minutes ago', '5 minutes ago', '10 minutes ago', '1 hour ago', '2 hours ago', 'Yesterday'];
-      const time = times[Math.floor(Math.random() * times.length)];
-      const duration = callType === 'missed' ? null : `${Math.floor(Math.random() * 10) + 1}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}`;
-      
-      return {
-        id: user.id,
-        name: user.name,
-        avatar: user.avatar,
-        phone: user.phone,
-        type: callType,
-        time,
-        duration,
-        isVideo: callType === 'video'
-      };
-    });
+    // Utiliser les données réelles des utilisateurs pour les appels récents
+    const recentCalls = users.slice(0, 10).map((user) => ({
+      id: user.id,
+      name: user.name,
+      avatar: user.avatar,
+      phone: user.phone,
+      type: 'outgoing', // Type par défaut
+      time: 'Recently',
+      duration: null,
+      isVideo: false
+    }));
 
     return (
       <div className="flex-1 overflow-y-auto">

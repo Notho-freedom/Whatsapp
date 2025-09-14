@@ -31,7 +31,8 @@ import {
 } from '@/components/status';
 import { 
   CallPanel, 
-  CallScreen
+  CallScreen,
+  CallManager
 } from '@/components/calls';
 import { useAppContext } from '@/context';
 import { useGoogleAuth, useEventManager, useTokenRefresh, useTempConversations, useRealtime, useLocalCache } from '@/hooks';
@@ -41,6 +42,7 @@ export default function WhatsApp() {
   const [chatListWidth, setChatListWidth] = React.useState(300); // Largeur initiale pour 25%
   const [selectedStatus, setSelectedStatus] = React.useState(null); // État pour le statut sélectionné
   const [profileActiveTab, setProfileActiveTab] = React.useState('overview'); // État pour l'onglet actif du profil
+  const [activeCall, setActiveCall] = React.useState(null); // État pour l'appel actif
 
   
   // Initialiser le gestionnaire d'événements seulement côté client
@@ -175,18 +177,60 @@ export default function WhatsApp() {
     calculateInitialWidth();
     window.addEventListener('resize', calculateInitialWidth);
     
-    // Gestionnaire d'événements pour les appels
+    // Gestionnaires d'événements pour les appels
     const handleStartCall = (event) => {
-      // Rediriger vers l'onglet "Appels"
+      const { type, participant, fromProfile, fromChat, chatId } = event.detail;
+      
+      // Créer l'appel sortant
+      const callData = {
+        id: Date.now(),
+        type: type,
+        isVideo: type === 'video',
+        state: 'outgoing',
+        participant: participant,
+        participants: [participant],
+        startTime: new Date(),
+        fromProfile,
+        fromChat,
+        chatId
+      };
+      
+      setActiveCall(callData);
       setActiveTab('calls');
+    };
+
+    const handleIncomingCall = (event) => {
+      const callData = event.detail;
+      setActiveCall(callData);
+    };
+
+    const handleCallEnded = (event) => {
+      setActiveCall(null);
+    };
+
+    const handleCallAccepted = (event) => {
+      const callData = event.detail;
+      setActiveCall(prev => ({ ...prev, state: 'active' }));
+    };
+
+    const handleCallDeclined = (event) => {
+      setActiveCall(null);
     };
     
     // Écouter les événements d'appels
     window.addEventListener('start-call', handleStartCall);
+    window.addEventListener('incoming-call', handleIncomingCall);
+    window.addEventListener('call-ended', handleCallEnded);
+    window.addEventListener('call-accepted', handleCallAccepted);
+    window.addEventListener('call-declined', handleCallDeclined);
     
     return () => {
       window.removeEventListener('resize', calculateInitialWidth);
       window.removeEventListener('start-call', handleStartCall);
+      window.removeEventListener('incoming-call', handleIncomingCall);
+      window.removeEventListener('call-ended', handleCallEnded);
+      window.removeEventListener('call-accepted', handleCallAccepted);
+      window.removeEventListener('call-declined', handleCallDeclined);
     };
   }, [setActiveTab]);
 
@@ -535,6 +579,19 @@ export default function WhatsApp() {
     setChatListWidth(newWidth);
   };
 
+  // Gestionnaires d'appels
+  const handleEndCall = (callData) => {
+    setActiveCall(null);
+  };
+
+  const handleAcceptCall = (callData) => {
+    setActiveCall(prev => ({ ...prev, state: 'active' }));
+  };
+
+  const handleDeclineCall = (callData) => {
+    setActiveCall(null);
+  };
+
   // Indicateur de chargement intelligent avec phases et progrès détaillé
   const LoadingIndicator = ({ phase = 1, isSyncing = false }) => {
     const totalProgress = Math.round(
@@ -679,6 +736,18 @@ export default function WhatsApp() {
       )}
 
       {/* Gestionnaire de cache local intégré dans ProfilePanel */}
+
+      {/* CallManager pour gérer les appels actifs */}
+      {activeCall && (
+        <CallManager
+          callData={activeCall}
+          onEndCall={handleEndCall}
+          onAcceptCall={handleAcceptCall}
+          onDeclineCall={handleDeclineCall}
+        />
+      )}
+
+      
     </div>
   );
 }

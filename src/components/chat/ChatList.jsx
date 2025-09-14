@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { LucideEdit, Pin, BellOff, Star, Search, Mic, Video, Image, FileText, Link, Music, MapPinMinus, SmileIcon } from 'lucide-react';
+import { LucideEdit, Pin, BellOff, Star, Search, Mic, Video, Phone, Image, FileText, Link, Music, MapPinMinus, SmileIcon } from 'lucide-react';
 import { useAppContext } from '@/context';
 import { StatusCircle } from '@/components/ui';
 import Avatar from '@/components/ui/Avatar';
@@ -585,6 +585,42 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect,
 
                   {/* Icônes + badge alignés à droite */}
                   <div className="flex items-center gap-1 ml-2 shrink-0">
+                    {/* Boutons d'appel */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        window.dispatchEvent(new CustomEvent('start-call', { 
+                          detail: { 
+                            type: 'voice',
+                            participant: chat,
+                            fromChatList: true,
+                            timestamp: new Date()
+                          } 
+                        }));
+                      }}
+                      className="p-1 hover:bg-neutral-600 rounded transition-colors"
+                      aria-label={`Appeler ${chat.name}`}
+                    >
+                      <Phone size={12} className="text-gray-400 hover:text-[#1DAA61]" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        window.dispatchEvent(new CustomEvent('start-call', { 
+                          detail: { 
+                            type: 'video',
+                            participant: chat,
+                            fromChatList: true,
+                            timestamp: new Date()
+                          } 
+                        }));
+                      }}
+                      className="p-1 hover:bg-neutral-600 rounded transition-colors"
+                      aria-label={`Appel vidéo ${chat.name}`}
+                    >
+                      <Video size={12} className="text-gray-400 hover:text-[#1DAA61]" />
+                    </button>
+
                     {chat.isPinned && <Pin size={12} className="text-gray-400" />}
                     {chat.isMuted && <BellOff size={12} className="text-gray-500" />}
 

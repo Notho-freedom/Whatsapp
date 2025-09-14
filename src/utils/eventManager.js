@@ -28,6 +28,13 @@ class EventManager {
     this.addGlobalListener('open-calls', this.handleOpenCalls.bind(this));
     this.addGlobalListener('video-call-started', this.handleVideoCallStarted.bind(this));
     this.addGlobalListener('voice-call-started', this.handleVoiceCallStarted.bind(this));
+    this.addGlobalListener('call-ended', this.handleCallEnded.bind(this));
+    this.addGlobalListener('call-failed', this.handleCallFailed.bind(this));
+    this.addGlobalListener('call-connected', this.handleCallConnected.bind(this));
+    this.addGlobalListener('call-disconnected', this.handleCallDisconnected.bind(this));
+    this.addGlobalListener('call-quality-changed', this.handleCallQualityChanged.bind(this));
+    this.addGlobalListener('call-participant-added', this.handleCallParticipantAdded.bind(this));
+    this.addGlobalListener('call-participant-removed', this.handleCallParticipantRemoved.bind(this));
 
     // Événements de chat
     this.addGlobalListener('chat-selected', this.handleChatSelected.bind(this));
@@ -145,6 +152,66 @@ class EventManager {
   handleOpenCalls(event) {
     console.log('📞 Opening calls:', event.detail);
     // Ouvrir l'écran des appels
+  }
+
+  handleCallEnded(event) {
+    const { callData } = event.detail;
+    console.log('📞 Appel terminé:', callData);
+    
+    // Nettoyer l'interface d'appel
+    this.emitEvent('call-ended', callData);
+  }
+
+  handleCallFailed(event) {
+    const { callData, reason } = event.detail;
+    console.log('📞 Appel échoué:', callData, 'Raison:', reason);
+    
+    // Afficher une notification d'erreur
+    this.emitEvent('show-notification', {
+      type: 'error',
+      title: 'Appel échoué',
+      message: `L'appel avec ${callData.participant?.name} a échoué: ${reason}`
+    });
+  }
+
+  handleCallConnected(event) {
+    const { callData } = event.detail;
+    console.log('📞 Appel connecté:', callData);
+    
+    // Mettre à jour l'interface pour indiquer la connexion
+    this.emitEvent('call-connected', callData);
+  }
+
+  handleCallDisconnected(event) {
+    const { callData, reason } = event.detail;
+    console.log('📞 Appel déconnecté:', callData, 'Raison:', reason);
+    
+    // Gérer la déconnexion
+    this.emitEvent('call-disconnected', { callData, reason });
+  }
+
+  handleCallQualityChanged(event) {
+    const { callId, quality } = event.detail;
+    console.log(`📞 Qualité d'appel changée pour ${callId}:`, quality);
+    
+    // Mettre à jour l'indicateur de qualité
+    this.emitEvent('call-quality-changed', { callId, quality });
+  }
+
+  handleCallParticipantAdded(event) {
+    const { callId, participant } = event.detail;
+    console.log(`📞 Participant ajouté à l'appel ${callId}:`, participant);
+    
+    // Mettre à jour la liste des participants
+    this.emitEvent('call-participant-added', { callId, participant });
+  }
+
+  handleCallParticipantRemoved(event) {
+    const { callId, participant } = event.detail;
+    console.log(`📞 Participant retiré de l'appel ${callId}:`, participant);
+    
+    // Mettre à jour la liste des participants
+    this.emitEvent('call-participant-removed', { callId, participant });
   }
 
   handleVideoCallStarted(event) {
