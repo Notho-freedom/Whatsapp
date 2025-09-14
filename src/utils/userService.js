@@ -11,8 +11,6 @@ import {
   orderBy, 
   limit, 
   startAfter,
-  serverTimestamp,
-  Timestamp 
 } from 'firebase/firestore';
 import { db } from './firebaseConfig';
 import { createUserInterface } from '@/types';

@@ -22,6 +22,9 @@
     "@heroicons/react": "^2.2.0",
     "@studio-freight/lenis": "^1.0.42",
     "bcryptjs": "^3.0.2",
+    "better-sqlite3": "^12.2.0",
+    "db-migrate": "^0.11.14",
+    "db-migrate-sqlite3": "^1.0.2",
     "emoji-mart": "^5.6.0",
     "firebase": "^12.1.0",
     "firebase-admin": "^13.4.0",
@@ -33,6 +36,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-icons": "^5.5.0",
+    "sqlite3": "^5.1.7",
     "zustand": "^5.0.8"
   },
   "devDependencies": {
