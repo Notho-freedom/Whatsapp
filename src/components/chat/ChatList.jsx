@@ -11,7 +11,7 @@ import { useGoogleContacts } from '@/hooks';
 import { useContacts } from '@/hooks';
 import { useRealtime } from '@/hooks';
 import { useAutoAvatarPreloader } from '@/hooks';
-import apiInterceptor from '@/utils/apiInterceptor';
+import { userService } from '@/utils';
 import { API_ENDPOINTS } from '@/utils/config';
 
 export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect, currentUser }) {
@@ -21,7 +21,10 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect,
   const { filteredUsers, contacts: appContacts, searchQuery, setSearchQuery, addUser } = useAppContext();
   const { contacts: googleContacts, isLoading: contactsLoading, error: contactsError } = useGoogleContacts();
   const { createContact, fetchContacts } = useContacts();
-  
+  const [showFirebaseUsers, setShowFirebaseUsers] = useState(false);
+  const [firebaseUsers, setFirebaseUsers] = useState([]);
+  const [firebaseLoading, setFirebaseLoading] = useState(false);
+  const [firebaseError, setFirebaseError] = useState(null);
   // Hook temps réel pour la présence et les notifications
   const currentUserId = 'default-user'; // À remplacer par l'ID utilisateur réel
   const { presence, notifications, sendNotification } = useRealtime(currentUserId);
@@ -36,6 +39,20 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect,
     console.log('Action de menu contextuel de chat:', actionId, data);
     // Ici vous pouvez ajouter la logique pour les actions de chat
   });
+
+
+  useEffect(() => {
+  async function loadUsers() {
+    try {
+      const fuser = await userService.getAllUsers();
+      setFirebaseUsers(fuser);
+    } catch (err) {
+      console.error("Erreur lors du chargement des utilisateurs Firebase:", err);
+    }
+  }
+  loadUsers();
+}, []);
+
 
   useEffect(() => {
     setIsClient(true);
@@ -186,7 +203,7 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect,
       };
 
       // Créer une conversation temporaire avec ce contact
-                      const response = await fetch(API_ENDPOINTS.CONVERSATIONS, {
+      const response = await fetch(API_ENDPOINTS.CONVERSATIONS, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -384,7 +401,11 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect,
       <div className="pl-4 pt-4 pr-2 mb-4">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-white font-semibold text-xl font-segoe">
-            {showContacts ? 'Contacts' : 'Chats'}
+            {showContacts
+              ? 'Contacts'
+              : showFirebaseUsers
+                ? 'Users'
+                : 'Chats'}
           </h2>
           <div className="flex items-center gap-2">
             <button
@@ -397,6 +418,20 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect,
               onClick={() => setShowContacts(!showContacts)}
             >
               <LucideEdit size={16} className="text-gray-200" />
+            </button>
+            <button
+              aria-label="Firebase users"
+              className={`p-2 rounded-md transition-colors ${
+                showFirebaseUsers
+                  ? 'bg-whatsapp-dark-700 text-white'
+                  : 'hover:bg-whatsapp-dark-700 text-gray-200'
+              }`}
+              onClick={() => {
+                setShowContacts(false);
+                setShowFirebaseUsers((v) => !v);
+              }}
+            >
+              <span role="img" aria-label="firebase">🔥</span>
             </button>
             <button
               aria-label="Filter chats"
@@ -496,7 +531,49 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect,
                 <p>Aucun contact trouvé</p>
               </div>
             )
-          ) : (
+          ) : showFirebaseUsers ? (
+            firebaseLoading ? (
+              <div className="p-4 text-center text-gray-400">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#1DAA61] mx-auto mb-2"></div>
+                <p>Chargement des utilisateurs Firebase...</p>
+              </div>
+            ) : firebaseUsers && firebaseUsers.length > 0 ? (
+              firebaseUsers.map((contact) => (
+                <div
+                  key={contact.id}
+                  onClick={() => createConversationWithContact(contact)}
+                  className="flex items-center gap-3 p-2 mt-1 cursor-pointer rounded-lg hover:bg-neutral-700/50 transition-colors"
+                >
+                  {/* Avatar du contact */}
+                  <Avatar
+                    src={contact.photos?.[0]?.url}
+                    alt={`${contact.displayName || contact.name} profile picture`}
+                    name={contact.displayName || contact.name || 'Contact'}
+                    size={48}
+                    className="w-12 h-12"
+                  />
+
+                  {/* Info du contact */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-white font-semibold text-sm font-segoe truncate">
+                        {contact.displayName || contact.name || 'Contact sans nom'}
+                      </h3>
+                    </div>
+                    <div className="flex items-center mt-1">
+                      <p className="text-sm text-gray-300 truncate">
+                        {contact.phones?.[0]?.value || contact.emails?.[0]?.value || 'Aucune information'}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="p-4 text-center text-gray-400">
+                <p>Aucun utilisateur Firebase trouvé</p>
+              </div>
+            )
+          ) :  (
                          // Mode Chats
              filteredUsers.length === 0 ? (
                <div className="flex items-center justify-center h-full">
