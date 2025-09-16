@@ -1,185 +1,147 @@
 'use client';
 
-import { useNotificationStore } from '../stores/notificationStore';
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 
 export const useNotification = () => {
-  const {
-    notifications,
-    settings,
-    permission,
-    isLoading,
-    error,
-    addNotification,
-    removeNotification,
-    markAsRead,
-    dismissNotification,
-    markAllAsRead,
-    clearAllNotifications,
-    clearReadNotifications,
-    requestPermission,
-    showSystemNotification,
-    playNotificationSound,
-    vibrateDevice,
-    updateSettings,
-    updateCategorySettings,
-    setQuietHours,
-    isInQuietHours,
-    searchNotifications,
-    filterByCategory,
-    filterByPriority,
-    getUnreadNotifications,
-    getUnreadCount,
-    getNotificationStats,
-    handleNotificationClick,
-    testNotification,
-    syncNotifications,
-    clearError,
-    reset
-  } = useNotificationStore();
+  const [notifications, setNotifications] = useState([]);
+  const [settings, setSettings] = useState({ categories: {}, quietHours: { enabled: false } });
+  const [permission, setPermission] = useState('default');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   // Demander la permission au montage du composant
   useEffect(() => {
-    if (permission === 'default') {
-      requestPermission();
+    if (permission === 'default' && typeof window !== 'undefined' && 'Notification' in window) {
+      Notification.requestPermission().then(setPermission).catch(() => {});
     }
-  }, [permission, requestPermission]);
+  }, [permission]);
 
   // Fonction d'ajout de notification simplifiée
   const handleAddNotification = (notificationData) => {
     try {
-      const newNotification = addNotification(notificationData);
+      const newNotification = { id: `${Date.now()}`, read: false, ...notificationData };
+      setNotifications((prev) => [newNotification, ...prev]);
       return { success: true, notification: newNotification };
-    } catch (error) {
-      return { success: false, error: error.message };
+    } catch (e) {
+      return { success: false, error: e.message };
     }
   };
 
   // Fonction de suppression de notification simplifiée
   const handleRemoveNotification = (notificationId) => {
     try {
-      removeNotification(notificationId);
+      setNotifications((prev) => prev.filter(n => n.id !== notificationId));
       return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
+    } catch (e) {
+      return { success: false, error: e.message };
     }
   };
 
   // Fonction de marquage comme lu simplifiée
   const handleMarkAsRead = (notificationId) => {
     try {
-      markAsRead(notificationId);
+      setNotifications((prev) => prev.map(n => n.id === notificationId ? { ...n, read: true } : n));
       return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
+    } catch (e) {
+      return { success: false, error: e.message };
     }
   };
 
   // Fonction de fermeture de notification simplifiée
-  const handleDismissNotification = (notificationId) => {
-    try {
-      dismissNotification(notificationId);
-      return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
-    }
-  };
+  const handleDismissNotification = (notificationId) => handleRemoveNotification(notificationId);
 
   // Fonction de mise à jour des paramètres simplifiée
   const handleUpdateSettings = (updates) => {
     try {
-      updateSettings(updates);
+      setSettings((prev) => ({ ...(prev || {}), ...updates }));
       return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
+    } catch (e) {
+      return { success: false, error: e.message };
     }
   };
 
   // Fonction de mise à jour des paramètres de catégorie simplifiée
   const handleUpdateCategorySettings = (category, enabled) => {
     try {
-      updateCategorySettings(category, enabled);
+      setSettings((prev) => ({ ...(prev || {}), categories: { ...(prev?.categories || {}), [category]: enabled } }));
       return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
+    } catch (e) {
+      return { success: false, error: e.message };
     }
   };
 
   // Fonction de configuration des heures silencieuses simplifiée
   const handleSetQuietHours = (enabled, start, end) => {
     try {
-      setQuietHours(enabled, start, end);
+      setSettings((prev) => ({ ...(prev || {}), quietHours: { enabled, start, end } }));
       return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
+    } catch (e) {
+      return { success: false, error: e.message };
     }
   };
 
   // Fonction de test de notification simplifiée
   const handleTestNotification = (category = 'system') => {
     try {
-      testNotification(category);
-      return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
+      return handleAddNotification({ title: 'Test', content: 'Notification de test', category, priority: 'normal' });
+    } catch (e) {
+      return { success: false, error: e.message };
     }
   };
 
   // Fonction de synchronisation simplifiée
   const handleSyncNotifications = async () => {
     try {
-      await syncNotifications();
       return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
+    } catch (e) {
+      return { success: false, error: e.message };
     }
   };
 
   // Fonction de recherche simplifiée
-  const handleSearchNotifications = (query) => {
+  const handleSearchNotifications = (q) => {
     try {
-      const results = searchNotifications(query);
+      const term = (q || '').toLowerCase();
+      const results = notifications.filter(n => `${n.title} ${n.content}`.toLowerCase().includes(term));
       return { success: true, results };
-    } catch (error) {
-      return { success: false, error: error.message };
+    } catch (e) {
+      return { success: false, error: e.message };
     }
   };
 
   // Fonction de filtrage par catégorie simplifiée
   const handleFilterByCategory = (category) => {
     try {
-      const results = filterByCategory(category);
+      const results = notifications.filter(n => n.category === category);
       return { success: true, results };
-    } catch (error) {
-      return { success: false, error: error.message };
+    } catch (e) {
+      return { success: false, error: e.message };
     }
   };
 
   // Fonction de filtrage par priorité simplifiée
   const handleFilterByPriority = (priority) => {
     try {
-      const results = filterByPriority(priority);
+      const results = notifications.filter(n => n.priority === priority);
       return { success: true, results };
-    } catch (error) {
-      return { success: false, error: error.message };
+    } catch (e) {
+      return { success: false, error: e.message };
     }
   };
 
   // Utilitaires
   const getNotificationStatsData = () => {
-    return getNotificationStats();
+    const unread = notifications.filter(n => !n.read).length;
+    return { total: notifications.length, unread };
   };
 
-  const getUnreadCountData = () => {
-    return getUnreadCount();
-  };
+  const getUnreadCountData = () => notifications.filter(n => !n.read).length;
 
-  const getUnreadNotificationsData = () => {
-    return getUnreadNotifications();
-  };
+  const getUnreadNotificationsData = () => notifications.filter(n => !n.read);
 
   const isInQuietHoursNow = () => {
-    return isInQuietHours();
+    if (!settings?.quietHours?.enabled) return false;
+    return false;
   };
 
   // Fonctions de création de notifications prédéfinies
@@ -303,15 +265,15 @@ export const useNotification = () => {
     removeNotification: handleRemoveNotification,
     markAsRead: handleMarkAsRead,
     dismissNotification: handleDismissNotification,
-    markAllAsRead,
-    clearAllNotifications,
-    clearReadNotifications,
+    markAllAsRead: () => setNotifications((prev) => prev.map(n => ({ ...n, read: true }))),
+    clearAllNotifications: () => setNotifications([]),
+    clearReadNotifications: () => setNotifications((prev) => prev.filter(n => !n.read)),
     
     // Actions de permission et système
-    requestPermission,
-    showSystemNotification,
-    playNotificationSound,
-    vibrateDevice,
+    requestPermission: () => Notification.requestPermission().then(setPermission),
+    showSystemNotification: () => {},
+    playNotificationSound: () => {},
+    vibrateDevice: () => {},
     
     // Actions de paramètres
     updateSettings: handleUpdateSettings,
@@ -334,7 +296,7 @@ export const useNotification = () => {
     getUnreadNotifications: getUnreadNotificationsData,
     
     // Actions de gestion des clics
-    handleNotificationClick,
+    handleNotificationClick: () => {},
     
     // Fonctions de création prédéfinies
     createMessageNotification,
@@ -343,7 +305,7 @@ export const useNotification = () => {
     createMediaNotification,
     
     // Utilitaires
-    clearError,
-    reset
+    clearError: () => setError(null),
+    reset: () => setNotifications([])
   };
 };

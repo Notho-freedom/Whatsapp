@@ -1,20 +1,19 @@
 "use client";
 
 import { useEffect, useRef } from 'react';
-import { useAuthStore } from '@/stores/authStore';
+import { getAuth } from 'firebase/auth';
 
 /**
  * Hook pour gérer le rafraîchissement automatique des tokens JWT
  * Vérifie l'expiration du token toutes les minutes et le rafraîchit si nécessaire
  */
 export const useTokenRefresh = () => {
-  const { 
-    isAuthenticated, 
-    accessToken, 
-    expiresAt, 
-    checkTokenExpiration, 
-    refreshAccessToken 
-  } = useAuthStore();
+  const auth = getAuth();
+  const isAuthenticated = Boolean(auth.currentUser);
+  const accessToken = null; // Firebase refresh is automatic
+  const expiresAt = null;
+  const refreshAccessToken = async () => auth.currentUser ? auth.currentUser.getIdToken(true) : null;
+  const checkTokenExpiration = () => Boolean(auth.currentUser);
   
   const intervalRef = useRef(null);
   const timeoutRef = useRef(null);

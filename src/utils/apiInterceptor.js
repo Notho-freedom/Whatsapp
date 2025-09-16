@@ -1,4 +1,4 @@
-import { useAuthStore } from '@/stores/authStore';
+import { getAuth } from 'firebase/auth';
 
 /**
  * Intercepteur pour les requêtes API
@@ -29,18 +29,10 @@ class ApiInterceptor {
    * Vérifie et rafraîchit le token si nécessaire
    */
   async checkAndRefreshToken() {
-    const { checkTokenExpiration, refreshAccessToken, isAuthenticated } = useAuthStore.getState();
-    
-    if (!isAuthenticated) {
-      return null;
-    }
+    const auth = getAuth();
+    const isAuthenticated = Boolean(auth.currentUser);
+    if (!isAuthenticated) return null;
 
-    // Si le token est encore valide, ne rien faire
-    if (checkTokenExpiration()) {
-      return useAuthStore.getState().accessToken;
-    }
-
-    // Si déjà en train de rafraîchir, attendre
     if (this.isRefreshing) {
       return new Promise((resolve, reject) => {
         this.failedQueue.push({ resolve, reject });
@@ -50,7 +42,7 @@ class ApiInterceptor {
     this.isRefreshing = true;
 
     try {
-      const newToken = await refreshAccessToken();
+      const newToken = await auth.currentUser.getIdToken(true);
       this.processQueue(null, newToken);
       return newToken;
     } catch (error) {
@@ -93,7 +85,7 @@ class ApiInterceptor {
         }
       } catch (error) {
         // Si le rafraîchissement échoue, déconnecter l'utilisateur
-        useAuthStore.getState().logout();
+        try { await getAuth().signOut(); } catch {}
         throw error;
       }
     }

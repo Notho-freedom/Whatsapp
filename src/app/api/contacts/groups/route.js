@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import contactService from '@/utils/contactDatabaseService';
-import authService from '@/utils/authDatabaseService';
+import { getAuth } from 'firebase-admin/auth';
 
 // GET /api/contacts/groups - Récupérer tous les groupes de contacts
 export async function GET(request) {

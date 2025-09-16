@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
-import messageService from '@/utils/messageDatabaseService';
-import conversationService from '@/utils/conversationDatabaseService';
-import authService from '@/utils/authDatabaseService';
+import firebaseServer from '@/utils/firebaseServerService';
+import { getAuth } from 'firebase-admin/auth';
 
 // GET /api/conversations/[conversationId]/messages/[messageId] - Récupérer un message spécifique
 export async function GET(request, { params }) {
@@ -16,7 +15,8 @@ export async function GET(request, { params }) {
     }
 
     const token = authHeader.substring(7);
-    const user = await authService.verifyToken(token);
+    const decoded = await getAuth().verifyIdToken(token);
+    const user = { id: decoded.uid };
     if (!user) {
       return NextResponse.json(
         { error: 'Token invalide' },
@@ -27,7 +27,7 @@ export async function GET(request, { params }) {
     const { conversationId, messageId } = params;
 
     // Vérifier que l'utilisateur est participant
-    const participants = await conversationService.getParticipants(conversationId);
+    const participants = await firebaseServer.getParticipants(conversationId);
     const isParticipant = participants.some(p => p.user_id === user.id);
     
     if (!isParticipant) {
@@ -38,7 +38,7 @@ export async function GET(request, { params }) {
     }
 
     // Récupérer le message
-    const message = await messageService.getMessageById(messageId);
+    const message = (await firebaseServer.getMessages(conversationId)).find(m => m.id === messageId);
     if (!message) {
       return NextResponse.json(
         { error: 'Message non trouvé' },
@@ -55,8 +55,8 @@ export async function GET(request, { params }) {
     }
 
     // Récupérer les réactions et lectures
-    const reactions = await messageService.getMessageReactions(messageId);
-    const reads = await messageService.getMessageReads(messageId);
+    const reactions = message?.reactions || [];
+    const reads = [];
 
     return NextResponse.json({
       message: {
@@ -88,7 +88,8 @@ export async function PUT(request, { params }) {
     }
 
     const token = authHeader.substring(7);
-    const user = await authService.verifyToken(token);
+    const decoded = await getAuth().verifyIdToken(token);
+    const user = { id: decoded.uid };
     if (!user) {
       return NextResponse.json(
         { error: 'Token invalide' },
@@ -100,7 +101,7 @@ export async function PUT(request, { params }) {
     const body = await request.json();
 
     // Vérifier que l'utilisateur est participant
-    const participants = await conversationService.getParticipants(conversationId);
+    const participants = await firebaseServer.getParticipants(conversationId);
     const isParticipant = participants.some(p => p.user_id === user.id);
     
     if (!isParticipant) {
@@ -111,7 +112,7 @@ export async function PUT(request, { params }) {
     }
 
     // Récupérer le message
-    const message = await messageService.getMessageById(messageId);
+    const message = (await firebaseServer.getMessages(conversationId)).find(m => m.id === messageId);
     if (!message) {
       return NextResponse.json(
         { error: 'Message non trouvé' },
@@ -167,7 +168,8 @@ export async function PUT(request, { params }) {
     }
 
     // Mettre à jour le message
-    const updatedMessage = await messageService.updateMessage(messageId, updateData);
+    await firebaseServer.updateMessage(messageId, updateData);
+    const updatedMessage = { ...message, ...updateData };
 
     return NextResponse.json({
       message: updatedMessage,
@@ -196,7 +198,8 @@ export async function DELETE(request, { params }) {
     }
 
     const token = authHeader.substring(7);
-    const user = await authService.verifyToken(token);
+    const decoded = await getAuth().verifyIdToken(token);
+    const user = { id: decoded.uid };
     if (!user) {
       return NextResponse.json(
         { error: 'Token invalide' },
@@ -207,7 +210,7 @@ export async function DELETE(request, { params }) {
     const { conversationId, messageId } = params;
 
     // Vérifier que l'utilisateur est participant
-    const participants = await conversationService.getParticipants(conversationId);
+    const participants = await firebaseServer.getParticipants(conversationId);
     const isParticipant = participants.some(p => p.user_id === user.id);
     
     if (!isParticipant) {
@@ -218,7 +221,7 @@ export async function DELETE(request, { params }) {
     }
 
     // Récupérer le message
-    const message = await messageService.getMessageById(messageId);
+    const message = (await firebaseServer.getMessages(conversationId)).find(m => m.id === messageId);
     if (!message) {
       return NextResponse.json(
         { error: 'Message non trouvé' },
@@ -247,7 +250,7 @@ export async function DELETE(request, { params }) {
 
     // Supprimer le message
     const reason = isAdmin && !isSender ? 'Supprimé par un administrateur' : null;
-    await messageService.deleteMessage(messageId, user.id, reason);
+    await firebaseServer.deleteMessage(messageId);
 
     return NextResponse.json({
       message: 'Message supprimé avec succès'

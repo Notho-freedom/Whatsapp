@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import contactService from '@/utils/contactDatabaseService';
-import authService from '@/utils/authDatabaseService';
+import { db } from '@/utils/firebaseConfig';
+import { getAuth } from 'firebase-admin/auth';
+import { collection, getDocs, query, where, limit as fsLimit, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 // GET /api/contacts - Récupérer tous les contacts de l'utilisateur
 export async function GET(request) {
@@ -12,7 +13,14 @@ export async function GET(request) {
     }
 
     const token = authHeader.replace('Bearer ', '');
-    const user = await authService.verifyJWT(token);
+    // In Next.js API routes on server, verify token via Firebase Admin (if configured)
+    let user = null;
+    try {
+      const decoded = await getAuth().verifyIdToken(token);
+      user = { userId: decoded.uid };
+    } catch {
+      user = null;
+    }
     if (!user) {
       return NextResponse.json({ error: 'Token invalide' }, { status: 401 });
     }
@@ -34,10 +42,16 @@ export async function GET(request) {
     if (groupId) filters.groupId = parseInt(groupId);
 
     // Récupérer les contacts
-    const contacts = await contactService.getContactsByUserId(user.userId, limit, offset, filters);
-    
-    // Récupérer les statistiques
-    const stats = await contactService.getContactStats(user.userId);
+    const col = collection(db, 'contacts');
+    let q = query(col, where('user_id', '==', user.userId));
+    const snap = await getDocs(q);
+    const all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    const filtered = all.filter(c => !c.deleted)
+      .filter(c => !filters.search || `${c.first_name || ''} ${c.last_name || ''}`.toLowerCase().includes(filters.search.toLowerCase()))
+      .filter(c => filters.isFavorite === undefined || c.isFavorite === filters.isFavorite)
+      .filter(c => !filters.groupId || c.groupId === Number(filters.groupId));
+    const contacts = filtered.slice(offset, offset + limit);
+    const stats = { total_contacts: filtered.length };
 
     return NextResponse.json({
       success: true,
@@ -91,7 +105,10 @@ export async function POST(request) {
     contactData.user_id = user.userId;
 
     // Créer le contact
-    const newContact = await contactService.createContact(contactData);
+    const newRef = doc(collection(db, 'contacts'));
+    const data = { ...contactData, created_at: serverTimestamp(), updated_at: serverTimestamp() };
+    await setDoc(newRef, data);
+    const newContact = { id: newRef.id, ...contactData };
 
     return NextResponse.json({
       success: true,

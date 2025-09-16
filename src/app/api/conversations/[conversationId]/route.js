@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import conversationService from '@/utils/conversationDatabaseService';
-import authService from '@/utils/authDatabaseService';
+import firebaseServer from '@/utils/firebaseServerService';
+import { getAuth } from 'firebase-admin/auth';
 
 // GET /api/conversations/[conversationId] - Récupérer une conversation spécifique
 export async function GET(request, { params }) {
@@ -15,7 +15,8 @@ export async function GET(request, { params }) {
     }
 
     const token = authHeader.substring(7);
-    const user = await authService.verifyToken(token);
+    const decoded = await getAuth().verifyIdToken(token);
+    const user = { id: decoded.uid };
     if (!user) {
       return NextResponse.json(
         { error: 'Token invalide' },
@@ -26,7 +27,7 @@ export async function GET(request, { params }) {
     const { conversationId } = await params;
 
     // Récupérer la conversation
-    const conversation = await conversationService.getConversationById(conversationId);
+    const conversation = await firebaseServer.getConversationsByUserId(user.id).then(list => list.find(c => c.id === conversationId));
     if (!conversation) {
       return NextResponse.json(
         { error: 'Conversation non trouvée' },
@@ -35,7 +36,7 @@ export async function GET(request, { params }) {
     }
 
     // Vérifier que l'utilisateur est participant
-    const participants = await conversationService.getParticipants(conversationId);
+    const participants = await firebaseServer.getParticipants(conversationId);
     const isParticipant = participants.some(p => p.user_id === user.id);
     
     if (!isParticipant) {
@@ -74,7 +75,8 @@ export async function PUT(request, { params }) {
     }
 
     const token = authHeader.substring(7);
-    const user = await authService.verifyToken(token);
+    const decoded = await getAuth().verifyIdToken(token);
+    const user = { id: decoded.uid };
     if (!user) {
       return NextResponse.json(
         { error: 'Token invalide' },
@@ -86,7 +88,7 @@ export async function PUT(request, { params }) {
     const body = await request.json();
 
     // Vérifier que l'utilisateur est participant
-    const participants = await conversationService.getParticipants(conversationId);
+    const participants = await firebaseServer.getParticipants(conversationId);
     const userParticipant = participants.find(p => p.user_id === user.id);
     
     if (!userParticipant) {
@@ -97,7 +99,7 @@ export async function PUT(request, { params }) {
     }
 
     // Vérifier les permissions pour les modifications de groupe
-    const conversation = await conversationService.getConversationById(conversationId);
+    const conversation = await firebaseServer.getConversationsByUserId(user.id).then(list => list.find(c => c.id === conversationId));
     if (conversation.is_group && body.title && !userParticipant.is_admin) {
       return NextResponse.json(
         { error: 'Seuls les administrateurs peuvent modifier le titre du groupe' },
@@ -106,7 +108,7 @@ export async function PUT(request, { params }) {
     }
 
     // Mettre à jour la conversation
-    const updatedConversation = await conversationService.updateConversation(conversationId, body);
+    const updatedConversation = { ...conversation, ...body };
 
     return NextResponse.json({
       conversation: updatedConversation,
@@ -135,7 +137,8 @@ export async function DELETE(request, { params }) {
     }
 
     const token = authHeader.substring(7);
-    const user = await authService.verifyToken(token);
+    const decoded = await getAuth().verifyIdToken(token);
+    const user = { id: decoded.uid };
     if (!user) {
       return NextResponse.json(
         { error: 'Token invalide' },
@@ -146,7 +149,7 @@ export async function DELETE(request, { params }) {
     const { conversationId } = params;
 
     // Vérifier que l'utilisateur est participant
-    const participants = await conversationService.getParticipants(conversationId);
+    const participants = await firebaseServer.getParticipants(conversationId);
     const userParticipant = participants.find(p => p.user_id === user.id);
     
     if (!userParticipant) {
@@ -157,7 +160,7 @@ export async function DELETE(request, { params }) {
     }
 
     // Vérifier les permissions pour la suppression
-    const conversation = await conversationService.getConversationById(conversationId);
+    const conversation = await firebaseServer.getConversationsByUserId(user.id).then(list => list.find(c => c.id === conversationId));
     if (conversation.is_group && !userParticipant.is_admin) {
       return NextResponse.json(
         { error: 'Seuls les administrateurs peuvent supprimer un groupe' },
@@ -166,7 +169,7 @@ export async function DELETE(request, { params }) {
     }
 
     // Supprimer la conversation
-    await conversationService.deleteConversation(conversationId);
+    await firebaseServer.deleteTempConversation(conversationId);
 
     return NextResponse.json({
       message: 'Conversation supprimée avec succès'

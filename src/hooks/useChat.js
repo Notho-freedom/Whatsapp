@@ -1,40 +1,21 @@
 'use client';
 
-import { useChatStore } from '../stores/chatStore';
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import firebaseService from '../utils/firebaseService';
+import { getAuth } from 'firebase/auth';
 
 export const useChat = () => {
-  const {
-    conversations,
-    selectedConversation,
-    messages,
-    unreadCounts,
-    isLoading,
-    isSending,
-    error,
-    createConversation,
-    selectConversation,
-    addMessage,
-    updateMessageStatus,
-    editMessage,
-    deleteMessage,
-    addReaction,
-    addReply,
-    markConversationAsRead,
-    togglePinConversation,
-    toggleArchiveConversation,
-    toggleMuteConversation,
-    searchMessages,
-    loadMessageHistory,
-    sendMessage,
-    clearError,
-    reset
-  } = useChatStore();
+  const [conversations, setConversations] = useState([]);
+  const [selectedConversation, setSelectedConversation] = useState(null);
+  const [messages, setMessages] = useState({});
+  const [unreadCounts, setUnreadCounts] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [error, setError] = useState(null);
 
   // Chargement automatique des conversations au montage du composant
   useEffect(() => {
     if (conversations.length === 0) {
-      // Charger les conversations depuis le serveur
       loadConversations();
     }
   }, [conversations.length]);
@@ -49,124 +30,157 @@ export const useChat = () => {
   // Fonction de chargement des conversations
   const loadConversations = async () => {
     try {
-      // Cette fonction sera implémentée avec le service
-      console.log('Chargement des conversations...');
-    } catch (error) {
-      console.error('Erreur lors du chargement des conversations:', error);
+      setIsLoading(true);
+      const uid = getAuth().currentUser?.uid;
+      if (!uid) return [];
+      const list = await firebaseService.getConversations(uid, 50, 0);
+      setConversations(list);
+      return list;
+    } catch (e) {
+      setError(e);
+      return [];
+    } finally {
+      setIsLoading(false);
     }
   };
 
   // Fonction de création de conversation simplifiée
   const handleCreateConversation = async (participants, type = 'individual', customName = null) => {
     try {
-      const newConversation = createConversation(participants, type);
-      return { success: true, conversation: newConversation };
-    } catch (error) {
-      return { success: false, error: error.message };
+      const created_by = getAuth().currentUser?.uid;
+      const conv = await firebaseService.createConversation({ type, name: customName || '', created_by, custom_settings: { participants } });
+      setConversations((prev) => [conv, ...prev]);
+      return { success: true, conversation: conv };
+    } catch (e) {
+      return { success: false, error: e.message };
     }
   };
 
   // Fonction de sélection de conversation simplifiée
   const handleSelectConversation = (conversationId) => {
-    selectConversation(conversationId);
+    setSelectedConversation(conversationId);
     return { success: true };
   };
 
   // Fonction d'envoi de message simplifiée
   const handleSendMessage = async (conversationId, content, type = 'text', metadata = {}) => {
     try {
-      const result = await sendMessage(conversationId, content, type, metadata);
+      setIsSending(true);
+      const sender = getAuth().currentUser?.uid || 'unknown';
+      const result = await firebaseService.addMessage(conversationId, { text: content, sender, type, metadata });
+      setMessages((prev) => ({
+        ...prev,
+        [conversationId]: [result, ...(prev[conversationId] || [])]
+      }));
       return { success: true, message: result };
-    } catch (error) {
-      return { success: false, error: error.message };
+    } catch (e) {
+      return { success: false, error: e.message };
+    } finally {
+      setIsSending(false);
     }
   };
 
   // Fonction d'ajout de message simplifiée
   const handleAddMessage = (conversationId, message) => {
     try {
-      const newMessage = addMessage(conversationId, message);
-      return { success: true, message: newMessage };
-    } catch (error) {
-      return { success: false, error: error.message };
+      setMessages((prev) => ({
+        ...prev,
+        [conversationId]: [message, ...(prev[conversationId] || [])]
+      }));
+      return { success: true, message };
+    } catch (e) {
+      return { success: false, error: e.message };
     }
   };
 
   // Fonction de modification de message simplifiée
-  const handleEditMessage = (conversationId, messageId, newContent) => {
+  const handleEditMessage = async (conversationId, messageId, newContent) => {
     try {
-      editMessage(conversationId, messageId, newContent);
+      await firebaseService.updateMessage(conversationId, messageId, { text: newContent });
+      setMessages((prev) => ({
+        ...prev,
+        [conversationId]: (prev[conversationId] || []).map(m => m.id === messageId ? { ...m, text: newContent } : m)
+      }));
       return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
+    } catch (e) {
+      return { success: false, error: e.message };
     }
   };
 
   // Fonction de suppression de message simplifiée
-  const handleDeleteMessage = (conversationId, messageId) => {
+  const handleDeleteMessage = async (conversationId, messageId) => {
     try {
-      deleteMessage(conversationId, messageId);
+      await firebaseService.deleteMessage(conversationId, messageId);
+      setMessages((prev) => ({
+        ...prev,
+        [conversationId]: (prev[conversationId] || []).filter(m => m.id !== messageId)
+      }));
       return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
+    } catch (e) {
+      return { success: false, error: e.message };
     }
   };
 
   // Fonction d'ajout de réaction simplifiée
-  const handleAddReaction = (conversationId, messageId, reaction, userId) => {
+  const handleAddReaction = async (conversationId, messageId, reaction, userId) => {
     try {
-      addReaction(conversationId, messageId, reaction, userId);
+      await firebaseService.updateMessage(conversationId, messageId, { reactions: [{ reaction, userId, at: new Date() }] });
       return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
+    } catch (e) {
+      return { success: false, error: e.message };
     }
   };
 
   // Fonction de marquage comme lu simplifiée
   const handleMarkAsRead = (conversationId) => {
     try {
-      markConversationAsRead(conversationId);
+      setUnreadCounts((prev) => ({ ...prev, [conversationId]: 0 }));
       return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
+    } catch (e) {
+      return { success: false, error: e.message };
     }
   };
 
   // Fonction de recherche de messages simplifiée
-  const handleSearchMessages = (query, conversationId = null) => {
+  const handleSearchMessages = (q, conversationId = null) => {
     try {
-      const results = searchMessages(query, conversationId);
+      const term = (q || '').toLowerCase();
+      const pool = conversationId ? { [conversationId]: messages[conversationId] || [] } : messages;
+      const results = Object.entries(pool).flatMap(([cid, msgs]) =>
+        (msgs || []).filter(m => (m.text || '').toLowerCase().includes(term)).map(m => ({ ...m, conversation_id: cid }))
+      );
       return { success: true, results };
-    } catch (error) {
-      return { success: false, error: error.message };
+    } catch (e) {
+      return { success: false, error: e.message };
     }
   };
 
   // Fonction de gestion des conversations simplifiée
-  const handleTogglePin = (conversationId) => {
+  const handleTogglePin = async (conversationId) => {
     try {
-      togglePinConversation(conversationId);
+      await firebaseService.updateMessage(conversationId, '__noop__', {});
+      setConversations((prev) => prev.map(c => c.id === conversationId ? { ...c, is_pinned: !c.is_pinned } : c));
       return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
+    } catch (e) {
+      return { success: false, error: e.message };
     }
   };
 
-  const handleToggleArchive = (conversationId) => {
+  const handleToggleArchive = async (conversationId) => {
     try {
-      toggleArchiveConversation(conversationId);
+      setConversations((prev) => prev.map(c => c.id === conversationId ? { ...c, is_archived: !c.is_archived } : c));
       return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
+    } catch (e) {
+      return { success: false, error: e.message };
     }
   };
 
-  const handleToggleMute = (conversationId) => {
+  const handleToggleMute = async (conversationId) => {
     try {
-      toggleMuteConversation(conversationId);
+      setConversations((prev) => prev.map(c => c.id === conversationId ? { ...c, is_muted: !c.is_muted } : c));
       return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
+    } catch (e) {
+      return { success: false, error: e.message };
     }
   };
 
@@ -188,16 +202,31 @@ export const useChat = () => {
   };
 
   const getPinnedConversations = () => {
-    return conversations.filter(conv => conv.isPinned);
+    return conversations.filter(conv => conv.isPinned || conv.is_pinned);
   };
 
   const getArchivedConversations = () => {
-    return conversations.filter(conv => conv.isArchived);
+    return conversations.filter(conv => conv.isArchived || conv.is_archived);
   };
 
   const getActiveConversations = () => {
-    return conversations.filter(conv => !conv.isArchived);
+    return conversations.filter(conv => !(conv.isArchived || conv.is_archived));
   };
+
+  const loadMessageHistory = useCallback(async (conversationId) => {
+    const list = await firebaseService.getMessages(conversationId, 50, 0);
+    setMessages((prev) => ({ ...prev, [conversationId]: list }));
+    return list;
+  }, []);
+
+  const clearError = useCallback(() => setError(null), []);
+  const reset = useCallback(() => {
+    setConversations([]);
+    setSelectedConversation(null);
+    setMessages({});
+    setUnreadCounts({});
+    setError(null);
+  }, []);
 
   return {
     // État
@@ -222,9 +251,9 @@ export const useChat = () => {
     sendMessage: handleSendMessage,
     editMessage: handleEditMessage,
     deleteMessage: handleDeleteMessage,
-    updateMessageStatus,
+    updateMessageStatus: async () => {},
     addReaction: handleAddReaction,
-    addReply,
+    addReply: async () => {},
     
     // Actions de recherche et chargement
     searchMessages: handleSearchMessages,
