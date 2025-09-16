@@ -1,6 +1,6 @@
 import { Inter } from 'next/font/google'
 import './globals.css'
-import { AppProvider } from '@/context'
+import { AppProvider, AppReducerProvider, MessageProvider } from '@/context'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -13,9 +13,13 @@ export default function RootLayout({ children }) {
   return (
     <html lang="fr" suppressHydrationWarning className="h-full">
       <body className={`${inter.className} h-full`} suppressHydrationWarning>
-        <AppProvider>
-          {children}
-        </AppProvider>
+        <AppReducerProvider>
+          <AppProvider>
+            <MessageProvider>
+              {children}
+            </MessageProvider>
+          </AppProvider>
+        </AppReducerProvider>
       </body>
     </html>
   )

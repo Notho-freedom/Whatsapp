@@ -30,7 +30,7 @@ const ReplyCap = memo(function ReplyCap({ replyTo, onCancelReply }) {
   };
 
   const getSenderName = () => {
-    return replyTo.sender === 'me' ? 'You' : (replyTo.senderName || 'Unknown');
+    return replyTo.sender === currentUser?.id ? 'You' : (replyTo.senderName || 'Unknown');
   };
 
   return (

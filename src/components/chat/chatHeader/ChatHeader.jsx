@@ -16,7 +16,7 @@ export default function ChatHeader({ selectedChat }) {
   });
 
   // Hook temps réel pour la présence et les indicateurs de frappe
-  const currentUserId = 'default-user'; // À remplacer par l'ID utilisateur réel
+  const currentUserId = localStorage.getItem('userData') ? JSON.parse(localStorage.getItem('userData')).id : 'default-user';
   const { presence, typingUsers } = useRealtime(currentUserId);
 
   if (!selectedChat) {

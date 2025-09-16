@@ -8,11 +8,12 @@ import { useEffect, useRef, useState, useCallback, memo } from 'react';
 import { useAppContext } from '@/context';
 import { useRealtime } from '@/hooks';
 
-const ChatBody = memo(function ChatBody({ selectedChat, currentUser }) {
+const ChatBody = memo(function ChatBody({ selectedChat}) {
   const scrollRef = useRef(null);
   const [isMobile, setIsMobile] = useState(false);
   const [autoScroll, setAutoScroll] = useState(true);
   const { messages, markMessagesRead } = useAppContext();
+  const currentUser = localStorage.getItem('userData') ? JSON.parse(localStorage.getItem('userData')) : null;
   
   // Hook temps réel pour les receipts de lecture et indicateurs de frappe
   const currentUserId = currentUser?.id || 'default-user';
@@ -63,7 +64,7 @@ const ChatBody = memo(function ChatBody({ selectedChat, currentUser }) {
       // Marquer les messages comme lus en temps réel
       const chatMessages = messages[selectedChat.id] || [];
       chatMessages.forEach(message => {
-        if (message.sender !== 'me' && !message.read) {
+        if (message.sender !== currentUserId && !message.read) {
           markMessageAsRead(selectedChat.id, message.id);
         }
       });

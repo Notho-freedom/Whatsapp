@@ -13,7 +13,7 @@ import { useMessageContextMenu } from '@/hooks';
 import { BsCheck2All } from 'react-icons/bs';
 
 const MessageBubble = memo(function MessageBubble({ message, isFirstInGroup, isLastInGroup, isMobile, currentUser }) {
-  const isMe = message.sender === 'me';
+  const isMe = message.sender === currentUser?.id;
   const messageRef = useRef(null);
   const longPressTimer = useRef(null);
   const [contextMenu, setContextMenu] = useState({ isOpen: false, position: null });
@@ -24,7 +24,7 @@ const MessageBubble = memo(function MessageBubble({ message, isFirstInGroup, isL
     if (isMe) {
       // Pour l'utilisateur actuel, utiliser l'utilisateur connecté
       return {
-        name: currentUser?.name || 'Me',
+        name: currentUser?.name || currentUser?.id,
         avatar: currentUser?.picture || null
       };
     } else {
@@ -57,7 +57,7 @@ const MessageBubble = memo(function MessageBubble({ message, isFirstInGroup, isL
         senderName: messageData.senderName || getUserInfo().name,
         senderAvatar: messageData.senderAvatar || getUserInfo().avatar,
         // S'assurer que l'ID de l'expéditeur est correct
-        sender: messageData.sender || (isMe ? 'me' : messageData.senderId),
+        sender: messageData.sender || (isMe ? currentUser?.id : messageData.senderId),
         // Ajouter des informations supplémentaires si disponibles
         timestamp: messageData.timestamp || new Date().toISOString(),
         messageType: messageData.type || 'text'
@@ -368,7 +368,7 @@ const MessageBubble = memo(function MessageBubble({ message, isFirstInGroup, isL
               role="blockquote"
               >
               <div className="text-[12px] sm:text-[13px] font-medium mb-[2px]" style={{ color: isMe ? '#06cf9c' : '#53bdeb' }}>
-                {message.replyTo.sender === 'me' ? 'You' : message.replyTo.senderName || 'Unknown'}
+                {message.replyTo.sender === currentUser?.id ? 'You' : message.replyTo.senderName || 'Unknown'}
                 </div>
               <div className="text-[#d1d7db] text-[13px] sm:text-[14px] line-clamp-3">
                 {message.replyTo.text || (message.replyTo.media ? 'Media' : 'Message')}

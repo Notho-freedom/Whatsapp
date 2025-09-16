@@ -14,7 +14,7 @@ import ContactPicker from './ContactPicker';
 import PollCreator from './PollCreator';
 import DrawingBoard from './DrawingBoard';
 
-export default function ChatFooter({ selectedChat, onSendMessage, currentUser }) {
+export default function ChatFooter({ selectedChat, onSendMessage }) {
   const [message, setMessage] = useState('');
   const [isClient, setIsClient] = useState(false);
   const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false);
@@ -29,6 +29,7 @@ export default function ChatFooter({ selectedChat, onSendMessage, currentUser })
   const [isDrawingBoardOpen, setIsDrawingBoardOpen] = useState(false);
   
   const { replyTo, clearReplyTo, users } = useAppContext();
+  const currentUser = localStorage.getItem('userData') ? JSON.parse(localStorage.getItem('userData')) : null;
   
   // Hook temps réel pour les indicateurs de frappe
   const currentUserId = currentUser?.id || 'default-user';
