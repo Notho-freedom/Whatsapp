@@ -23,8 +23,6 @@ import Avatar from '@/components/ui/Avatar';
 import Lenis from '@studio-freight/lenis';
 import { useChatContextMenu } from '@/hooks';
 import { useGoogleContacts } from '@/hooks';
-import { useContacts } from '@/hooks';
-import { useRealtime } from '@/hooks';
 import { useAutoAvatarPreloader } from '@/hooks';
 import { userService } from '@/utils';
 import { API_ENDPOINTS } from '@/utils/config';
@@ -33,8 +31,7 @@ import ContactList from './ContactList';
 export default function ChatList({
   onChatSelect,
   selectedChatId,
-  onStatusSelect,
-  currentUser,
+  onStatusSelect
 }) {
   const [isClient, setIsClient] = useState(false);
   const [showContacts, setShowContacts] = useState(false);
@@ -51,15 +48,11 @@ export default function ChatList({
     isLoading: contactsLoading,
     error: contactsError,
   } = useGoogleContacts();
-  const { createContact, fetchContacts } = useContacts();
   const [showFirebaseUsers, setShowFirebaseUsers] = useState(false);
   const [firebaseUsers, setFirebaseUsers] = useState([]);
   const [firebaseLoading, setFirebaseLoading] = useState(false);
-  const [firebaseError, setFirebaseError] = useState(null);
   // Hook temps réel pour la présence et les notifications
-  const currentUserId = 'default-user'; // À remplacer par l'ID utilisateur réel
-  const { presence, notifications, sendNotification } =
-    useRealtime(currentUserId);
+  const currentUser = JSON.parse(localStorage.getItem('userData'));
   const scrollRef = useRef(null);
 
   // Préchargement automatique des avatars
@@ -172,6 +165,7 @@ export default function ChatList({
           ...contact,
           id: contactId,
         },
+      lastMessage: { text: 'Nouvelle conversation', type: 'text', time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) },
       }),
     };
 
@@ -542,7 +536,7 @@ export default function ChatList({
                       src={chat.avatar}
                       alt={`${chat.name} profile picture`}
                       name={chat.name}
-                      size={56}
+                      size={48}
                       className="w-full h-full p-0.5"
                     />
                   </StatusCircle>

@@ -43,13 +43,14 @@ export default function WhatsApp() {
   const [selectedStatus, setSelectedStatus] = React.useState(null); // État pour le statut sélectionné
   const [profileActiveTab, setProfileActiveTab] = React.useState('overview'); // État pour l'onglet actif du profil
   const [activeCall, setActiveCall] = React.useState(null); // État pour l'appel actif
-
+  const user = localStorage.getItem('userData') || null;
   
   // Initialiser le gestionnaire d'événements seulement côté client
   const eventManager = useEventManager();
   
   // Hook d'authentification Google
-  const { user, isAuthenticated, isLoading: authLoading } = useGoogleAuth();
+  const { isAuthenticated, isLoading: authLoading } = useGoogleAuth();
+
   
   // Hook de rafraîchissement automatique des tokens
   useTokenRefresh();

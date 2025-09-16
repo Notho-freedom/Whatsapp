@@ -328,7 +328,7 @@ function AudioMessage({ audio, isMe, isMobile, messageId, onAudioStart, onAudioS
       </div>
 
       {/* Avatar avec micro (optionnel) */}
-      <div className="relative flex-shrink-0 absolute bottom-2 -right-1 ">
+      <div className="relative flex-shrink-0 bottom-2 -right-1 ">
         <div className={`${isMobile ? 'w-[32px] h-[32px]' : 'w-[36px] h-[36px]'} rounded-full overflow-hidden`}>
           <img
             src={getAvatarSrc()}
