@@ -1,12 +1,109 @@
-'use client';
+"use client";
 
-import { useAuthStore } from '../stores/authStore';
-import { useEffect } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
+import { auth } from '@/config/firebase';
+import {
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signOut,
+  GoogleAuthProvider,
+  signInWithPopup,
+  updateProfile,
+  getIdToken
+} from 'firebase/auth';
 
 export const useAuth = () => {
-  const {
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [accessToken, setAccessToken] = useState(null);
+
+  useEffect(() => {
+    if (!auth) return;
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setCurrentUser(user);
+      setIsLoading(false);
+      setError(null);
+      if (user) {
+        try {
+          const token = await getIdToken(user, true);
+          setAccessToken(token);
+        } catch (e) {
+          setAccessToken(null);
+        }
+      } else {
+        setAccessToken(null);
+      }
+    });
+    return () => unsubscribe && unsubscribe();
+  }, []);
+
+  const login = useCallback(async ({ email, password }) => {
+    if (!auth) return { success: false, error: 'Firebase non initialisé' };
+    setIsLoading(true);
+    setError(null);
+    try {
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      const token = await cred.user.getIdToken(true);
+      setAccessToken(token);
+      setIsLoading(false);
+      return { success: true };
+    } catch (e) {
+      setIsLoading(false);
+      setError(e.message);
+      return { success: false, error: e.message };
+    }
+  }, []);
+
+  const loginWithGoogle = useCallback(async () => {
+    if (!auth) return { success: false, error: 'Firebase non initialisé' };
+    setIsLoading(true);
+    setError(null);
+    try {
+      const provider = new GoogleAuthProvider();
+      const cred = await signInWithPopup(auth, provider);
+      const token = await cred.user.getIdToken(true);
+      setAccessToken(token);
+      setIsLoading(false);
+      return { success: true };
+    } catch (e) {
+      setIsLoading(false);
+      setError(e.message);
+      return { success: false, error: e.message };
+    }
+  }, []);
+
+  const logout = useCallback(async () => {
+    if (!auth) return;
+    await signOut(auth);
+    setAccessToken(null);
+  }, []);
+
+  const updateUserProfile = useCallback(async (updates) => {
+    if (!auth || !auth.currentUser) return { success: false, error: 'Utilisateur non connecté' };
+    try {
+      await updateProfile(auth.currentUser, updates);
+      setCurrentUser({ ...auth.currentUser });
+      return { success: true };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  }, []);
+
+  const refreshAccessToken = useCallback(async () => {
+    if (!auth || !auth.currentUser) return null;
+    const token = await auth.currentUser.getIdToken(true);
+    setAccessToken(token);
+    return token;
+  }, []);
+
+  const clearError = useCallback(() => setError(null), []);
+
+  const isAuthenticated = useMemo(() => !!currentUser, [currentUser]);
+
+  return {
     isAuthenticated,
-    user,
+    user: currentUser,
     accessToken,
     isLoading,
     error,
@@ -14,74 +111,7 @@ export const useAuth = () => {
     loginWithGoogle,
     logout,
     refreshAccessToken,
-    checkTokenExpiration,
     updateUserProfile,
-    clearError,
-    checkAuthStatus
-  } = useAuthStore();
-
-  // Vérification automatique du statut d'authentification au montage du composant
-  useEffect(() => {
-    if (accessToken) {
-      checkAuthStatus();
-    }
-  }, [accessToken, checkAuthStatus]);
-
-  // Vérification périodique de l'expiration du token
-  useEffect(() => {
-    if (!isAuthenticated || !accessToken) return;
-
-    const interval = setInterval(() => {
-      checkTokenExpiration();
-    }, 60000); // Vérifier toutes les minutes
-
-    return () => clearInterval(interval);
-  }, [isAuthenticated, accessToken, checkTokenExpiration]);
-
-  // Fonction de connexion simplifiée
-  const handleLogin = async (credentials) => {
-    try {
-      await login(credentials);
-      return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
-    }
-  };
-
-  // Fonction de connexion Google simplifiée
-  const handleGoogleLogin = async (googleToken) => {
-    try {
-      await loginWithGoogle(googleToken);
-      return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
-    }
-  };
-
-  // Fonction de déconnexion avec nettoyage
-  const handleLogout = () => {
-    logout();
-    // Ici vous pouvez ajouter d'autres actions de nettoyage si nécessaire
-  };
-
-  return {
-    // État
-    isAuthenticated,
-    user,
-    accessToken,
-    isLoading,
-    error,
-    
-    // Actions
-    login: handleLogin,
-    loginWithGoogle: handleGoogleLogin,
-    logout: handleLogout,
-    refreshAccessToken,
-    updateUserProfile,
-    clearError,
-    
-    // Utilitaires
-    checkTokenExpiration,
-    checkAuthStatus
+    clearError
   };
 };

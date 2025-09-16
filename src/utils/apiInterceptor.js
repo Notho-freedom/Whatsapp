@@ -1,4 +1,4 @@
-import { useAuthStore } from '@/stores/authStore';
+import { auth } from '@/config/firebase';
 
 /**
  * Intercepteur pour les requêtes API
@@ -8,6 +8,26 @@ class ApiInterceptor {
   constructor() {
     this.isRefreshing = false;
     this.failedQueue = [];
+    this.getToken = async () => {
+      if (auth?.currentUser) {
+        try {
+          return await auth.currentUser.getIdToken();
+        } catch (e) {
+          return null;
+        }
+      }
+      return null;
+    };
+    this.refreshToken = async () => {
+      if (auth?.currentUser) {
+        try {
+          return await auth.currentUser.getIdToken(true);
+        } catch (e) {
+          return null;
+        }
+      }
+      return null;
+    };
   }
 
   /**
@@ -29,16 +49,8 @@ class ApiInterceptor {
    * Vérifie et rafraîchit le token si nécessaire
    */
   async checkAndRefreshToken() {
-    const { checkTokenExpiration, refreshAccessToken, isAuthenticated } = useAuthStore.getState();
-    
-    if (!isAuthenticated) {
-      return null;
-    }
-
-    // Si le token est encore valide, ne rien faire
-    if (checkTokenExpiration()) {
-      return useAuthStore.getState().accessToken;
-    }
+    const token = await this.getToken();
+    if (token) return token;
 
     // Si déjà en train de rafraîchir, attendre
     if (this.isRefreshing) {
@@ -50,7 +62,7 @@ class ApiInterceptor {
     this.isRefreshing = true;
 
     try {
-      const newToken = await refreshAccessToken();
+      const newToken = await this.refreshToken();
       this.processQueue(null, newToken);
       return newToken;
     } catch (error) {
@@ -92,8 +104,6 @@ class ApiInterceptor {
           return await fetch(url, options);
         }
       } catch (error) {
-        // Si le rafraîchissement échoue, déconnecter l'utilisateur
-        useAuthStore.getState().logout();
         throw error;
       }
     }

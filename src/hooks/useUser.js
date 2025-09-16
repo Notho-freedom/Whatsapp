@@ -1,179 +1,130 @@
-'use client';
+"use client";
 
-import { useUserStore } from '../stores/userStore';
-import { useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import firebaseService from '@/utils/firebaseService';
+import { auth, db } from '@/config/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { collection, addDoc, getDocs, query, where, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 
 export const useUser = () => {
-  const {
+  const [currentUser, setCurrentUser] = useState(null);
+  const [contacts, setContacts] = useState([]);
+  const [preferences, setPreferences] = useState({ theme: 'light', language: 'fr' });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setCurrentUser(user);
+    });
+    return () => unsubscribe && unsubscribe();
+  }, []);
+
+  const loadContacts = useCallback(async () => {
+    if (!db || !currentUser) return [];
+    setIsLoading(true);
+    setError(null);
+    try {
+      const q = query(collection(db, 'contacts'), where('ownerId', '==', currentUser.uid));
+      const snap = await getDocs(q);
+      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      setContacts(list);
+      setIsLoading(false);
+      return list;
+    } catch (e) {
+      setIsLoading(false);
+      setError(e.message);
+      return [];
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (currentUser) {
+      loadContacts();
+    } else {
+      setContacts([]);
+    }
+  }, [currentUser, loadContacts]);
+
+  const addContact = useCallback(async (contact) => {
+    if (!db || !currentUser) return { success: false, error: 'Non connecté' };
+    try {
+      const docRef = await addDoc(collection(db, 'contacts'), {
+        ...contact,
+        ownerId: currentUser.uid,
+        created_at: new Date()
+      });
+      const newContact = { id: docRef.id, ...contact };
+      setContacts(prev => [...prev, newContact]);
+      return { success: true, contact: newContact };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  }, [currentUser]);
+
+  const updateContact = useCallback(async (contactId, updates) => {
+    if (!db) return { success: false, error: 'Firebase non initialisé' };
+    try {
+      await updateDoc(doc(db, 'contacts', contactId), { ...updates, updated_at: new Date() });
+      setContacts(prev => prev.map(c => c.id === contactId ? { ...c, ...updates } : c));
+      return { success: true };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  }, []);
+
+  const removeContact = useCallback(async (contactId) => {
+    if (!db) return { success: false, error: 'Firebase non initialisé' };
+    try {
+      await deleteDoc(doc(db, 'contacts', contactId));
+      setContacts(prev => prev.filter(c => c.id !== contactId));
+      return { success: true };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  }, []);
+
+  const setTheme = useCallback((theme) => {
+    setPreferences(prev => ({ ...prev, theme }));
+    document.documentElement.setAttribute('data-theme', theme);
+  }, []);
+
+  const setLanguage = useCallback((language) => {
+    setPreferences(prev => ({ ...prev, language }));
+  }, []);
+
+  const updateProfile = useCallback(async (updates) => {
+    if (!currentUser) return { success: false, error: 'Utilisateur non connecté' };
+    try {
+      await firebaseService.updateUser(currentUser.uid, updates);
+      return { success: true };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  }, [currentUser]);
+
+  const value = useMemo(() => ({
     currentUser,
     contacts,
-    users,
     preferences,
     isLoading,
-    error,
-    updateProfile,
-    updateProfilePhoto,
-    updateStatus,
-    addContact,
-    updateContact,
-    removeContact,
-    toggleFavoriteContact,
-    toggleBlockContact,
-    searchContacts,
-    getFavoriteContacts,
-    getBlockedContacts,
-    updatePreferences,
-    setTheme,
-    setLanguage,
-    updateNotificationSettings,
-    updatePrivacySettings,
-    updateChatSettings,
-    syncContacts,
-    loadContacts,
-    saveContacts,
-    clearError,
-    reset
-  } = useUserStore();
+    error
+  }), [currentUser, contacts, preferences, isLoading, error]);
 
-  // Chargement automatique des contacts au montage du composant
-  useEffect(() => {
-    if (contacts.length === 0) {
-      loadContacts();
-    }
-  }, [contacts.length, loadContacts]);
-
-  // Application automatique du thème
-  useEffect(() => {
-    if (preferences.theme) {
-      document.documentElement.setAttribute('data-theme', preferences.theme);
-    }
-  }, [preferences.theme]);
-
-  // Fonction de mise à jour du profil simplifiée
-  const handleUpdateProfile = async (updates) => {
-    try {
-      await updateProfile(updates);
-      return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
-    }
-  };
-
-  // Fonction d'ajout de contact simplifiée
-  const handleAddContact = async (contactData) => {
-    try {
-      const newContact = addContact(contactData);
-      await saveContacts();
-      return { success: true, contact: newContact };
-    } catch (error) {
-      return { success: false, error: error.message };
-    }
-  };
-
-  // Fonction de mise à jour de contact simplifiée
-  const handleUpdateContact = async (contactId, updates) => {
-    try {
-      updateContact(contactId, updates);
-      await saveContacts();
-      return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
-    }
-  };
-
-  // Fonction de suppression de contact simplifiée
-  const handleRemoveContact = async (contactId) => {
-    try {
-      removeContact(contactId);
-      await saveContacts();
-      return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
-    }
-  };
-
-  // Fonction de synchronisation simplifiée
-  const handleSyncContacts = async () => {
-    try {
-      await syncContacts();
-      return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
-    }
-  };
-
-  // Fonction de changement de thème avec application immédiate
-  const handleSetTheme = (theme) => {
-    setTheme(theme);
-    document.documentElement.setAttribute('data-theme', theme);
-  };
-
-  // Fonction de recherche de contacts avec debounce
-  const handleSearchContacts = (query) => {
-    return searchContacts(query);
-  };
-
-  // Fonction de gestion des favoris
-  const handleToggleFavorite = async (contactId) => {
-    try {
-      toggleFavoriteContact(contactId);
-      await saveContacts();
-      return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
-    }
-  };
-
-  // Fonction de gestion du blocage
-  const handleToggleBlock = async (contactId) => {
-    try {
-      toggleBlockContact(contactId);
-      await saveContacts();
-      return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
-    }
+  const searchContacts = (queryText) => {
+    const q = (queryText || '').toLowerCase();
+    return contacts.filter(c => (c.name || '').toLowerCase().includes(q) || (c.phone || '').includes(queryText));
   };
 
   return {
-    // État
-    currentUser,
-    contacts,
-    users,
-    preferences,
-    isLoading,
-    error,
-    
-    // Actions de profil
-    updateProfile: handleUpdateProfile,
-    updateProfilePhoto,
-    updateStatus,
-    
-    // Actions de contacts
-    addContact: handleAddContact,
-    updateContact: handleUpdateContact,
-    removeContact: handleRemoveContact,
-    toggleFavoriteContact: handleToggleFavorite,
-    toggleBlockContact: handleToggleBlock,
-    searchContacts: handleSearchContacts,
-    getFavoriteContacts,
-    getBlockedContacts,
-    
-    // Actions de préférences
-    updatePreferences,
-    setTheme: handleSetTheme,
-    setLanguage,
-    updateNotificationSettings,
-    updatePrivacySettings,
-    updateChatSettings,
-    
-    // Actions de synchronisation
-    syncContacts: handleSyncContacts,
+    ...value,
     loadContacts,
-    saveContacts,
-    
-    // Utilitaires
-    clearError,
-    reset
+    addContact,
+    updateContact,
+    removeContact,
+    setTheme,
+    setLanguage,
+    updateProfile,
+    searchContacts
   };
 };
