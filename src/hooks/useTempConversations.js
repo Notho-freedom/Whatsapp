@@ -29,7 +29,7 @@ export const useTempConversations = () => {
     try {
       console.log('🔄 Chargement des conversations temporaires...');
       
-                                                 const response = await fetch(`${API_ENDPOINTS.CONVERSATIONS}?is_temporary=true`);
+      const response = await fetch(`${API_ENDPOINTS.CONVERSATIONS}?is_temporary=true`);
       if (!response.ok) {
         throw new Error('Erreur lors de la récupération des conversations temporaires');
       }
@@ -42,14 +42,7 @@ export const useTempConversations = () => {
         id: conv.id,
         name: conv.name,
         avatar: conv.avatar_url || conv.avatar || '/default-avatar.png',
-        lastMessage: {
-          text: 'Conversation temporaire',
-          type: 'text',
-          time: new Date(conv.updated_at).toLocaleTimeString('fr-FR', { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-          })
-        },
+        lastMessage: json.parse(conv.last_message || '{}'),
         lastMessageTime: new Date(conv.updated_at).toLocaleTimeString('fr-FR', { 
           hour: '2-digit', 
           minute: '2-digit' 
@@ -100,7 +93,7 @@ export const useTempConversations = () => {
    */
   const cleanupOldConversations = async () => {
     try {
-                                                 const response = await fetch(`${API_ENDPOINTS.CONVERSATIONS}?is_temporary=true`, {
+        const response = await fetch(`${API_ENDPOINTS.CONVERSATIONS}?is_temporary=true`, {
         method: 'DELETE'
       });
       

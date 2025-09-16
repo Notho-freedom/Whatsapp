@@ -18,33 +18,18 @@ export default function CallPanel() {
     return null;
   }
 
-  // Générer des données d'appels récents basées sur les utilisateurs
-  const generateRecentCalls = () => {
-    const callTypes = ['incoming', 'outgoing', 'missed'];
-    const times = ['Just now', '2 minutes ago', '5 minutes ago', '10 minutes ago', '1 hour ago', '2 hours ago', 'Yesterday', '2 days ago'];
-    
-    return users.slice(0, 15).map((user, index) => {
-      const callType = callTypes[Math.floor(Math.random() * callTypes.length)];
-      const isVideo = Math.random() > 0.7; // 30% de chance d'être un appel vidéo
-      const time = times[Math.floor(Math.random() * times.length)];
-      const duration = callType === 'missed' ? null : `${Math.floor(Math.random() * 10) + 1}:${String(Math.floor(Math.random() * 60)).padStart(2, '0')}`;
-      const missedCount = callType === 'missed' ? Math.floor(Math.random() * 3) + 1 : 0;
-      
-      return {
-        id: user.id,
-        name: user.name,
-        avatar: user.avatar,
-        phone: user.phone,
-        type: callType,
-        time,
-        duration,
-        missedCount,
-        isVideo: isVideo
-      };
-    });
-  };
-
-  const recentCalls = generateRecentCalls();
+  // Utiliser les données réelles des utilisateurs pour les appels récents
+  const recentCalls = users.slice(0, 15).map((user) => ({
+    id: user.id,
+    name: user.name,
+    avatar: user.avatar,
+    phone: user.phone,
+    type: 'outgoing', // Type par défaut
+    time: 'Recently',
+    duration: null,
+    missedCount: 0,
+    isVideo: false
+  }));
 
   // Filtrer les appels selon la recherche
   const filteredCalls = recentCalls.filter(call =>

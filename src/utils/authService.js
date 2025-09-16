@@ -4,24 +4,6 @@ class AuthService {
     this.baseURL = '/api/auth';
   }
 
-  // Connexion avec email/mot de passe
-  async login(credentials) {
-    const response = await fetch(`${this.baseURL}/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(credentials),
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error || 'Erreur de connexion');
-    }
-
-    return response.json();
-  }
-
   // Connexion avec Google
   async loginWithGoogle(token) {
     const response = await fetch(`${this.baseURL}/google`, {

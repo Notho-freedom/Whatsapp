@@ -95,7 +95,7 @@ export default function OutgoingCall({ callData, onCancel, onToggleSpeaker }) {
           {/* Avatar */}
           <div className="w-32 h-32 bg-[#3D3D3D] rounded-full flex items-center justify-center mx-auto mb-6 relative">
             <img 
-              src={callData?.participant?.avatar || '/default-avatar.jpg'} 
+              src={callData?.participant?.avatar || '/api/placeholder/112/112'} 
               alt={callData?.participant?.name}
               className="w-28 h-28 rounded-full object-cover"
             />

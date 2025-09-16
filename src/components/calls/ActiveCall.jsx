@@ -109,7 +109,7 @@ export default function ActiveCall({ callData, onEndCall, onToggleMute, onToggle
           {/* Main Video */}
           <div className="absolute inset-0">
             <img 
-              src={callData?.participant?.avatar || '/default-avatar.jpg'} 
+              src={callData?.participant?.avatar || '/api/placeholder/400/300'} 
               alt="Participant"
               className="w-full h-full object-cover"
             />
@@ -118,7 +118,7 @@ export default function ActiveCall({ callData, onEndCall, onToggleMute, onToggle
                      {/* Self Video (Picture in Picture) */}
            <div className="absolute top-3 right-3 w-24 h-18 bg-gray-800 rounded overflow-hidden border border-white">
              <img 
-               src="/self-avatar.jpg" 
+               src="/api/placeholder/96/72" 
                alt="You"
                className="w-full h-full object-cover"
              />
@@ -153,7 +153,7 @@ export default function ActiveCall({ callData, onEndCall, onToggleMute, onToggle
            <div className="text-center mb-6">
              <div className="w-20 h-20 bg-[#3D3D3D] rounded-full flex items-center justify-center mx-auto mb-3">
                <img 
-                 src={callData?.participant?.avatar || '/default-avatar.jpg'} 
+                 src={callData?.participant?.avatar || '/api/placeholder/64/64'} 
                  alt={callData?.participant?.name}
                  className="w-16 h-16 rounded-full object-cover"
                />

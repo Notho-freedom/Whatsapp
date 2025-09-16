@@ -1,30 +1,64 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { LucideEdit, Pin, BellOff, Star, Search, Mic, Video, Image, FileText, Link, Music, MapPinMinus, SmileIcon } from 'lucide-react';
+import {
+  LucideEdit,
+  Pin,
+  BellOff,
+  Star,
+  Search,
+  Mic,
+  Video,
+  Phone,
+  Image,
+  FileText,
+  Link,
+  Music,
+  MapPinMinus,
+  SmileIcon,
+} from 'lucide-react';
 import { useAppContext } from '@/context';
 import { StatusCircle } from '@/components/ui';
+import Avatar from '@/components/ui/Avatar';
 import Lenis from '@studio-freight/lenis';
 import { useChatContextMenu } from '@/hooks';
 import { useGoogleContacts } from '@/hooks';
-import { useContacts } from '@/hooks';
-import { useRealtime } from '@/hooks';
-import apiInterceptor from '@/utils/apiInterceptor';
+import { useAutoAvatarPreloader } from '@/hooks';
+import { userService } from '@/utils';
 import { API_ENDPOINTS } from '@/utils/config';
+import ContactList from './ContactList';
 
-export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect, currentUser }) {
+export default function ChatList({
+  onChatSelect,
+  selectedChatId,
+  onStatusSelect
+}) {
   const [isClient, setIsClient] = useState(false);
   const [showContacts, setShowContacts] = useState(false);
   const [notification, setNotification] = useState(null);
-  const { filteredUsers, contacts: appContacts, searchQuery, setSearchQuery, addUser } = useAppContext();
-  const { contacts: googleContacts, isLoading: contactsLoading, error: contactsError } = useGoogleContacts();
-  const { createContact, fetchContacts } = useContacts();
-  
+  const {
+    filteredUsers,
+    contacts: appContacts,
+    searchQuery,
+    setSearchQuery,
+    addUser,
+  } = useAppContext();
+  const {
+    contacts: googleContacts,
+    isLoading: contactsLoading,
+    error: contactsError,
+  } = useGoogleContacts();
+  const [showFirebaseUsers, setShowFirebaseUsers] = useState(false);
+  const [firebaseUsers, setFirebaseUsers] = useState([]);
+  const [firebaseLoading, setFirebaseLoading] = useState(false);
   // Hook temps réel pour la présence et les notifications
-  const currentUserId = 'default-user'; // À remplacer par l'ID utilisateur réel
-  const { presence, notifications, sendNotification } = useRealtime(currentUserId);
+  const currentUser = JSON.parse(localStorage.getItem('userData'));
   const scrollRef = useRef(null);
-  
+
+  // Préchargement automatique des avatars
+  useAutoAvatarPreloader(filteredUsers, 'chats');
+  useAutoAvatarPreloader(googleContacts, 'contacts');
+
   // Hook pour les menus contextuels natifs d'Electron
   const nativeChatMenu = useChatContextMenu((actionId, data) => {
     console.log('Action de menu contextuel de chat:', actionId, data);
@@ -32,12 +66,27 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect,
   });
 
   useEffect(() => {
+    async function loadUsers() {
+      try {
+        const fuser = await userService.getAllUsers();
+        setFirebaseUsers(fuser);
+      } catch (err) {
+        console.error(
+          'Erreur lors du chargement des utilisateurs Firebase:',
+          err
+        );
+      }
+    }
+    loadUsers();
+  }, []);
+
+  useEffect(() => {
     setIsClient(true);
 
     if (scrollRef.current) {
       const lenis = new Lenis({
         duration: 1.2,
-        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        easing: t => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
         smoothWheel: true,
         smoothTouch: true,
         wrapper: scrollRef.current,
@@ -61,234 +110,165 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect,
     return null;
   }
 
-  const handleSearchChange = (e) => {
+  const handleSearchChange = e => {
     setSearchQuery(e.target.value);
   };
 
   // Fonction pour créer une conversation avec un contact
-  const createConversationWithContact = async (contact) => {
+  const createConversationWithContact = async contact => {
+    if (!currentUser || !currentUser.id) {
+      setNotification({
+        type: 'error',
+        message: 'Utilisateur courant non défini.',
+        timestamp: new Date(),
+      });
+      return;
+    }
+
+    // 1. Chercher si une conversation existe déjà (par ID utilisateur)
+    const existing = filteredUsers.find(
+      chat =>
+        (chat.contact?.id && contact.id && chat.contact.id === contact.id) ||
+        (chat.id && contact.id && chat.id === contact.id) // fallback si structure différente
+    );
+    if (existing) {
+      onChatSelect(existing);
+      setShowContacts(false);
+      setShowFirebaseUsers(false);
+      setNotification({
+        type: 'success',
+        message: `Conversation déjà existante avec ${existing.name}`,
+        timestamp: new Date(),
+      });
+      setTimeout(() => setNotification(null), 2000);
+      return;
+    }
+
+    // 2. Construction des données pour la nouvelle conversation
+    const contactName =
+      contact.displayName || contact.name || 'Nouveau contact';
+    const contactAvatar =
+      contact.photos?.[0]?.url || contact.avatar || '/default-avatar.png';
+    const contactId = contact.id || `temp-contact-${Date.now()}`;
+
+    const conversationPayload = {
+      type: 'individual',
+      name: contactName,
+      avatar_url: contactAvatar,
+      description: `Conversation avec ${contactName}`,
+      created_by: currentUser.id,
+      participants: [currentUser.id, contactId],
+      is_temporary: true,
+      custom_settings: JSON.stringify({
+        isTemporary: true,
+        contact: {
+          ...contact,
+          id: contactId,
+        },
+      lastMessage: { text: 'Nouvelle conversation', type: 'text', time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) },
+      }),
+    };
+
+    // 3. Création de la conversation côté serveur
     try {
-      // Vérifier si l'utilisateur est authentifié
       const token = localStorage.getItem('accessToken');
-      if (!token) {
-              // Si pas d'authentification, créer un chat temporaire dans la base de données
-      try {
-        const response = await fetch(API_ENDPOINTS.CONVERSATIONS, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            type: 'individual',
-            name: contact.displayName || contact.name || 'Nouveau contact',
-            avatar_url: contact.photos?.[0]?.url || '/default-avatar.png',
-            description: `Conversation avec ${contact.displayName || contact.name || 'Nouveau contact'}`,
-            created_by: currentUser?.id || 1,
-            is_temporary: true,
-            custom_settings: JSON.stringify({ 
-              isTemporary: true, 
-              contact: contact 
-            })
-          })
-        });
+      const response = await fetch(API_ENDPOINTS.CONVERSATIONS, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(conversationPayload),
+      });
 
-        if (!response.ok) {
-          throw new Error('Erreur lors de la création de la conversation temporaire');
-        }
-
-        const data = await response.json();
-        const tempConversation = data.conversation;
-
-          const fallbackChat = {
-            id: tempConversation.id,
-            name: tempConversation.name,
-            avatar: tempConversation.avatar_url || tempConversation.avatar || '/default-avatar.png',
-            lastMessage: {
-              text: 'Nouvelle conversation',
-              type: 'text',
-              time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-            },
-            lastMessageTime: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
-            unreadCount: 0,
-            isPinned: false,
-            isMuted: false,
-            isTyping: false,
-            contact: tempConversation.custom_settings?.contact || tempConversation.contact,
-            isNewConversation: true,
-            isTemporary: true
-          };
-
-          // Ajouter le chat temporaire à la liste
-          addUser(fallbackChat);
-          onChatSelect(fallbackChat);
-          setShowContacts(false);
-
-          setNotification({
-            type: 'success',
-            message: `Conversation temporaire créée avec ${fallbackChat.name}`,
-            timestamp: new Date()
-          });
-          setTimeout(() => setNotification(null), 3000);
-
-          return;
-        } catch (error) {
-          console.error('❌ Erreur lors de la création de la conversation temporaire:', error);
-          
-          // Fallback en cas d'erreur
-          const fallbackChat = {
-            id: `temp-${Date.now()}`,
-            name: contact.displayName || contact.name || 'Nouveau contact',
-            avatar: contact.photos?.[0]?.url || '/default-avatar.png',
-            lastMessage: {
-              text: 'Nouvelle conversation',
-              type: 'text',
-              time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-            },
-            lastMessageTime: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
-            unreadCount: 0,
-            isPinned: false,
-            isMuted: false,
-            isTyping: false,
-            contact: contact,
-            isNewConversation: true,
-            isTemporary: true
-          };
-
-          addUser(fallbackChat);
-          onChatSelect(fallbackChat);
-          setShowContacts(false);
-        }
-      }
-
-      // Créer un contact temporaire directement
-      const newContact = {
-        id: `temp-contact-${Date.now()}`,
-        first_name: contact.displayName?.split(' ')[0] || contact.name?.split(' ')[0] || 'Contact',
-        last_name: contact.displayName?.split(' ').slice(1).join(' ') || contact.name?.split(' ').slice(1).join(' ') || '',
-        email: contact.emails?.[0]?.value || '',
-        phone: contact.phones?.[0]?.value || '',
-        avatar_url: contact.photos?.[0]?.url || '/default-avatar.png',
-        is_favorite: false,
-        labels: [],
-        notes: '',
-        company: '',
-        job_title: '',
-        birthday: null,
-        address: '',
-        website: '',
-        isTemporary: true
-      };
-
-      // Créer une conversation temporaire avec ce contact
-                      const response = await fetch(API_ENDPOINTS.CONVERSATIONS, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            type: 'individual',
-            name: contact.displayName || contact.name || 'Nouveau contact',
-            avatar_url: contact.photos?.[0]?.url || '/default-avatar.png',
-            description: `Conversation avec ${contact.displayName || contact.name || 'Nouveau contact'}`,
-            created_by: currentUser?.id || 1,
-            is_temporary: true,
-            custom_settings: JSON.stringify({ 
-              isTemporary: true, 
-              contact: newContact 
-            })
-          })
-        });
-
-      if (!response.ok) {
-        throw new Error('Erreur lors de la création de la conversation temporaire');
-      }
+      if (!response.ok)
+        throw new Error('Erreur lors de la création de la conversation');
 
       const { conversation } = await response.json();
 
-      // Créer un objet chat pour l'interface
       const newChat = {
         id: conversation.id,
-        name: conversation.name || contact.displayName || contact.name,
-        avatar: conversation.avatar_url || contact.photos?.[0]?.url || '/default-avatar.png',
+        name: conversation.name,
+        avatar: conversation.avatar_url,
         lastMessage: {
           text: 'Nouvelle conversation',
           type: 'text',
-          time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+          time: new Date().toLocaleTimeString('fr-FR', {
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
         },
-        lastMessageTime: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+        lastMessageTime: new Date().toLocaleTimeString('fr-FR', {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
         unreadCount: 0,
         isPinned: false,
         isMuted: false,
         isTyping: false,
-        contact: newContact,
-        isNewConversation: true
+        contact: { ...contact, id: contactId },
+        isNewConversation: true,
+        isTemporary: true,
       };
 
-      // Ajouter le nouveau chat à la liste des conversations
       addUser(newChat);
-
-      // Sélectionner le nouveau chat
       onChatSelect(newChat);
-
-      // Fermer la vue contacts et revenir aux chats
       setShowContacts(false);
+      setShowFirebaseUsers(false);
 
-      // Émettre un événement pour notifier l'application
-      window.dispatchEvent(new CustomEvent('conversation-created', { 
-        detail: { 
-          conversation: newChat,
-          contact: newContact,
-          timestamp: new Date()
-        } 
-      }));
-
-      console.log('✅ Conversation créée avec succès:', newChat);
-
-      // Afficher une notification de succès
       setNotification({
         type: 'success',
         message: `Conversation créée avec ${newChat.name}`,
-        timestamp: new Date()
+        timestamp: new Date(),
       });
+      setTimeout(() => setNotification(null), 2000);
 
-      // Masquer la notification après 3 secondes
-      setTimeout(() => setNotification(null), 3000);
-
+      window.dispatchEvent(
+        new CustomEvent('conversation-created', {
+          detail: {
+            conversation: newChat,
+            contact: { ...contact, id: contactId },
+            timestamp: new Date(),
+          },
+        })
+      );
     } catch (error) {
-      console.error('❌ Erreur lors de la création de la conversation temporaire:', error);
-      
-      // Fallback: créer un chat temporaire en mémoire
+      // Fallback local en cas d'échec serveur
       const fallbackChat = {
         id: `temp-${Date.now()}`,
-        name: contact.displayName || contact.name || 'Nouveau contact',
-        avatar: contact.photos?.[0]?.url || '/default-avatar.png',
+        name: contactName,
+        avatar: contactAvatar,
         lastMessage: {
           text: 'Nouvelle conversation',
           type: 'text',
-          time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+          time: new Date().toLocaleTimeString('fr-FR', {
+            hour: '2-digit',
+            minute: '2-digit',
+          }),
         },
-        lastMessageTime: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+        lastMessageTime: new Date().toLocaleTimeString('fr-FR', {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
         unreadCount: 0,
         isPinned: false,
         isMuted: false,
         isTyping: false,
-        contact: contact,
+        contact: { ...contact, id: contactId },
         isNewConversation: true,
-        isTemporary: true
+        isTemporary: true,
       };
-
-      // Ajouter le chat temporaire à la liste
       addUser(fallbackChat);
       onChatSelect(fallbackChat);
       setShowContacts(false);
+      setShowFirebaseUsers(false);
 
-      // Afficher une notification d'erreur
       setNotification({
         type: 'error',
-        message: `Conversation temporaire créée (mode fallback)`,
-        timestamp: new Date()
+        message: `Conversation temporaire créée (mode local)`,
+        timestamp: new Date(),
       });
-      setTimeout(() => setNotification(null), 3000);
+      setTimeout(() => setNotification(null), 2000);
     }
   };
 
@@ -297,18 +277,17 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect,
     // D'abord par statut épinglé
     if (a.isPinned && !b.isPinned) return -1;
     if (!a.isPinned && b.isPinned) return 1;
-    
+
     // Ensuite par temps (plus récent en premier)
     const timeA = new Date(a.lastMessageTime || 0);
     const timeB = new Date(b.lastMessageTime || 0);
     return timeB - timeA;
   });
 
-
   const MessageIcon = ({ type }) => {
-    const iconProps = { size: 14, className: "text-gray-400 mr-1" };
-    
-    switch(type) {
+    const iconProps = { size: 14, className: 'text-gray-400 mr-1' };
+
+    switch (type) {
       case 'voice':
         return <Mic {...iconProps} />;
       case 'video':
@@ -330,35 +309,50 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect,
     }
   };
 
-  const renderLastMessage = (chat) => {
+  const renderLastMessage = chat => {
     if (chat.isTyping) {
-      return <span className="text-[#1DAA61] truncate w-[100%]">{chat.name} is typing...</span>;
+      return (
+        <span className="text-[#1DAA61] truncate w-[100%]">
+          {chat.name} is typing...
+        </span>
+      );
     }
-    
+
     return (
       <>
         <MessageIcon type={chat.lastMessage.type} />
         <span className="truncate">
-          {((chat.lastMessage.type === 'voice') || (chat.lastMessage.type === 'voices')) && `Voice message (${chat.lastMessage.duration || '0:23'})`}
-          {((chat.lastMessage.type === 'video') || (chat.lastMessage.type === 'videos')) && `Video (${chat.lastMessage.duration || '1:45'})`}
-          {((chat.lastMessage.type === 'audio') || (chat.lastMessage.type === 'audios')) && `Audio (${chat.lastMessage.duration || '3:12'})`}
-          {((chat.lastMessage.type === 'document') || (chat.lastMessage.type === 'documents')) && `${chat.lastMessage.text} • ${chat.lastMessage.size || '2.4 MB'}`}
-          {!['voice', 'video', 'audio', 'document'].includes(chat.lastMessage.type) && chat.lastMessage.text}
+          {(chat.lastMessage.type === 'voice' ||
+            chat.lastMessage.type === 'voices') &&
+            `Voice message (${chat.lastMessage.duration || '0:23'})`}
+          {(chat.lastMessage.type === 'video' ||
+            chat.lastMessage.type === 'videos') &&
+            `Video (${chat.lastMessage.duration || '1:45'})`}
+          {(chat.lastMessage.type === 'audio' ||
+            chat.lastMessage.type === 'audios') &&
+            `Audio (${chat.lastMessage.duration || '3:12'})`}
+          {(chat.lastMessage.type === 'document' ||
+            chat.lastMessage.type === 'documents') &&
+            `${chat.lastMessage.text} • ${chat.lastMessage.size || '2.4 MB'}`}
+          {!['voice', 'video', 'audio', 'document'].includes(
+            chat.lastMessage.type
+          ) && chat.lastMessage.text}
         </span>
       </>
     );
   };
 
-
   return (
     <div className="h-full flex flex-col pl-1.5 relative">
       {/* Notification */}
       {notification && (
-        <div className={`absolute top-4 left-4 right-4 z-50 p-3 rounded-lg shadow-lg transition-all duration-300 ${
-          notification.type === 'success' 
-            ? 'bg-green-600 text-white' 
-            : 'bg-red-600 text-white'
-        }`}>
+        <div
+          className={`absolute top-4 left-4 right-4 z-50 p-3 rounded-lg shadow-lg transition-all duration-300 ${
+            notification.type === 'success'
+              ? 'bg-green-600 text-white'
+              : 'bg-red-600 text-white'
+          }`}
+        >
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium">
               {notification.type === 'success' ? '✅ ' : '❌ '}
@@ -378,14 +372,14 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect,
       <div className="pl-4 pt-4 pr-2 mb-4">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-white font-semibold text-xl font-segoe">
-            {showContacts ? 'Contacts' : 'Chats'}
+            {showContacts ? 'Contacts' : showFirebaseUsers ? 'Users' : 'Chats'}
           </h2>
           <div className="flex items-center gap-2">
             <button
               aria-label="New chat"
               className={`p-2 rounded-md transition-colors ${
-                showContacts 
-                  ? 'bg-whatsapp-dark-700 text-white' 
+                showContacts
+                  ? 'bg-whatsapp-dark-700 text-white'
                   : 'hover:bg-whatsapp-dark-700 text-gray-200'
               }`}
               onClick={() => setShowContacts(!showContacts)}
@@ -393,26 +387,44 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect,
               <LucideEdit size={16} className="text-gray-200" />
             </button>
             <button
+              aria-label="Firebase users"
+              className={`p-2 rounded-md transition-colors ${
+                showFirebaseUsers
+                  ? 'bg-whatsapp-dark-700 text-white'
+                  : 'hover:bg-whatsapp-dark-700 text-gray-200'
+              }`}
+              onClick={() => {
+                setShowContacts(false);
+                setShowFirebaseUsers(v => !v);
+              }}
+            >
+              <span role="img" aria-label="firebase">
+                🔥
+              </span>
+            </button>
+            <button
               aria-label="Filter chats"
               className="p-2 rounded-md hover:bg-whatsapp-dark-700 transition-colors"
               onClick={() => {
                 // Ouvrir le filtre des chats
-                window.dispatchEvent(new CustomEvent('filter-chats', { 
-                  detail: { action: 'open' } 
-                }));
+                window.dispatchEvent(
+                  new CustomEvent('filter-chats', {
+                    detail: { action: 'open' },
+                  })
+                );
               }}
             >
-              <svg 
-                width="18" 
-                height="18" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
                 className="text-gray-200"
               >
-                <path d="M4 7H20" strokeWidth="2" strokeLinecap="round"/>
-                <path d="M6 12H18" strokeWidth="2" strokeLinecap="round"/>
-                <path d="M8 17H16" strokeWidth="2" strokeLinecap="round"/>
+                <path d="M4 7H20" strokeWidth="2" strokeLinecap="round" />
+                <path d="M6 12H18" strokeWidth="2" strokeLinecap="round" />
+                <path d="M8 17H16" strokeWidth="2" strokeLinecap="round" />
               </svg>
             </button>
           </div>
@@ -420,15 +432,21 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect,
 
         {/* Search */}
         <div className="relative">
-          
-          <input 
-            className="w-full max-h-8 bg-[#3D3D3D] text-white placeholder-gray-200 placeholder:text-sm py-2 pl-8 pr-3 rounded-[0.30rem] border-b border-white/50 backdrop-blur-lg focus:outline-none focus:ring-none focus:border-b-2 focus:border-[#1DAA61] focus:bg-[#202020]" 
-            placeholder={showContacts ? "Rechercher des contacts" : "Search or start a new chat"} 
+          <input
+            className="w-full max-h-8 bg-[#3D3D3D] text-white placeholder-gray-200 placeholder:text-sm py-2 pl-8 pr-3 rounded-[0.30rem] border-b border-white/50 backdrop-blur-lg focus:outline-none focus:ring-none focus:border-b-2 focus:border-[#1DAA61] focus:bg-[#202020]"
+            placeholder={
+              showContacts
+                ? 'Rechercher des contacts'
+                : 'Search or start a new chat'
+            }
             type="text"
             onChange={handleSearchChange}
             value={searchQuery}
           />
-          <Search size={12} className="absolute left-3 top-1/2 -translate-y-1/3 text-gray-200 text-xs rotate-90 weigth-thin" />
+          <Search
+            size={12}
+            className="absolute left-3 top-1/2 -translate-y-1/3 text-gray-200 text-xs rotate-90 weigth-thin"
+          />
         </div>
       </div>
 
@@ -436,89 +454,48 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect,
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-1 chat-list">
         <div>
           {showContacts ? (
-            // Mode Contacts
-            contactsLoading ? (
-              <div className="p-4 text-center text-gray-400">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#1DAA61] mx-auto mb-2"></div>
-                <p>Chargement des contacts...</p>
-              </div>
-            ) : contactsError ? (
-              <div className="p-4 text-center text-gray-400">
-                <div className="text-red-400 text-6xl mb-4">⚠️</div>
-                <p className="text-red-300 mb-2">Erreur lors du chargement des contacts</p>
-                <p className="text-sm text-gray-500">Utilisation de contacts de démonstration</p>
-                <button
-                  onClick={() => window.location.reload()}
-                  className="mt-3 px-4 py-2 bg-[#1DAA61] text-white rounded-lg hover:bg-[#1DAA61]/80 transition-colors"
-                >
-                  Réessayer
-                </button>
-              </div>
-            ) : googleContacts && googleContacts.length > 0 ? (
-              googleContacts.map((contact) => (
-                <div
-                  key={contact.id}
-                  onClick={() => createConversationWithContact(contact)}
-                  className="flex items-center gap-3 p-2 mt-1 cursor-pointer rounded-lg hover:bg-neutral-700/50 transition-colors"
-                >
-                  {/* Avatar du contact */}
-                  <div className="relative">
-                    <img
-                      src={contact.photos?.[0]?.url || '/default-avatar.png'}
-                      alt={`${contact.displayName || contact.name} profile picture`}
-                      className="w-12 h-12 rounded-full object-cover"
-                    />
-                  </div>
-
-                  {/* Info du contact */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-white font-semibold text-sm font-segoe truncate">
-                        {contact.displayName || contact.name || 'Contact sans nom'}
-                      </h3>
-                    </div>
-                    <div className="flex items-center mt-1">
-                      <p className="text-sm text-gray-300 truncate">
-                        {contact.phones?.[0]?.value || contact.emails?.[0]?.value || 'Aucune information'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="p-4 text-center text-gray-400">
-                <p>Aucun contact trouvé</p>
-              </div>
-            )
+            <ContactList
+              users={googleContacts}
+              onSelect={createConversationWithContact}
+              emptyMessage="Aucun contact trouvé"
+              loading={contactsLoading}
+            />
+          ) : showFirebaseUsers ? (
+            <ContactList
+              users={firebaseUsers}
+              onSelect={createConversationWithContact}
+              emptyMessage="Aucun utilisateur Firebase trouvé"
+              loading={firebaseLoading}
+            />
+          ) : filteredUsers.length === 0 ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1DAA61] mt-[45%]"></div>
+            </div>
+          ) : sortedUsers.length === 0 ? (
+            <div className="p-4 text-center text-gray-400">
+              <p>Aucune conversation trouvée</p>
+            </div>
           ) : (
-                         // Mode Chats
-             filteredUsers.length === 0 ? (
-               <div className="flex items-center justify-center h-full">
-                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1DAA61] mt-[45%]"></div>
-               </div>
-             ) : sortedUsers.length === 0 ? (
-              <div className="p-4 text-center text-gray-400">
-                <p>Aucune conversation trouvée</p>
-              </div>
-            ) : (
-              sortedUsers.map((chat) => (
+            sortedUsers.map(chat => (
               <div
                 key={chat.id}
                 onClick={() => {
                   onChatSelect(chat);
-                  
+
                   // Émettre un événement pour notifier l'application
-                  window.dispatchEvent(new CustomEvent('chat-selected', { 
-                    detail: { 
-                      chat,
-                      timestamp: new Date()
-                    } 
-                  }));
+                  window.dispatchEvent(
+                    new CustomEvent('chat-selected', {
+                      detail: {
+                        chat,
+                        timestamp: new Date(),
+                      },
+                    })
+                  );
                 }}
                 className={`flex items-center gap-3 p-2 mt-1 cursor-pointer rounded-lg hover:bg-neutral-700/50 transition-colors ${
                   selectedChatId === chat.id ? 'bg-neutral-700' : ''
                 }`}
-                onContextMenu={(e) => {
+                onContextMenu={e => {
                   // Menu contextuel natif Electron (priorité)
                   if (nativeChatMenu.isElectron) {
                     nativeChatMenu.handleContextMenu(e, {
@@ -527,31 +504,40 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect,
                       isPinned: chat.isPinned,
                       isMuted: chat.isMuted,
                       unreadCount: chat.unreadCount,
-                      lastMessage: chat.lastMessage
+                      lastMessage: chat.lastMessage,
                     });
                   }
                 }}
               >
                 {/* Avatar avec cercles de statuts */}
-                <div 
+                <div
                   className={`relative w-14 h-14`}
-                  onClick={(e) => {
+                  onClick={e => {
                     e.stopPropagation(); // Empêcher le clic sur le chat
-                    if (chat.statuses && chat.statuses.length > 0 && onStatusSelect) {
+                    if (
+                      chat.statuses &&
+                      chat.statuses.length > 0 &&
+                      onStatusSelect
+                    ) {
                       // Naviguer vers les statuts de cet utilisateur
                       onStatusSelect({
                         ...chat.statuses[0],
                         userId: chat.id,
-                        user: chat
+                        user: chat,
                       });
                     }
                   }}
                 >
-                  <StatusCircle statusCircles={chat.statusCircles} size="default">
-                    <img
+                  <StatusCircle
+                    statusCircles={chat.statusCircles}
+                    size="default"
+                  >
+                    <Avatar
                       src={chat.avatar}
                       alt={`${chat.name} profile picture`}
-                      className="w-full h-full p-0.5 rounded-full object-cover"
+                      name={chat.name}
+                      size={48}
+                      className="w-full h-full p-0.5"
                     />
                   </StatusCircle>
                 </div>
@@ -562,37 +548,90 @@ export default function ChatList({ onChatSelect, selectedChatId, onStatusSelect,
                     <h3 className="text-white font-semibold text-sm font-segoe truncate flex items-center gap-1">
                       {chat.name}
                     </h3>
-                    <span className={`text-xs w-[35%] pl-2 text-right text-nowrap ${chat.unreadCount > 0 ? 'text-[#1DAA61]' : 'text-gray-300'}`}>
+                    <span
+                      className={`text-xs w-[35%] pl-2 text-right text-nowrap ${
+                        chat.unreadCount > 0
+                          ? 'text-[#1DAA61]'
+                          : 'text-gray-300'
+                      }`}
+                    >
                       {chat.lastMessageTime}
                     </span>
                   </div>
                   <div className="flex items-center mt-1">
-                  {/* Texte (occupe tout l'espace restant) */}
-                  <div className="flex items-center flex-1 min-w-0">
+                    {/* Texte (occupe tout l'espace restant) */}
+                    <div className="flex items-center flex-1 min-w-0">
                       <p className="text-sm text-gray-300 truncate flex items-center">
                         {renderLastMessage(chat)}
                       </p>
                     </div>
 
+                    {/* Icônes + badge alignés à droite */}
+                    <div className="flex items-center gap-1 ml-2 shrink-0">
+                      {/* Boutons d'appel */}
+                      <button
+                        onClick={e => {
+                          e.stopPropagation();
+                          window.dispatchEvent(
+                            new CustomEvent('start-call', {
+                              detail: {
+                                type: 'voice',
+                                participant: chat,
+                                fromChatList: true,
+                                timestamp: new Date(),
+                              },
+                            })
+                          );
+                        }}
+                        className="p-1 hover:bg-neutral-600 rounded transition-colors"
+                        aria-label={`Appeler ${chat.name}`}
+                      >
+                        <Phone
+                          size={12}
+                          className="text-gray-400 hover:text-[#1DAA61]"
+                        />
+                      </button>
+                      <button
+                        onClick={e => {
+                          e.stopPropagation();
+                          window.dispatchEvent(
+                            new CustomEvent('start-call', {
+                              detail: {
+                                type: 'video',
+                                participant: chat,
+                                fromChatList: true,
+                                timestamp: new Date(),
+                              },
+                            })
+                          );
+                        }}
+                        className="p-1 hover:bg-neutral-600 rounded transition-colors"
+                        aria-label={`Appel vidéo ${chat.name}`}
+                      >
+                        <Video
+                          size={12}
+                          className="text-gray-400 hover:text-[#1DAA61]"
+                        />
+                      </button>
 
-                  {/* Icônes + badge alignés à droite */}
-                  <div className="flex items-center gap-1 ml-2 shrink-0">
-                    {chat.isPinned && <Pin size={12} className="text-gray-400" />}
-                    {chat.isMuted && <BellOff size={12} className="text-gray-500" />}
+                      {chat.isPinned && (
+                        <Pin size={12} className="text-gray-400" />
+                      )}
+                      {chat.isMuted && (
+                        <BellOff size={12} className="text-gray-500" />
+                      )}
 
-                    {chat.unreadCount > 0 && (
-                      <span className="bg-[#1DAA61] text-whatsapp-dark-950 text-[11px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
-                        {chat.unreadCount}
-                      </span>
-                    )}
+                      {chat.unreadCount > 0 && (
+                        <span className="bg-[#1DAA61] text-whatsapp-dark-950 text-[11px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                          {chat.unreadCount}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-
                 </div>
               </div>
             ))
-          )
-        )}
+          )}
         </div>
       </div>
     </div>

@@ -10,7 +10,7 @@ export async function GET(request) {
     
     // Pour les conversations temporaires, pas besoin d'authentification
     if (isTemporary) {
-                  const conversations = await firebaseServerService.getTempConversations();
+      const conversations = await firebaseServerService.getTempConversations();
       return NextResponse.json({
         conversations,
         count: conversations.length
@@ -30,7 +30,7 @@ export async function GET(request) {
     
     // Pour l'instant, on utilise un utilisateur par défaut
     // TODO: Implémenter la vérification Firebase Auth
-    const user = { id: 1, name: 'Utilisateur par défaut' };
+    const user = localStorage.getItem('userData') ? JSON.parse(localStorage.getItem('userData')) : { id: 1, name: 'Utilisateur par défaut' };
 
     // Récupérer les paramètres de requête pour les conversations normales
     const limit = parseInt(searchParams.get('limit')) || 50;
