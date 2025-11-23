@@ -52,8 +52,25 @@ export default function ChatList({
   const [firebaseUsers, setFirebaseUsers] = useState([]);
   const [firebaseLoading, setFirebaseLoading] = useState(false);
   // Hook temps réel pour la présence et les notifications
-  const currentUser = JSON.parse(localStorage.getItem('userData'));
+  const [currentUser, setCurrentUser] = useState(null);
   const scrollRef = useRef(null);
+
+  // Charger l'utilisateur depuis localStorage uniquement côté client
+  useEffect(() => {
+    try {
+      const storedUser = typeof window !== 'undefined' ? localStorage.getItem('userData') : null;
+      if (storedUser && storedUser.trim() !== '') {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          setCurrentUser(parsedUser);
+        } catch (error) {
+          console.warn('⚠️ Erreur lors du parsing de userData dans ChatList:', error);
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ Erreur lors de la récupération de userData dans ChatList:', error);
+    }
+  }, []);
 
   // Préchargement automatique des avatars
   useAutoAvatarPreloader(filteredUsers, 'chats');
@@ -171,7 +188,7 @@ export default function ChatList({
 
     // 3. Création de la conversation côté serveur
     try {
-      const token = localStorage.getItem('accessToken');
+      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
       const response = await fetch(API_ENDPOINTS.CONVERSATIONS, {
         method: 'POST',
         headers: {

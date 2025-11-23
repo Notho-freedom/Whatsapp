@@ -43,7 +43,25 @@ export default function WhatsApp() {
   const [selectedStatus, setSelectedStatus] = React.useState(null); // État pour le statut sélectionné
   const [profileActiveTab, setProfileActiveTab] = React.useState('overview'); // État pour l'onglet actif du profil
   const [activeCall, setActiveCall] = React.useState(null); // État pour l'appel actif
-  const user = localStorage.getItem('userData') || null;
+  const [user, setUser] = React.useState(null);
+  
+  // Charger l'utilisateur depuis localStorage uniquement côté client
+  React.useEffect(() => {
+    setIsClient(true);
+    try {
+      const storedUser = typeof window !== 'undefined' ? localStorage.getItem('userData') : null;
+      if (storedUser) {
+        try {
+          const parsedUser = JSON.parse(storedUser);
+          setUser(parsedUser);
+        } catch (error) {
+          console.warn('⚠️ Erreur lors du parsing de userData:', error);
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ Erreur lors de la récupération de userData:', error);
+    }
+  }, []);
   
   // Initialiser le gestionnaire d'événements seulement côté client
   const eventManager = useEventManager();
@@ -59,7 +77,7 @@ export default function WhatsApp() {
   const { loadTempConversations, cleanupOldConversations } = useTempConversations();
   
   // Hook pour les fonctionnalités temps réel
-  const currentUserId = user?.uid || 'default-user';
+  const currentUserId = user?.id || user?.uid || 'default-user';
   const { 
     updatePresence, 
     listenToUserPresence, 
