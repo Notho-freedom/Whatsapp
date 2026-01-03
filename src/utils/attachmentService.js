@@ -75,33 +75,29 @@ class AttachmentService {
         }
       );
 
-      // Créer des messages pour chaque média
-      const messages = [];
-      for (const media of mediaResults) {
-        const messageData = {
-          type: 'media',
-          media: [media],
-          text: '',
-          sender: userId,
-          conversation_id: conversationId,
-          metadata: {
-            attachment_type: 'media',
-            media_count: 1,
-            source: 'gallery',
-          },
-        };
+      // Créer UN SEUL message pour tous les médias
+      const messageData = {
+        type: 'media',
+        media: mediaResults,
+        text: '',
+        sender: userId,
+        conversation_id: conversationId,
+        metadata: {
+          attachment_type: 'media',
+          media_count: mediaResults.length,
+          source: 'gallery',
+        },
+      };
 
-        const message = await firebaseServerService.saveMessage(
-          conversationId,
-          messageData
-        );
-        messages.push(message);
-      }
+      const message = await firebaseServerService.saveMessage(
+        conversationId,
+        messageData
+      );
 
       return {
         success: true,
         media: mediaResults,
-        messages: messages,
+        messages: [message],
         count: mediaResults.length,
       };
     } catch (error) {
