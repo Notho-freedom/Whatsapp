@@ -66,7 +66,7 @@ class AttachmentService {
         const messageData = {
           type: 'media',
           media: [media],
-          text: `📷 ${media.original_name || 'Média partagé'}`,
+          text: '',
           sender: userId,
           conversation_id: conversationId,
           metadata: {
@@ -118,7 +118,7 @@ class AttachmentService {
       const messageData = {
         type: 'media',
         media: [mediaResult],
-        text: `📸 ${type === 'photo' ? 'Photo' : 'Vidéo'} capturée`,
+        text: '',
         sender: userId,
         conversation_id: conversationId,
         metadata: {
@@ -164,7 +164,7 @@ class AttachmentService {
         const messageData = {
           type: 'document',
           document: document,
-          text: `📄 ${document.name}`,
+          text: '',
           sender: userId,
           conversation_id: conversationId,
           metadata: {
