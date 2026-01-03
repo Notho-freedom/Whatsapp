@@ -52,16 +52,27 @@ export default function MediaGroup({
     .filter(item => !!item);
 
   const isSingleMedia = normalizedMedia.length === 1;
-  const gridCols =
-    normalizedMedia.length === 2
-      ? 'grid-cols-2'
-      : normalizedMedia.length >= 3
-      ? 'grid-cols-3'
-      : '';
+  
+  // Meilleure gestion de la grille
+  const MAX_IMAGES_TO_SHOW = 9;
+  const displayMedia = normalizedMedia.slice(0, MAX_IMAGES_TO_SHOW);
+  const remainingCount = normalizedMedia.length - MAX_IMAGES_TO_SHOW;
+  
+  // Déterminer le nombre de colonnes selon le nombre d'images
+  let gridCols = '';
+  if (!isSingleMedia) {
+    if (displayMedia.length === 2) {
+      gridCols = 'grid-cols-2';
+    } else if (displayMedia.length <= 4) {
+      gridCols = 'grid-cols-2';
+    } else {
+      gridCols = 'grid-cols-3';
+    }
+  }
 
   return (
     <div className={`${!isSingleMedia && `grid gap-[2px] ${gridCols}`}`}>
-      {normalizedMedia.map((item, idx) => {
+      {displayMedia.map((item, idx) => {
         if (item.mediaType === 'image')
           return (
             <ImageItem
@@ -69,6 +80,9 @@ export default function MediaGroup({
               item={item}
               isSingleMedia={isSingleMedia}
               isMobile={isMobile}
+              totalCount={displayMedia.length}
+              isLast={idx === displayMedia.length - 1 && remainingCount > 0}
+              remainingCount={remainingCount}
             />
           );
         if (item.mediaType === 'video')
@@ -78,6 +92,7 @@ export default function MediaGroup({
               item={item}
               isSingleMedia={isSingleMedia}
               isMobile={isMobile}
+              totalCount={displayMedia.length}
             />
           );
         if (item.mediaType === 'audio')
@@ -125,7 +140,7 @@ function normalizeMedia(item) {
   };
 }
 
-function ImageItem({ item, isSingleMedia, isMobile }) {
+function ImageItem({ item, isSingleMedia, isMobile, totalCount, isLast, remainingCount }) {
   return (
     <div
       className="relative overflow-hidden bg-[#0b0e11]"
@@ -148,11 +163,20 @@ function ImageItem({ item, isSingleMedia, isMobile }) {
         }`}
         alt=""
       />
+      
+      {/* Afficher "+N" pour les images restantes */}
+      {isLast && remainingCount > 0 && (
+        <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-[7.5px]">
+          <span className="text-white text-lg sm:text-2xl font-bold">
+            +{remainingCount}
+          </span>
+        </div>
+      )}
     </div>
   );
 }
 
-function VideoItem({ item, isSingleMedia, isMobile }) {
+function VideoItem({ item, isSingleMedia, isMobile, totalCount }) {
   return (
     <div
       className="relative overflow-hidden bg-[#0b0e11] group cursor-pointer"
