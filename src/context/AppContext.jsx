@@ -760,9 +760,7 @@ export function AppProvider({ children }) {
               edited: msg.edited || false,
               forwarded: msg.forwarded || false,
               link: msg.link,
-              timestamp: msg.created_at
-                ? new Date(msg.created_at)
-                : new Date(),
+              timestamp: msg.created_at ? new Date(msg.created_at) : new Date(),
             };
           });
 
@@ -1084,7 +1082,8 @@ export function AppProvider({ children }) {
                   minute: '2-digit',
                 }),
               date:
-                msg.date || new Date(msg.created_at).toLocaleDateString('fr-FR'),
+                msg.date ||
+                new Date(msg.created_at).toLocaleDateString('fr-FR'),
               read: msg.read || false,
               timestamp: new Date(msg.created_at),
             };
@@ -1184,7 +1183,14 @@ export function AppProvider({ children }) {
         messageListenersRef.current.set(chat.id, unsubscribe);
       }
     },
-    [actions, listenToMessages, state.selectedChat, state.messages, currentUserId, currentUser]
+    [
+      actions,
+      listenToMessages,
+      state.selectedChat,
+      state.messages,
+      currentUserId,
+      currentUser,
+    ]
   );
 
   const addReactionToMessage = useCallback(
