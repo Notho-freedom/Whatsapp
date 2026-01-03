@@ -198,6 +198,25 @@ export const useRealtime = userId => {
     return unsubscribe;
   }, []);
 
+  /**
+   * Écoute les conversations d'un utilisateur en temps réel
+   */
+  const listenToConversations = useCallback((userId, callback) => {
+    if (!userId) return;
+
+    const firebaseService = require('@/utils/firebaseService').default;
+
+    const unsubscribe = firebaseService.listenToConversations(
+      userId,
+      ({ changes, allConversations }) => {
+        callback({ changes, allConversations });
+      }
+    );
+
+    listenersRef.current.set(`conversations_${userId}`, unsubscribe);
+    return unsubscribe;
+  }, []);
+
   // ===== GESTION DU CYCLE DE VIE =====
 
   useEffect(() => {
@@ -281,6 +300,7 @@ export const useRealtime = userId => {
     listenToStatusViews,
     listenToMessages,
     listenToConversation,
+    listenToConversations, // NOUVEAU: Écoute les conversations en temps réel
 
     // Utilitaires
     removeListener,

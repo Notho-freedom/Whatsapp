@@ -115,18 +115,18 @@ export function transformConversationForDisplay(conversation, currentUserId) {
   }
 
   // Récupérer les infos de l'autre participant
-  let otherParticipantName = 'Contact';
-  let otherParticipantAvatar = '/default-avatar.png';
+  let otherParticipantName =
+    conversation.participants_info?.[otherParticipantId]?.name ||
+    conversation.name ||
+    otherParticipantId ||
+    'Contact';
 
-  if (
-    conversation.participants_info &&
-    conversation.participants_info[otherParticipantId]
-  ) {
-    otherParticipantName =
-      conversation.participants_info[otherParticipantId].name;
-    otherParticipantAvatar =
-      conversation.participants_info[otherParticipantId].avatar;
-  }
+  let otherParticipantAvatar =
+    conversation.participants_info?.[otherParticipantId]?.avatar ||
+    conversation.avatar_url ||
+    `https://ui-avatars.com/api/?name=${encodeURIComponent(
+      otherParticipantName
+    )}&background=6a7175&color=fff&size=40`;
 
   return {
     id: conversation.id,

@@ -116,7 +116,7 @@ export default function ChatList({
 
   // Fonction pour créer une conversation avec un contact
   const createConversationWithContact = contact => {
-    console.log('✅ Selecting contact for new conversation:', contact);
+    console.log('✅ Selecting Firebase user for conversation:', contact);
 
     if (!currentUser || !currentUser.id) {
       setNotification({
@@ -127,33 +127,42 @@ export default function ChatList({
       return;
     }
 
-    // Get contact info for display
-    const contactName =
-      contact.displayName || contact.name || contact.email || 'Contact';
-    const contactAvatar =
-      contact.photos?.[0]?.url || contact.avatar || '/default-avatar.png';
-    const contactId = contact.id || contact.email || `contact-${Date.now()}`;
+    // Pour les utilisateurs Firebase, utiliser directement leur ID (email)
+    const recipientId = contact.id || contact.email;
+    const recipientName =
+      contact.displayName || contact.name || contact.email || 'Utilisateur';
+    const recipientAvatar =
+      contact.photoURL || contact.avatar || '/default-avatar.png';
+
+    if (!recipientId) {
+      setNotification({
+        type: 'error',
+        message: 'ID utilisateur Firebase manquant',
+        timestamp: new Date(),
+      });
+      return;
+    }
 
     // Create a temporary chat object for UI display
-    // The actual conversation will be created when first message is sent
+    // Store recipientId directly in the chat object (not nested in contact)
     const tempChat = {
-      id: `temp-${contactId}`, // Temporary ID that will be replaced on first message
-      name: contactName,
-      avatar: contactAvatar,
-      description: `Conversation avec ${contactName}`,
-      participants: [currentUser.id, contactId],
+      id: recipientId, // Utiliser directement l'ID Firebase (email)
+      recipientId: recipientId, // ID du destinataire pour sendMessage
+      name: recipientName,
+      avatar: recipientAvatar,
+      description: `Conversation avec ${recipientName}`,
+      participants: [currentUser.id, recipientId],
       participants_info: {
         [currentUser.id]: {
           name: currentUser.name || currentUser.displayName || 'Moi',
           avatar:
             currentUser.avatar || currentUser.photoURL || '/default-avatar.png',
         },
-        [contactId]: {
-          name: contactName,
-          avatar: contactAvatar,
+        [recipientId]: {
+          name: recipientName,
+          avatar: recipientAvatar,
         },
       },
-      contact: { ...contact, id: contactId },
       isTemporary: true, // Mark as temporary until first message
       isNewConversation: true,
       lastMessage: null,
@@ -163,10 +172,11 @@ export default function ChatList({
       isTyping: false,
     };
 
-    console.log(
-      '🎯 Temporary chat created, waiting for first message:',
-      tempChat
-    );
+    console.log('🎯 Chat temporaire créé avec utilisateur Firebase:', {
+      recipientId,
+      recipientName,
+      tempChat,
+    });
 
     // Just select the chat (no Firebase call yet)
     // The conversation will be created in Firebase when the first message is sent
@@ -176,7 +186,7 @@ export default function ChatList({
 
     setNotification({
       type: 'info',
-      message: `Ouverture de la conversation avec ${contactName}`,
+      message: `Ouverture de la conversation avec ${recipientName}`,
       timestamp: new Date(),
     });
     setTimeout(() => setNotification(null), 2000);
@@ -225,6 +235,13 @@ export default function ChatList({
         <span className="text-[#1DAA61] truncate w-[100%]">
           {chat.name} is typing...
         </span>
+      );
+    }
+
+    // Vérifier si lastMessage existe (pour les nouveaux chats temporaires)
+    if (!chat.lastMessage) {
+      return (
+        <span className="text-gray-400 truncate italic">Aucun message</span>
       );
     }
 

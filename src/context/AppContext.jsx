@@ -349,9 +349,12 @@ export function AppProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
   const messageListenersRef = useRef(new Map());
+  const conversationListenerRef = useRef(null);
+  const latestMessagesRef = useRef({});
 
-  // Hook temps réel pour les messages
-  const { listenToMessages, listenToConversation } = useRealtime(currentUserId);
+  // Hook temps réel pour les messages et conversations
+  const { listenToMessages, listenToConversation, listenToConversations } =
+    useRealtime(currentUserId);
 
   // Récupérer l'utilisateur courant au montage et quand authUser change
   useEffect(() => {
@@ -728,28 +731,40 @@ export function AppProvider({ children }) {
         const messages = await cachedFirebaseService.getMessages(chatId, 50, 0);
 
         if (messages && messages.length > 0) {
-          const transformedMessages = messages.map(msg => ({
-            id: msg.id,
-            sender: msg.sender,
-            senderName: msg.sender_name,
-            text: msg.text,
-            media: msg.media,
-            time:
-              msg.time ||
-              new Date().toLocaleTimeString('fr-FR', {
-                hour: '2-digit',
-                minute: '2-digit',
-              }),
-            date: msg.date || new Date().toLocaleDateString('fr-FR'),
-            read: msg.is_read || false,
-            reactions: msg.reactions || [],
-            replyTo: msg.reply_to,
-            type: msg.type || 'text',
-            isStarred: msg.is_starred || false,
-            edited: msg.edited || false,
-            forwarded: msg.forwarded || false,
-            link: msg.link,
-          }));
+          const transformedMessages = messages.map(msg => {
+            const normalizedSender =
+              msg.sender === currentUserId ? 'me' : 'other';
+
+            return {
+              id: msg.id,
+              sender: normalizedSender,
+              senderName:
+                msg.sender_name ||
+                (normalizedSender === 'me'
+                  ? currentUser?.name || currentUser?.displayName || 'Me'
+                  : undefined),
+              text: msg.text,
+              media: msg.media,
+              time:
+                msg.time ||
+                new Date().toLocaleTimeString('fr-FR', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                }),
+              date: msg.date || new Date().toLocaleDateString('fr-FR'),
+              read: msg.is_read || false,
+              reactions: msg.reactions || [],
+              replyTo: msg.reply_to,
+              type: msg.type || 'text',
+              isStarred: msg.is_starred || false,
+              edited: msg.edited || false,
+              forwarded: msg.forwarded || false,
+              link: msg.link,
+              timestamp: msg.created_at
+                ? new Date(msg.created_at)
+                : new Date(),
+            };
+          });
 
           actions.setMessages(chatId, transformedMessages);
           console.log(
@@ -767,8 +782,13 @@ export function AppProvider({ children }) {
         actions.setLoading(false);
       }
     },
-    [actions]
+    [actions, currentUserId, currentUser]
   );
+
+  // Toujours garder une référence des messages à jour pour éviter les doublons en temps réel
+  useEffect(() => {
+    latestMessagesRef.current = state.messages;
+  }, [state.messages]);
 
   const sendMessage = useCallback(
     async (recipientUserIdOrChatId, messageData, replyTo = null) => {
@@ -796,27 +816,21 @@ export function AppProvider({ children }) {
             currentUser.id
           );
         }
-        // Si c'est une conversation temporaire (temp-{contactId}), extraire le contact
-        else if (recipientUserIdOrChatId.startsWith('temp-')) {
-          // C'est un chat temporaire avant le premier message
-          // Extraire le recipientUserId du chat sélectionné
-          if (selectedChat?.contact?.id) {
-            recipientUserId = selectedChat.contact.id;
-          } else {
-            console.error(
-              "❌ Impossible d'extraire le contact du chat temporaire"
-            );
-            return;
-          }
-          // Générer l'ID de conversation déterministe
-          conversationId = generateConversationId(
-            currentUser.id,
-            recipientUserId
-          );
-        }
-        // Sinon, c'est un ID utilisateur direct
+        // Sinon, c'est un ID utilisateur Firebase direct (email)
         else {
+          // Pour les utilisateurs Firebase, l'ID est directement l'email
           recipientUserId = recipientUserIdOrChatId;
+
+          // Si c'est un chat temporaire, on peut aussi récupérer depuis recipientId
+          if (selectedChat?.isTemporary && selectedChat?.recipientId) {
+            recipientUserId = selectedChat.recipientId;
+            console.log(
+              '📧 Utilisation de recipientId du chat temporaire:',
+              recipientUserId
+            );
+          }
+
+          // Générer l'ID de conversation déterministe
           conversationId = generateConversationId(
             currentUser.id,
             recipientUserId
@@ -850,26 +864,48 @@ export function AppProvider({ children }) {
           console.log(`📝 Création de la conversation ${conversationId}`);
 
           try {
-            // Chercher les infos du destinataire - priorité au chat temporaire sélectionné
+            // Chercher les infos du destinataire
             let recipientInfo;
-            if (selectedChat?.contact) {
-              // Si on a un contact depuis le chat temporaire, l'utiliser
-              recipientInfo = {
-                name:
-                  selectedChat.contact.displayName ||
-                  selectedChat.contact.name ||
-                  selectedChat.name ||
-                  'Contact',
-                avatar: selectedChat.avatar || '/default-avatar.png',
-              };
-            } else {
-              // Sinon chercher dans les utilisateurs
-              recipientInfo = state.users.find(
-                u => u.id === recipientUserId
-              ) || {
-                name: 'Contact',
-                avatar: '/default-avatar.png',
-              };
+
+            // Priorité 1: Utiliser les infos du chat temporaire si disponibles
+            if (
+              selectedChat?.isTemporary &&
+              selectedChat?.participants_info?.[recipientUserId]
+            ) {
+              recipientInfo = selectedChat.participants_info[recipientUserId];
+              console.log(
+                '📋 Infos destinataire depuis chat temporaire:',
+                recipientInfo
+              );
+            }
+            // Priorité 2: Chercher dans la liste des utilisateurs
+            else {
+              const foundUser = state.users.find(
+                u => u.id === recipientUserId || u.email === recipientUserId
+              );
+              if (foundUser) {
+                recipientInfo = {
+                  name:
+                    foundUser.displayName ||
+                    foundUser.name ||
+                    foundUser.email ||
+                    'Utilisateur',
+                  avatar:
+                    foundUser.photoURL ||
+                    foundUser.avatar ||
+                    '/default-avatar.png',
+                };
+              } else {
+                // Fallback: utiliser l'email comme nom
+                recipientInfo = {
+                  name: recipientUserId,
+                  avatar: '/default-avatar.png',
+                };
+              }
+              console.log(
+                '📋 Infos destinataire depuis liste utilisateurs:',
+                recipientInfo
+              );
             }
 
             const conversationData = createConversationData(
@@ -1024,25 +1060,35 @@ export function AppProvider({ children }) {
           const messages = data.messages || [];
 
           // Transformer les messages pour l'interface
-          const transformedMessages = messages.map(msg => ({
-            id: msg.id,
-            text: msg.text,
-            sender: msg.sender,
-            type: msg.type || 'text',
-            media: msg.media || null,
-            replyTo: msg.reply_to,
-            reactions: msg.reactions || [],
-            time:
-              msg.time ||
-              new Date(msg.created_at).toLocaleTimeString('fr-FR', {
-                hour: '2-digit',
-                minute: '2-digit',
-              }),
-            date:
-              msg.date || new Date(msg.created_at).toLocaleDateString('fr-FR'),
-            read: msg.read || false,
-            timestamp: new Date(msg.created_at),
-          }));
+          const transformedMessages = messages.map(msg => {
+            const normalizedSender =
+              msg.sender === currentUserId ? 'me' : 'other';
+
+            return {
+              id: msg.id,
+              text: msg.text,
+              sender: normalizedSender,
+              senderName:
+                msg.sender_name ||
+                (normalizedSender === 'me'
+                  ? currentUser?.name || currentUser?.displayName || 'Me'
+                  : undefined),
+              type: msg.type || 'text',
+              media: msg.media || null,
+              replyTo: msg.reply_to,
+              reactions: msg.reactions || [],
+              time:
+                msg.time ||
+                new Date(msg.created_at).toLocaleTimeString('fr-FR', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                }),
+              date:
+                msg.date || new Date(msg.created_at).toLocaleDateString('fr-FR'),
+              read: msg.read || false,
+              timestamp: new Date(msg.created_at),
+            };
+          });
 
           // Ajouter les messages à l'état local
           if (transformedMessages.length > 0) {
@@ -1069,7 +1115,8 @@ export function AppProvider({ children }) {
             changes.forEach(({ type, message }) => {
               if (type === 'added') {
                 // Vérifier si le message existe déjà (éviter doublons)
-                const existingMessages = state.messages[chat.id] || [];
+                const existingMessages =
+                  latestMessagesRef.current[chat.id] || [];
                 const alreadyExists = existingMessages.some(
                   m => m.id === message.id
                 );
@@ -1081,10 +1128,18 @@ export function AppProvider({ children }) {
                   );
 
                   // Transformer pour l'interface
+                  const normalizedSender =
+                    message.sender === currentUserId ? 'me' : 'other';
+
                   const transformedMessage = {
                     id: message.id,
                     text: message.text,
-                    sender: message.sender,
+                    sender: normalizedSender,
+                    senderName:
+                      message.sender_name ||
+                      (normalizedSender === 'me'
+                        ? currentUser?.name || currentUser?.displayName || 'Me'
+                        : undefined),
                     type: message.type || 'text',
                     media: message.media || null,
                     replyTo: message.reply_to,
@@ -1129,7 +1184,7 @@ export function AppProvider({ children }) {
         messageListenersRef.current.set(chat.id, unsubscribe);
       }
     },
-    [actions, listenToMessages, state.selectedChat, state.messages]
+    [actions, listenToMessages, state.selectedChat, state.messages, currentUserId, currentUser]
   );
 
   const addReactionToMessage = useCallback(
@@ -1560,6 +1615,76 @@ export function AppProvider({ children }) {
     ];
     return times[Math.floor(Math.random() * times.length)];
   }
+
+  // Écouter les conversations en temps réel quand l'utilisateur est connecté
+  useEffect(() => {
+    if (!currentUserId || !listenToConversations) {
+      return;
+    }
+
+    console.log('🔊 Activation du listener conversations pour:', currentUserId);
+
+    // Nettoyer l'ancien listener
+    if (conversationListenerRef.current) {
+      conversationListenerRef.current();
+      conversationListenerRef.current = null;
+    }
+
+    // Créer le nouveau listener
+    const unsubscribe = listenToConversations(
+      currentUserId,
+      ({ changes, allConversations }) => {
+        console.log(
+          '📥 Conversations mises à jour:',
+          changes.length,
+          'changements'
+        );
+
+        // Transformer les conversations pour l'affichage
+        const transformedConversations = allConversations.map(conv => {
+          return transformConversationForDisplay(conv, currentUserId);
+        });
+
+        // Dédoublication: créer un Map pour éliminer les doublons par ID
+        const uniqueConversations = new Map();
+        transformedConversations.forEach(conv => {
+          if (conv && conv.id) {
+            uniqueConversations.set(conv.id, conv);
+          }
+        });
+
+        // Convertir le Map en tableau
+        const finalConversations = Array.from(uniqueConversations.values());
+
+        console.log(`✅ ${finalConversations.length} conversations uniques`);
+
+        // Mettre à jour la liste des conversations
+        actions.setUsers(finalConversations);
+
+        // Logger les changements
+        changes.forEach(change => {
+          if (change.type === 'added') {
+            console.log(
+              '➕ Nouvelle conversation ajoutée:',
+              change.conversation.id
+            );
+          } else if (change.type === 'modified') {
+            console.log('✏️ Conversation mise à jour:', change.conversation.id);
+          }
+        });
+      }
+    );
+
+    conversationListenerRef.current = unsubscribe;
+
+    // Nettoyer au démontage
+    return () => {
+      if (conversationListenerRef.current) {
+        conversationListenerRef.current();
+        conversationListenerRef.current = null;
+      }
+    };
+  }, [currentUserId, listenToConversations, actions]);
 
   const value = useMemo(
     () => ({

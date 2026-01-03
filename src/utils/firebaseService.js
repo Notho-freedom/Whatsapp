@@ -885,6 +885,86 @@ class FirebaseService {
   }
 
   /**
+   * Écoute les conversations d'un utilisateur en temps réel
+   * @param {string} userId - ID de l'utilisateur
+   * @param {function} callback - Fonction appelée quand une conversation change
+   * @returns {function} - Fonction unsubscribe pour arrêter l'écoute
+   */
+  listenToConversations(userId, callback) {
+    try {
+      if (!userId) {
+        console.warn('⚠️ userId manquant pour listenToConversations');
+        return () => {};
+      }
+
+      const conversationsRef = collection(this.db, 'conversations');
+
+      // Query pour écouter les conversations où l'utilisateur est participant
+      const q = query(
+        conversationsRef,
+        where('participants', 'array-contains', userId)
+      );
+
+      console.log(`🔊 Écoute des conversations pour l'utilisateur ${userId}`);
+
+      // Créer le listener en temps réel
+      const unsubscribe = onSnapshot(
+        q,
+        snapshot => {
+          const changes = [];
+
+          snapshot.docChanges().forEach(change => {
+            const data = change.doc.data();
+            const conversation = {
+              id: change.doc.id,
+              ...data,
+              created_at: data.created_at?.toDate?.() || data.created_at,
+              updated_at: data.updated_at?.toDate?.() || data.updated_at,
+            };
+
+            if (change.type === 'added') {
+              console.log('➕ Nouvelle conversation:', conversation.id);
+              changes.push({ type: 'added', conversation });
+            } else if (change.type === 'modified') {
+              console.log('✏️ Conversation modifiée:', conversation.id);
+              changes.push({ type: 'modified', conversation });
+            } else if (change.type === 'removed') {
+              console.log('🗑️ Conversation supprimée:', conversation.id);
+              changes.push({ type: 'removed', conversation });
+            }
+          });
+
+          // Récupérer toutes les conversations
+          const allConversations = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+            created_at:
+              doc.data().created_at?.toDate?.() || doc.data().created_at,
+            updated_at:
+              doc.data().updated_at?.toDate?.() || doc.data().updated_at,
+          }));
+
+          // Appeler le callback avec les changements et toutes les conversations
+          if (callback) {
+            callback({ changes, allConversations });
+          }
+        },
+        error => {
+          console.error('❌ Erreur dans le listener conversations:', error);
+        }
+      );
+
+      return unsubscribe;
+    } catch (error) {
+      console.error(
+        '❌ Erreur lors de la création du listener conversations:',
+        error
+      );
+      return () => {};
+    }
+  }
+
+  /**
    * Ajoute une nouvelle conversation dans Firebase
    * @param {object} conversationData - Données de la conversation
    * @returns {Promise<object>} - Conversation créée avec son ID

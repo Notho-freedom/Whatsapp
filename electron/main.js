@@ -327,8 +327,8 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, '../out/index.html'));
   }
   
-  mainWindow.removeMenu();
-  mainWindow.setMenuBarVisibility(false);
+  //mainWindow.removeMenu();
+  //mainWindow.setMenuBarVisibility(false);
   mainWindow.setTitle('WhatsApp Clone');
   mainWindow.setResizable(true);
   mainWindow.setMovable(true);
