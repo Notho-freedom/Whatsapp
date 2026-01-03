@@ -133,6 +133,13 @@ export function transformConversationForDisplay(conversation, currentUserId) {
       otherParticipantName
     )}&background=6a7175&color=fff&size=40`;
 
+  const lastMessageTimeFormatted = conversation.last_message_time
+    ? new Date(conversation.last_message_time).toLocaleTimeString('fr-FR', {
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : conversation.last_message_time;
+
   return {
     id: conversation.id,
     conversationId: conversation.id,
@@ -140,7 +147,7 @@ export function transformConversationForDisplay(conversation, currentUserId) {
     avatar: otherParticipantAvatar,
     otherParticipantId,
     lastMessage: conversation.last_message,
-    lastMessageTime: conversation.last_message_time,
+    lastMessageTime: lastMessageTimeFormatted,
     unreadCount: conversation.unread_count || 0,
     isPinned: conversation.is_pinned || false,
     isMuted: conversation.is_muted || false,

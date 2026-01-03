@@ -22,7 +22,14 @@ import {
   transformConversationForDisplay,
   getOtherParticipantId,
 } from '@/utils/conversationHelper';
-import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+} from 'firebase/firestore';
 import { db } from '@/utils/firebaseConfig';
 
 // Types d'actions
@@ -844,6 +851,34 @@ export function AppProvider({ children }) {
           `📨 Envoi du message à ${recipientUserId} via conversation ${conversationId}`
         );
 
+        // Préparer les infos destinataire (utilisées pour création ou mise à jour)
+        let recipientInfo;
+        if (selectedChat?.isTemporary && selectedChat?.participants_info?.[recipientUserId]) {
+          recipientInfo = selectedChat.participants_info[recipientUserId];
+        } else {
+          const foundUser = state.users.find(
+            u => u.id === recipientUserId || u.email === recipientUserId
+          );
+          if (foundUser) {
+            recipientInfo = {
+              name:
+                foundUser.displayName ||
+                foundUser.name ||
+                foundUser.email ||
+                'Utilisateur',
+              avatar:
+                foundUser.photoURL ||
+                foundUser.avatar ||
+                '/default-avatar.png',
+            };
+          } else {
+            recipientInfo = {
+              name: recipientUserId,
+              avatar: '/default-avatar.png',
+            };
+          }
+        }
+
         // Vérifier si la conversation existe déjà
         let conversationExists = false;
         try {
@@ -882,50 +917,6 @@ export function AppProvider({ children }) {
           console.log(`📝 Création de la conversation ${conversationId}`);
 
           try {
-            // Chercher les infos du destinataire
-            let recipientInfo;
-
-            // Priorité 1: Utiliser les infos du chat temporaire si disponibles
-            if (
-              selectedChat?.isTemporary &&
-              selectedChat?.participants_info?.[recipientUserId]
-            ) {
-              recipientInfo = selectedChat.participants_info[recipientUserId];
-              console.log(
-                '📋 Infos destinataire depuis chat temporaire:',
-                recipientInfo
-              );
-            }
-            // Priorité 2: Chercher dans la liste des utilisateurs
-            else {
-              const foundUser = state.users.find(
-                u => u.id === recipientUserId || u.email === recipientUserId
-              );
-              if (foundUser) {
-                recipientInfo = {
-                  name:
-                    foundUser.displayName ||
-                    foundUser.name ||
-                    foundUser.email ||
-                    'Utilisateur',
-                  avatar:
-                    foundUser.photoURL ||
-                    foundUser.avatar ||
-                    '/default-avatar.png',
-                };
-              } else {
-                // Fallback: utiliser l'email comme nom
-                recipientInfo = {
-                  name: recipientUserId,
-                  avatar: '/default-avatar.png',
-                };
-              }
-              console.log(
-                '📋 Infos destinataire depuis liste utilisateurs:',
-                recipientInfo
-              );
-            }
-
             const conversationData = createConversationData(
               currentUser.id,
               recipientUserId,
@@ -957,6 +948,25 @@ export function AppProvider({ children }) {
               '❌ Erreur lors de la création de la conversation:',
               error
             );
+          }
+        } else {
+          // S'assurer que participants_info contient bien les deux utilisateurs
+          try {
+            await firebaseService.mergeParticipantsInfo(conversationId, {
+              [currentUser.id]: {
+                name: currentUser.name || currentUser.displayName || 'Moi',
+                avatar:
+                  currentUser.avatar ||
+                  currentUser.photoURL ||
+                  '/default-avatar.png',
+              },
+              [recipientUserId]: {
+                name: recipientInfo?.name || 'Contact',
+                avatar: recipientInfo?.avatar || '/default-avatar.png',
+              },
+            });
+          } catch (error) {
+            console.warn('⚠️ Impossible de mettre à jour participants_info:', error);
           }
         }
 
@@ -1044,6 +1054,15 @@ export function AppProvider({ children }) {
         actions.updateLastMessage(conversationId, {
           text: lastMessageText,
           type: messageData.type || 'text',
+        });
+
+        // Mettre à jour la conversation dans Firestore pour les tuiles
+        firebaseService.updateConversationLastMessage(conversationId, {
+          text: lastMessageText,
+          type: messageData.type || 'text',
+          sender: currentUser.id,
+          sender_name: currentUser.name || currentUser.displayName,
+          created_at: new Date().toISOString(),
         });
       } catch (error) {
         console.error("❌ Erreur générale lors de l'envoi du message:", error);

@@ -75,6 +75,51 @@ class FirebaseService {
     }
   }
 
+  async updateConversation(conversationId, updates) {
+    try {
+      const conversationRef = doc(this.db, 'conversations', conversationId);
+      await updateDoc(conversationRef, {
+        ...updates,
+        updated_at: serverTimestamp(),
+      });
+      return true;
+    } catch (error) {
+      console.error('❌ Erreur lors de la mise à jour de la conversation:', error);
+      throw error;
+    }
+  }
+
+  async mergeParticipantsInfo(conversationId, participantsInfo) {
+    if (!participantsInfo || typeof participantsInfo !== 'object') return;
+    try {
+      const conversationRef = doc(this.db, 'conversations', conversationId);
+      const flat = {};
+      Object.entries(participantsInfo).forEach(([pid, info]) => {
+        flat[`participants_info.${pid}`] = info;
+      });
+
+      await updateDoc(conversationRef, {
+        ...flat,
+        updated_at: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error('❌ Erreur lors de la mise à jour des participants_info:', error);
+    }
+  }
+
+  async updateConversationLastMessage(conversationId, lastMessage) {
+    try {
+      const conversationRef = doc(this.db, 'conversations', conversationId);
+      await updateDoc(conversationRef, {
+        last_message: lastMessage,
+        last_message_time: serverTimestamp(),
+        updated_at: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error('❌ Erreur lors de la mise à jour du dernier message:', error);
+    }
+  }
+
   async deleteMessage(conversationId, messageId) {
     try {
       const messageRef = doc(this.db, 'messages', messageId);
@@ -928,6 +973,8 @@ class FirebaseService {
               ...data,
               created_at: data.created_at?.toDate?.() || data.created_at,
               updated_at: data.updated_at?.toDate?.() || data.updated_at,
+              last_message_time:
+                data.last_message_time?.toDate?.() || data.last_message_time,
             };
 
             if (change.type === 'added') {
@@ -950,6 +997,9 @@ class FirebaseService {
               doc.data().created_at?.toDate?.() || doc.data().created_at,
             updated_at:
               doc.data().updated_at?.toDate?.() || doc.data().updated_at,
+            last_message_time:
+              doc.data().last_message_time?.toDate?.() ||
+              doc.data().last_message_time,
           }));
 
           // Appeler le callback avec les changements et toutes les conversations
