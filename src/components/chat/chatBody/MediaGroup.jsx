@@ -52,12 +52,12 @@ export default function MediaGroup({
     .filter(item => !!item);
 
   const isSingleMedia = normalizedMedia.length === 1;
-  
+
   // Meilleure gestion de la grille
-  const MAX_IMAGES_TO_SHOW = 9;
+  const MAX_IMAGES_TO_SHOW = 4;
   const displayMedia = normalizedMedia.slice(0, MAX_IMAGES_TO_SHOW);
   const remainingCount = normalizedMedia.length - MAX_IMAGES_TO_SHOW;
-  
+
   // Déterminer le nombre de colonnes selon le nombre d'images
   let gridCols = '';
   if (!isSingleMedia) {
@@ -140,7 +140,14 @@ function normalizeMedia(item) {
   };
 }
 
-function ImageItem({ item, isSingleMedia, isMobile, totalCount, isLast, remainingCount }) {
+function ImageItem({
+  item,
+  isSingleMedia,
+  isMobile,
+  totalCount,
+  isLast,
+  remainingCount,
+}) {
   return (
     <div
       className="relative overflow-hidden bg-[#0b0e11]"
@@ -163,7 +170,7 @@ function ImageItem({ item, isSingleMedia, isMobile, totalCount, isLast, remainin
         }`}
         alt=""
       />
-      
+
       {/* Afficher "+N" pour les images restantes */}
       {isLast && remainingCount > 0 && (
         <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-[7.5px]">
