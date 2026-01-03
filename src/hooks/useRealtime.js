@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import realtimeService from '@/utils/realtimeService';
 
-export const useRealtime = (userId) => {
+export const useRealtime = userId => {
   const [presence, setPresence] = useState({});
   const [typingUsers, setTypingUsers] = useState({});
   const [notifications, setNotifications] = useState([]);
@@ -12,21 +12,27 @@ export const useRealtime = (userId) => {
 
   // ===== GESTION DE LA PRÉSENCE =====
 
-  const updatePresence = useCallback(async (status = 'online') => {
-    if (userId) {
-      await realtimeService.setUserPresence(userId, status);
-    }
-  }, [userId]);
+  const updatePresence = useCallback(
+    async (status = 'online') => {
+      if (userId) {
+        await realtimeService.setUserPresence(userId, status);
+      }
+    },
+    [userId]
+  );
 
-  const listenToUserPresence = useCallback((targetUserId) => {
+  const listenToUserPresence = useCallback(targetUserId => {
     if (!targetUserId) return;
 
-    const unsubscribe = realtimeService.onUserPresenceChange(targetUserId, (data) => {
-      setPresence(prev => ({
-        ...prev,
-        [targetUserId]: data
-      }));
-    });
+    const unsubscribe = realtimeService.onUserPresenceChange(
+      targetUserId,
+      data => {
+        setPresence(prev => ({
+          ...prev,
+          [targetUserId]: data,
+        }));
+      }
+    );
 
     listenersRef.current.set(`presence_${targetUserId}`, unsubscribe);
     return unsubscribe;
@@ -34,21 +40,27 @@ export const useRealtime = (userId) => {
 
   // ===== INDICATEURS DE TYPING =====
 
-  const setTypingStatus = useCallback(async (conversationId, isTyping = true) => {
-    if (userId && conversationId) {
-      await realtimeService.setTypingStatus(conversationId, userId, isTyping);
-    }
-  }, [userId]);
+  const setTypingStatus = useCallback(
+    async (conversationId, isTyping = true) => {
+      if (userId && conversationId) {
+        await realtimeService.setTypingStatus(conversationId, userId, isTyping);
+      }
+    },
+    [userId]
+  );
 
-  const listenToTypingStatus = useCallback((conversationId) => {
+  const listenToTypingStatus = useCallback(conversationId => {
     if (!conversationId) return;
 
-    const unsubscribe = realtimeService.onTypingStatusChange(conversationId, (users) => {
-      setTypingUsers(prev => ({
-        ...prev,
-        [conversationId]: users
-      }));
-    });
+    const unsubscribe = realtimeService.onTypingStatusChange(
+      conversationId,
+      users => {
+        setTypingUsers(prev => ({
+          ...prev,
+          [conversationId]: users,
+        }));
+      }
+    );
 
     listenersRef.current.set(`typing_${conversationId}`, unsubscribe);
     return unsubscribe;
@@ -56,19 +68,25 @@ export const useRealtime = (userId) => {
 
   // ===== RECEIPTS DE LECTURE =====
 
-  const markMessageAsRead = useCallback(async (conversationId, messageId) => {
-    if (userId && conversationId && messageId) {
-      await realtimeService.setReadReceipt(conversationId, messageId, userId);
-    }
-  }, [userId]);
+  const markMessageAsRead = useCallback(
+    async (conversationId, messageId) => {
+      if (userId && conversationId && messageId) {
+        await realtimeService.setReadReceipt(conversationId, messageId, userId);
+      }
+    },
+    [userId]
+  );
 
-  const listenToReadReceipts = useCallback((conversationId) => {
+  const listenToReadReceipts = useCallback(conversationId => {
     if (!conversationId) return;
 
-    const unsubscribe = realtimeService.onReadReceiptsChange(conversationId, (receipts) => {
-      // Traiter les receipts de lecture
-      console.log('Receipts de lecture mis à jour:', receipts);
-    });
+    const unsubscribe = realtimeService.onReadReceiptsChange(
+      conversationId,
+      receipts => {
+        // Traiter les receipts de lecture
+        console.log('Receipts de lecture mis à jour:', receipts);
+      }
+    );
 
     listenersRef.current.set(`receipts_${conversationId}`, unsubscribe);
     return unsubscribe;
@@ -82,15 +100,18 @@ export const useRealtime = (userId) => {
     }
   }, []);
 
-  const listenToMessageStatus = useCallback((messageId) => {
+  const listenToMessageStatus = useCallback(messageId => {
     if (!messageId) return;
 
-    const unsubscribe = realtimeService.onMessageStatusChange(messageId, (data) => {
-      setMessageStatuses(prev => ({
-        ...prev,
-        [messageId]: data
-      }));
-    });
+    const unsubscribe = realtimeService.onMessageStatusChange(
+      messageId,
+      data => {
+        setMessageStatuses(prev => ({
+          ...prev,
+          [messageId]: data,
+        }));
+      }
+    );
 
     listenersRef.current.set(`messageStatus_${messageId}`, unsubscribe);
     return unsubscribe;
@@ -107,9 +128,12 @@ export const useRealtime = (userId) => {
   const listenToNotifications = useCallback(() => {
     if (!userId) return;
 
-    const unsubscribe = realtimeService.onNotificationsChange(userId, (notifications) => {
-      setNotifications(notifications);
-    });
+    const unsubscribe = realtimeService.onNotificationsChange(
+      userId,
+      notifications => {
+        setNotifications(notifications);
+      }
+    );
 
     listenersRef.current.set(`notifications_${userId}`, unsubscribe);
     return unsubscribe;
@@ -117,16 +141,19 @@ export const useRealtime = (userId) => {
 
   // ===== STATUTS/STORIES =====
 
-  const markStatusAsViewed = useCallback(async (statusId) => {
-    if (userId && statusId) {
-      await realtimeService.updateStatusView(statusId, userId);
-    }
-  }, [userId]);
+  const markStatusAsViewed = useCallback(
+    async statusId => {
+      if (userId && statusId) {
+        await realtimeService.updateStatusView(statusId, userId);
+      }
+    },
+    [userId]
+  );
 
-  const listenToStatusViews = useCallback((statusId) => {
+  const listenToStatusViews = useCallback(statusId => {
     if (!statusId) return;
 
-    const unsubscribe = realtimeService.onStatusViewsChange(statusId, (views) => {
+    const unsubscribe = realtimeService.onStatusViewsChange(statusId, views => {
       // Traiter les vues de statut
       console.log('Vues de statut mises à jour:', views);
     });
@@ -135,7 +162,43 @@ export const useRealtime = (userId) => {
     return unsubscribe;
   }, []);
 
-    // ===== GESTION DU CYCLE DE VIE =====
+  // ===== MESSAGES EN TEMPS RÉEL =====
+
+  const listenToMessages = useCallback((conversationId, callback) => {
+    if (!conversationId) return;
+
+    // Import dynamique pour éviter les problèmes circulaires
+    const firebaseService = require('@/utils/firebaseService').default;
+
+    const unsubscribe = firebaseService.listenToMessages(
+      conversationId,
+      ({ changes, allMessages }) => {
+        callback({ changes, allMessages });
+      },
+      50 // Limite de 50 messages
+    );
+
+    listenersRef.current.set(`messages_${conversationId}`, unsubscribe);
+    return unsubscribe;
+  }, []);
+
+  const listenToConversation = useCallback((conversationId, callback) => {
+    if (!conversationId) return;
+
+    const firebaseService = require('@/utils/firebaseService').default;
+
+    const unsubscribe = firebaseService.listenToConversation(
+      conversationId,
+      conversation => {
+        callback(conversation);
+      }
+    );
+
+    listenersRef.current.set(`conversation_${conversationId}`, unsubscribe);
+    return unsubscribe;
+  }, []);
+
+  // ===== GESTION DU CYCLE DE VIE =====
 
   useEffect(() => {
     // Mettre à jour la présence au montage
@@ -150,7 +213,7 @@ export const useRealtime = (userId) => {
       }
 
       // Supprimer tous les écouteurs
-      listenersRef.current.forEach((unsubscribe) => {
+      listenersRef.current.forEach(unsubscribe => {
         if (typeof unsubscribe === 'function') {
           unsubscribe();
         }
@@ -177,7 +240,7 @@ export const useRealtime = (userId) => {
 
   // ===== UTILITAIRES =====
 
-  const removeListener = useCallback((key) => {
+  const removeListener = useCallback(key => {
     const unsubscribe = listenersRef.current.get(key);
     if (unsubscribe && typeof unsubscribe === 'function') {
       unsubscribe();
@@ -186,7 +249,7 @@ export const useRealtime = (userId) => {
   }, []);
 
   const removeAllListeners = useCallback(() => {
-    listenersRef.current.forEach((unsubscribe) => {
+    listenersRef.current.forEach(unsubscribe => {
       if (typeof unsubscribe === 'function') {
         unsubscribe();
       }
@@ -216,9 +279,11 @@ export const useRealtime = (userId) => {
     listenToMessageStatus,
     listenToNotifications,
     listenToStatusViews,
+    listenToMessages,
+    listenToConversation,
 
     // Utilitaires
     removeListener,
-    removeAllListeners
+    removeAllListeners,
   };
 };

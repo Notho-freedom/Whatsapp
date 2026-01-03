@@ -1,0 +1,206 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Fonction helper pour vérifier l'authentification
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Fonction helper pour vérifier si l'utilisateur est propriétaire
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+    
+    // Fonction helper pour vérifier si l'utilisateur est participant
+    function isParticipant(conversationId) {
+      return isAuthenticated() && 
+        request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
+    }
+    
+    // Fonction helper pour vérifier si l'utilisateur est admin d'une conversation
+    function isConversationAdmin(conversationId) {
+      return isAuthenticated() && 
+        request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.admins;
+    }
+    
+    // Règles pour la collection users
+    match /users/{userId} {
+      // Lecture : utilisateur authentifié peut lire n'importe quel profil
+      allow read: if isAuthenticated();
+      
+      // Création : seulement lors de l'inscription (géré par Admin SDK)
+      allow create: if false;
+      
+      // Mise à jour : seulement le propriétaire peut modifier son profil
+      allow update: if isOwner(userId) && 
+        // Empêcher la modification de certains champs sensibles
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['uid', 'createdAt']));
+      
+      // Suppression : seulement le propriétaire
+      allow delete: if isOwner(userId);
+    }
+    
+    // Règles pour la collection conversations
+    match /conversations/{conversationId} {
+      // Lecture : utilisateur authentifié ET participant de la conversation
+      // Utilise resource.data pour permettre les requêtes avec filtres (ex: is_temporary=true)
+      allow read: if isAuthenticated() && 
+        request.auth.uid in resource.data.participants;
+      
+      // Liste (query) : utilisateur authentifié peut lister ses conversations
+      allow list: if isAuthenticated();
+      
+      // Création : utilisateur authentifié peut créer une conversation s'il est dans les participants
+      allow create: if isAuthenticated() && 
+        request.auth.uid in request.resource.data.participants &&
+        request.resource.data.participants.size() >= 2 &&
+        request.resource.data.participants.size() <= 256;
+      
+      // Mise à jour : participants pour les infos basiques, admins pour les changements importants
+      allow update: if isAuthenticated() && 
+        request.auth.uid in resource.data.participants &&
+        (
+          // Tous les participants peuvent mettre à jour lastMessage et lastMessageAt
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['lastMessage', 'lastMessageAt', 'updatedAt']) ||
+          // Les admins peuvent tout modifier sauf certains champs
+          (request.auth.uid in resource.data.admins && 
+           !request.resource.data.diff(resource.data).affectedKeys().hasAny(['id', 'createdAt']))
+        );
+      
+      // Suppression : seulement les admins
+      allow delete: if isAuthenticated() && 
+        request.auth.uid in resource.data.admins;
+    }
+    
+    // Règles pour la collection messages
+    match /messages/{messageId} {
+      // Fonction helper pour vérifier si l'utilisateur peut lire le message
+      function canReadMessage() {
+        return isAuthenticated() && 
+          isParticipant(resource.data.conversationId);
+      }
+      
+      // Fonction helper pour vérifier si l'utilisateur est l'auteur
+      function isMessageAuthor() {
+        return isAuthenticated() && 
+          request.auth.uid == resource.data.senderId;
+      }
+      
+      // Lecture : participants de la conversation
+      allow read: if canReadMessage();
+      
+      // Création : participants peuvent envoyer des messages
+      allow create: if isAuthenticated() &&
+        isParticipant(request.resource.data.conversationId) &&
+        request.auth.uid == request.resource.data.senderId &&
+        request.resource.data.keys().hasAll(['conversationId', 'senderId', 'createdAt']);
+      
+      // Mise à jour : auteur peut modifier son message (pour édition, réactions)
+      allow update: if isMessageAuthor() &&
+        // Empêcher la modification de certains champs
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['id', 'conversationId', 'senderId', 'createdAt']);
+      
+      // Suppression : auteur ou admin de la conversation
+      allow delete: if isMessageAuthor() || 
+        isConversationAdmin(resource.data.conversationId);
+    }
+    
+    // Règles pour la collection contacts
+    match /contacts/{contactId} {
+      // Fonction helper pour vérifier le propriétaire du contact
+      function isContactOwner() {
+        return isAuthenticated() && 
+          request.auth.uid == resource.data.userId;
+      }
+      
+      // Lecture : seulement le propriétaire peut voir ses contacts
+      allow read: if isContactOwner();
+      
+      // Création : utilisateur peut créer ses propres contacts
+      allow create: if isAuthenticated() &&
+        request.auth.uid == request.resource.data.userId &&
+        request.resource.data.keys().hasAll(['userId', 'name']);
+      
+      // Mise à jour : seulement le propriétaire
+      allow update: if isContactOwner() &&
+        // Empêcher la modification du userId
+        request.resource.data.userId == resource.data.userId;
+      
+      // Suppression : seulement le propriétaire
+      allow delete: if isContactOwner();
+    }
+    
+    // Règles pour la collection calls (pour extension future)
+    match /calls/{callId} {
+      // Fonction helper pour vérifier si l'utilisateur est participant à l'appel
+      function isCallParticipant() {
+        return isAuthenticated() && 
+          (request.auth.uid == resource.data.callerId ||
+           request.auth.uid in resource.data.participants);
+      }
+      
+      // Lecture : participants de l'appel
+      allow read: if isCallParticipant();
+      
+      // Création : utilisateur authentifié peut initier un appel
+      allow create: if isAuthenticated() &&
+        request.auth.uid == request.resource.data.callerId;
+      
+      // Mise à jour : participants peuvent mettre à jour (accepter, rejeter, etc.)
+      allow update: if isCallParticipant();
+      
+      // Suppression : initiateur de l'appel seulement
+      allow delete: if isAuthenticated() &&
+        request.auth.uid == resource.data.callerId;
+    }
+    
+    // Règles pour la collection status (pour extension future)
+    match /status/{statusId} {
+      // Lecture : tous les utilisateurs authentifiés
+      allow read: if isAuthenticated();
+      
+      // Création : utilisateur peut créer son propre statut
+      allow create: if isAuthenticated() &&
+        request.auth.uid == request.resource.data.userId;
+      
+      // Mise à jour : propriétaire du statut
+      allow update: if isAuthenticated() &&
+        request.auth.uid == resource.data.userId;
+      
+      // Suppression : propriétaire du statut
+      allow delete: if isAuthenticated() &&
+        request.auth.uid == resource.data.userId;
+    }
+    
+    // Règles pour les sous-collections de messages
+    match /conversations/{conversationId}/messages/{messageId} {
+      // Mêmes règles que la collection messages principale
+      allow read: if isParticipant(conversationId);
+      allow create: if isParticipant(conversationId) &&
+        request.auth.uid == request.resource.data.senderId;
+      allow update: if request.auth.uid == resource.data.senderId;
+      allow delete: if request.auth.uid == resource.data.senderId ||
+        isConversationAdmin(conversationId);
+    }
+    
+    // Règles pour les réactions aux messages
+    match /messages/{messageId}/reactions/{reactionId} {
+      // Lecture : participants de la conversation
+      allow read: if isAuthenticated();
+      
+      // Création/Mise à jour : utilisateur peut ajouter/modifier sa réaction
+      allow create, update: if isAuthenticated() &&
+        request.auth.uid == request.resource.data.userId;
+      
+      // Suppression : utilisateur peut retirer sa réaction
+      allow delete: if isAuthenticated() &&
+        request.auth.uid == resource.data.userId;
+    }
+    
+    // Interdire tout accès par défaut
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

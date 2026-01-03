@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useAppContext } from '@/context';
 import { API_ENDPOINTS } from '@/utils/config';
+import json from 'json-bigint';
 
 /**
  * Hook pour gérer les conversations temporaires

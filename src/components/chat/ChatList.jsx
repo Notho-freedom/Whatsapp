@@ -31,7 +31,7 @@ import ContactList from './ContactList';
 export default function ChatList({
   onChatSelect,
   selectedChatId,
-  onStatusSelect
+  onStatusSelect,
 }) {
   const [isClient, setIsClient] = useState(false);
   const [showContacts, setShowContacts] = useState(false);
@@ -42,6 +42,7 @@ export default function ChatList({
     searchQuery,
     setSearchQuery,
     addUser,
+    currentUser, // Récupérer currentUser depuis le contexte
   } = useAppContext();
   const {
     contacts: googleContacts,
@@ -52,25 +53,7 @@ export default function ChatList({
   const [firebaseUsers, setFirebaseUsers] = useState([]);
   const [firebaseLoading, setFirebaseLoading] = useState(false);
   // Hook temps réel pour la présence et les notifications
-  const [currentUser, setCurrentUser] = useState(null);
   const scrollRef = useRef(null);
-
-  // Charger l'utilisateur depuis localStorage uniquement côté client
-  useEffect(() => {
-    try {
-      const storedUser = typeof window !== 'undefined' ? localStorage.getItem('userData') : null;
-      if (storedUser && storedUser.trim() !== '') {
-        try {
-          const parsedUser = JSON.parse(storedUser);
-          setCurrentUser(parsedUser);
-        } catch (error) {
-          console.warn('⚠️ Erreur lors du parsing de userData dans ChatList:', error);
-        }
-      }
-    } catch (error) {
-      console.warn('⚠️ Erreur lors de la récupération de userData dans ChatList:', error);
-    }
-  }, []);
 
   // Préchargement automatique des avatars
   useAutoAvatarPreloader(filteredUsers, 'chats');
@@ -132,7 +115,9 @@ export default function ChatList({
   };
 
   // Fonction pour créer une conversation avec un contact
-  const createConversationWithContact = async contact => {
+  const createConversationWithContact = contact => {
+    console.log('✅ Selecting contact for new conversation:', contact);
+
     if (!currentUser || !currentUser.id) {
       setNotification({
         type: 'error',
@@ -142,151 +127,59 @@ export default function ChatList({
       return;
     }
 
-    // 1. Chercher si une conversation existe déjà (par ID utilisateur)
-    const existing = filteredUsers.find(
-      chat =>
-        (chat.contact?.id && contact.id && chat.contact.id === contact.id) ||
-        (chat.id && contact.id && chat.id === contact.id) // fallback si structure différente
-    );
-    if (existing) {
-      onChatSelect(existing);
-      setShowContacts(false);
-      setShowFirebaseUsers(false);
-      setNotification({
-        type: 'success',
-        message: `Conversation déjà existante avec ${existing.name}`,
-        timestamp: new Date(),
-      });
-      setTimeout(() => setNotification(null), 2000);
-      return;
-    }
-
-    // 2. Construction des données pour la nouvelle conversation
+    // Get contact info for display
     const contactName =
-      contact.displayName || contact.name || 'Nouveau contact';
+      contact.displayName || contact.name || contact.email || 'Contact';
     const contactAvatar =
       contact.photos?.[0]?.url || contact.avatar || '/default-avatar.png';
-    const contactId = contact.id || `temp-contact-${Date.now()}`;
+    const contactId = contact.id || contact.email || `contact-${Date.now()}`;
 
-    const conversationPayload = {
-      type: 'individual',
+    // Create a temporary chat object for UI display
+    // The actual conversation will be created when first message is sent
+    const tempChat = {
+      id: `temp-${contactId}`, // Temporary ID that will be replaced on first message
       name: contactName,
-      avatar_url: contactAvatar,
+      avatar: contactAvatar,
       description: `Conversation avec ${contactName}`,
-      created_by: currentUser.id,
       participants: [currentUser.id, contactId],
-      is_temporary: true,
-      custom_settings: JSON.stringify({
-        isTemporary: true,
-        contact: {
-          ...contact,
-          id: contactId,
+      participants_info: {
+        [currentUser.id]: {
+          name: currentUser.name || currentUser.displayName || 'Moi',
+          avatar:
+            currentUser.avatar || currentUser.photoURL || '/default-avatar.png',
         },
-      lastMessage: { text: 'Nouvelle conversation', type: 'text', time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) },
-      }),
+        [contactId]: {
+          name: contactName,
+          avatar: contactAvatar,
+        },
+      },
+      contact: { ...contact, id: contactId },
+      isTemporary: true, // Mark as temporary until first message
+      isNewConversation: true,
+      lastMessage: null,
+      unreadCount: 0,
+      isPinned: false,
+      isMuted: false,
+      isTyping: false,
     };
 
-    // 3. Création de la conversation côté serveur
-    try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-      const response = await fetch(API_ENDPOINTS.CONVERSATIONS, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify(conversationPayload),
-      });
+    console.log(
+      '🎯 Temporary chat created, waiting for first message:',
+      tempChat
+    );
 
-      if (!response.ok)
-        throw new Error('Erreur lors de la création de la conversation');
+    // Just select the chat (no Firebase call yet)
+    // The conversation will be created in Firebase when the first message is sent
+    onChatSelect(tempChat);
+    setShowContacts(false);
+    setShowFirebaseUsers(false);
 
-      const { conversation } = await response.json();
-
-      const newChat = {
-        id: conversation.id,
-        name: conversation.name,
-        avatar: conversation.avatar_url,
-        lastMessage: {
-          text: 'Nouvelle conversation',
-          type: 'text',
-          time: new Date().toLocaleTimeString('fr-FR', {
-            hour: '2-digit',
-            minute: '2-digit',
-          }),
-        },
-        lastMessageTime: new Date().toLocaleTimeString('fr-FR', {
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
-        unreadCount: 0,
-        isPinned: false,
-        isMuted: false,
-        isTyping: false,
-        contact: { ...contact, id: contactId },
-        isNewConversation: true,
-        isTemporary: true,
-      };
-
-      addUser(newChat);
-      onChatSelect(newChat);
-      setShowContacts(false);
-      setShowFirebaseUsers(false);
-
-      setNotification({
-        type: 'success',
-        message: `Conversation créée avec ${newChat.name}`,
-        timestamp: new Date(),
-      });
-      setTimeout(() => setNotification(null), 2000);
-
-      window.dispatchEvent(
-        new CustomEvent('conversation-created', {
-          detail: {
-            conversation: newChat,
-            contact: { ...contact, id: contactId },
-            timestamp: new Date(),
-          },
-        })
-      );
-    } catch (error) {
-      // Fallback local en cas d'échec serveur
-      const fallbackChat = {
-        id: `temp-${Date.now()}`,
-        name: contactName,
-        avatar: contactAvatar,
-        lastMessage: {
-          text: 'Nouvelle conversation',
-          type: 'text',
-          time: new Date().toLocaleTimeString('fr-FR', {
-            hour: '2-digit',
-            minute: '2-digit',
-          }),
-        },
-        lastMessageTime: new Date().toLocaleTimeString('fr-FR', {
-          hour: '2-digit',
-          minute: '2-digit',
-        }),
-        unreadCount: 0,
-        isPinned: false,
-        isMuted: false,
-        isTyping: false,
-        contact: { ...contact, id: contactId },
-        isNewConversation: true,
-        isTemporary: true,
-      };
-      addUser(fallbackChat);
-      onChatSelect(fallbackChat);
-      setShowContacts(false);
-      setShowFirebaseUsers(false);
-
-      setNotification({
-        type: 'error',
-        message: `Conversation temporaire créée (mode local)`,
-        timestamp: new Date(),
-      });
-      setTimeout(() => setNotification(null), 2000);
-    }
+    setNotification({
+      type: 'info',
+      message: `Ouverture de la conversation avec ${contactName}`,
+      timestamp: new Date(),
+    });
+    setTimeout(() => setNotification(null), 2000);
   };
 
   // Priorité : pinned > non pinned, puis par temps
