@@ -144,7 +144,7 @@ export default function ChatList({
       return;
     }
 
-    // ⭐ IMPORTANT: Générer l'ID de conversation dès maintenant avec la même logique 
+    // ⭐ IMPORTANT: Générer l'ID de conversation dès maintenant avec la même logique
     // que dans sendMessage() pour éviter les doublons de tuiles
     const conversationId = generateConversationId(currentUser.id, recipientId);
 

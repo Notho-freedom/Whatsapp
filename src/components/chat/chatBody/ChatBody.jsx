@@ -184,9 +184,11 @@ const ChatBody = memo(function ChatBody({ selectedChat, currentUser }) {
                     return <SystemMessage key={msg.id} message={msg} />;
                   }
                   
+                  // Assure une clé unique même si un même id arrive deux fois (optimiste + temps réel)
+                  const uniqueKey = `${msg.id}-${idx}`;
                   return (
                     <MessageBubble 
-                      key={msg.id} 
+                      key={uniqueKey}
                       message={msg}
                       isFirstInGroup={isFirstInGroup}
                       isLastInGroup={isLastInGroup}

@@ -853,7 +853,7 @@ export function AppProvider({ children }) {
 
         // Préparer les infos destinataire (utilisées pour création ou mise à jour)
         let recipientInfo;
-        
+
         // 1️⃣ Chercher d'abord dans les infos du chat temporaire
         if (
           selectedChat?.isTemporary &&
@@ -861,15 +861,19 @@ export function AppProvider({ children }) {
         ) {
           recipientInfo = selectedChat.participants_info[recipientUserId];
           console.log('📋 Infos destinataire trouvées dans le chat temporaire');
-        } 
+        }
         // 2️⃣ Chercher dans les conversations existantes
         else {
           const foundConv = state.users.find(
-            u => u.id === conversationId || u.otherParticipantId === recipientUserId
+            u =>
+              u.id === conversationId ||
+              u.otherParticipantId === recipientUserId
           );
           if (foundConv?.participants_info?.[recipientUserId]) {
             recipientInfo = foundConv.participants_info[recipientUserId];
-            console.log('📋 Infos destinataire trouvées dans la conversation existante');
+            console.log(
+              '📋 Infos destinataire trouvées dans la conversation existante'
+            );
           }
         }
 
