@@ -84,7 +84,10 @@ class FirebaseService {
       });
       return true;
     } catch (error) {
-      console.error('❌ Erreur lors de la mise à jour de la conversation:', error);
+      console.error(
+        '❌ Erreur lors de la mise à jour de la conversation:',
+        error
+      );
       throw error;
     }
   }
@@ -103,7 +106,10 @@ class FirebaseService {
         updated_at: serverTimestamp(),
       });
     } catch (error) {
-      console.error('❌ Erreur lors de la mise à jour des participants_info:', error);
+      console.error(
+        '❌ Erreur lors de la mise à jour des participants_info:',
+        error
+      );
     }
   }
 
@@ -116,7 +122,10 @@ class FirebaseService {
         updated_at: serverTimestamp(),
       });
     } catch (error) {
-      console.error('❌ Erreur lors de la mise à jour du dernier message:', error);
+      console.error(
+        '❌ Erreur lors de la mise à jour du dernier message:',
+        error
+      );
     }
   }
 

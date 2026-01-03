@@ -853,7 +853,10 @@ export function AppProvider({ children }) {
 
         // Préparer les infos destinataire (utilisées pour création ou mise à jour)
         let recipientInfo;
-        if (selectedChat?.isTemporary && selectedChat?.participants_info?.[recipientUserId]) {
+        if (
+          selectedChat?.isTemporary &&
+          selectedChat?.participants_info?.[recipientUserId]
+        ) {
           recipientInfo = selectedChat.participants_info[recipientUserId];
         } else {
           const foundUser = state.users.find(
@@ -867,9 +870,7 @@ export function AppProvider({ children }) {
                 foundUser.email ||
                 'Utilisateur',
               avatar:
-                foundUser.photoURL ||
-                foundUser.avatar ||
-                '/default-avatar.png',
+                foundUser.photoURL || foundUser.avatar || '/default-avatar.png',
             };
           } else {
             recipientInfo = {
@@ -966,7 +967,10 @@ export function AppProvider({ children }) {
               },
             });
           } catch (error) {
-            console.warn('⚠️ Impossible de mettre à jour participants_info:', error);
+            console.warn(
+              '⚠️ Impossible de mettre à jour participants_info:',
+              error
+            );
           }
         }
 
