@@ -1,11 +1,11 @@
 import React from 'react';
-import { 
-  Info, 
-  Shield, 
-  Users, 
-  Calendar, 
-  Link, 
-  FileText, 
+import {
+  Info,
+  Shield,
+  Users,
+  Calendar,
+  Link,
+  FileText,
   Image,
   Settings,
   Monitor,
@@ -16,7 +16,7 @@ import {
   Pencil,
   HardDrive,
   Keyboard,
-  HelpCircle
+  HelpCircle,
 } from 'lucide-react';
 
 const ProfilePanel = ({ activeTab, onTabChange }) => {
@@ -55,7 +55,12 @@ const ProfilePanel = ({ activeTab, onTabChange }) => {
       <nav className="p-1.5">
         {tabs.map((tab, index) => {
           if (tab.id === 'separator') {
-            return <div key={`separator-${index}`} className="w-[90%] mx-auto h-px bg-neutral-700/50 my-2"></div>;
+            return (
+              <div
+                key={`separator-${index}`}
+                className="w-[90%] mx-auto h-px bg-neutral-700/50 my-2"
+              ></div>
+            );
           }
           const IconComponent = tab.icon;
           return (
@@ -74,7 +79,6 @@ const ProfilePanel = ({ activeTab, onTabChange }) => {
           );
         })}
       </nav>
-
     </div>
   );
 };

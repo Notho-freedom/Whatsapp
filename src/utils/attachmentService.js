@@ -12,7 +12,7 @@ class AttachmentService {
       drawing: drawingService,
       contact: contactSharingService,
       document: documentService,
-      camera: cameraService
+      camera: cameraService,
     };
   }
 
@@ -22,27 +22,38 @@ class AttachmentService {
       switch (action) {
         case 'select-media':
           return await this.handleMediaSelection(data, conversationId, userId);
-        
+
         case 'open-camera':
           return await this.handleCameraAction(data, conversationId, userId);
-        
+
         case 'select-document':
-          return await this.handleDocumentSelection(data, conversationId, userId);
-        
+          return await this.handleDocumentSelection(
+            data,
+            conversationId,
+            userId
+          );
+
         case 'select-contact':
-          return await this.handleContactSelection(data, conversationId, userId);
-        
+          return await this.handleContactSelection(
+            data,
+            conversationId,
+            userId
+          );
+
         case 'create-poll':
           return await this.handlePollCreation(data, conversationId, userId);
-        
+
         case 'open-drawing':
           return await this.handleDrawingCreation(data, conversationId, userId);
-        
+
         default:
           throw new Error(`Action d'attachement non reconnue: ${action}`);
       }
     } catch (error) {
-      console.error('Erreur lors du traitement de l\'action d\'attachement:', error);
+      console.error(
+        "Erreur lors du traitement de l'action d'attachement:",
+        error
+      );
       throw error;
     }
   }
@@ -55,10 +66,14 @@ class AttachmentService {
       }
 
       // Utiliser le service caméra pour traiter les médias
-      const mediaResults = await cameraService.selectMedia(files, conversationId, {
-        created_by: userId,
-        source: 'gallery'
-      });
+      const mediaResults = await cameraService.selectMedia(
+        files,
+        conversationId,
+        {
+          created_by: userId,
+          source: 'gallery',
+        }
+      );
 
       // Créer des messages pour chaque média
       const messages = [];
@@ -72,11 +87,14 @@ class AttachmentService {
           metadata: {
             attachment_type: 'media',
             media_count: 1,
-            source: 'gallery'
-          }
+            source: 'gallery',
+          },
         };
 
-        const message = await firebaseServerService.saveMessage(conversationId, messageData);
+        const message = await firebaseServerService.saveMessage(
+          conversationId,
+          messageData
+        );
         messages.push(message);
       }
 
@@ -84,7 +102,7 @@ class AttachmentService {
         success: true,
         media: mediaResults,
         messages: messages,
-        count: mediaResults.length
+        count: mediaResults.length,
       };
     } catch (error) {
       console.error('Erreur lors de la sélection de médias:', error);
@@ -102,13 +120,13 @@ class AttachmentService {
         mediaResult = await cameraService.capturePhoto(blob, conversationId, {
           created_by: userId,
           source: 'camera',
-          ...metadata
+          ...metadata,
         });
       } else if (type === 'video') {
         mediaResult = await cameraService.recordVideo(blob, conversationId, {
           created_by: userId,
           source: 'camera',
-          ...metadata
+          ...metadata,
         });
       } else {
         throw new Error('Type de média non supporté');
@@ -124,19 +142,22 @@ class AttachmentService {
         metadata: {
           attachment_type: 'camera',
           media_type: type,
-          source: 'camera'
-        }
+          source: 'camera',
+        },
       };
 
-      const message = await firebaseServerService.saveMessage(conversationId, messageData);
+      const message = await firebaseServerService.saveMessage(
+        conversationId,
+        messageData
+      );
 
       return {
         success: true,
         media: mediaResult,
-        message: message
+        message: message,
       };
     } catch (error) {
-      console.error('Erreur lors de l\'action caméra:', error);
+      console.error("Erreur lors de l'action caméra:", error);
       throw error;
     }
   }
@@ -153,10 +174,14 @@ class AttachmentService {
 
       for (const file of files) {
         // Upload du document
-        const document = await documentService.uploadDocument(file, conversationId, {
-          created_by: userId,
-          source: 'selection'
-        });
+        const document = await documentService.uploadDocument(
+          file,
+          conversationId,
+          {
+            created_by: userId,
+            source: 'selection',
+          }
+        );
 
         documentResults.push(document);
 
@@ -171,11 +196,14 @@ class AttachmentService {
             attachment_type: 'document',
             document_id: document.id,
             file_size: document.file_size,
-            file_type: document.file_type
-          }
+            file_type: document.file_type,
+          },
         };
 
-        const message = await firebaseServerService.saveMessage(conversationId, messageData);
+        const message = await firebaseServerService.saveMessage(
+          conversationId,
+          messageData
+        );
         messages.push(message);
       }
 
@@ -183,7 +211,7 @@ class AttachmentService {
         success: true,
         documents: documentResults,
         messages: messages,
-        count: documentResults.length
+        count: documentResults.length,
       };
     } catch (error) {
       console.error('Erreur lors de la sélection de documents:', error);
@@ -215,16 +243,19 @@ class AttachmentService {
         metadata: {
           attachment_type: 'contact',
           contact_id: sharedContact.id,
-          contact_name: `${contactData.first_name} ${contactData.last_name}`
-        }
+          contact_name: `${contactData.first_name} ${contactData.last_name}`,
+        },
       };
 
-      const message = await firebaseServerService.saveMessage(conversationId, messageData);
+      const message = await firebaseServerService.saveMessage(
+        conversationId,
+        messageData
+      );
 
       return {
         success: true,
         contact: sharedContact,
-        message: message
+        message: message,
       };
     } catch (error) {
       console.error('Erreur lors de la sélection de contact:', error);
@@ -235,7 +266,11 @@ class AttachmentService {
   // Gérer la création de sondage
   async handlePollCreation(pollData, conversationId, userId) {
     try {
-      if (!pollData.question || !pollData.options || pollData.options.length < 2) {
+      if (
+        !pollData.question ||
+        !pollData.options ||
+        pollData.options.length < 2
+      ) {
         throw new Error('Données de sondage invalides');
       }
 
@@ -243,7 +278,7 @@ class AttachmentService {
       const poll = await pollService.createPoll({
         ...pollData,
         conversation_id: conversationId,
-        created_by: userId
+        created_by: userId,
       });
 
       // Créer un message pour le sondage
@@ -257,16 +292,19 @@ class AttachmentService {
           attachment_type: 'poll',
           poll_id: poll.id,
           question: poll.question,
-          options_count: poll.options.length
-        }
+          options_count: poll.options.length,
+        },
       };
 
-      const message = await firebaseServerService.saveMessage(conversationId, messageData);
+      const message = await firebaseServerService.saveMessage(
+        conversationId,
+        messageData
+      );
 
       return {
         success: true,
         poll: poll,
-        message: message
+        message: message,
       };
     } catch (error) {
       console.error('Erreur lors de la création du sondage:', error);
@@ -285,7 +323,7 @@ class AttachmentService {
       const drawing = await drawingService.saveDrawingWithImage(
         {
           ...drawingData,
-          created_by: userId
+          created_by: userId,
         },
         drawingData.imageBlob,
         conversationId
@@ -301,16 +339,19 @@ class AttachmentService {
         metadata: {
           attachment_type: 'drawing',
           drawing_id: drawing.id,
-          source: 'canvas'
-        }
+          source: 'canvas',
+        },
       };
 
-      const message = await firebaseServerService.saveMessage(conversationId, messageData);
+      const message = await firebaseServerService.saveMessage(
+        conversationId,
+        messageData
+      );
 
       return {
         success: true,
         drawing: drawing,
-        message: message
+        message: message,
       };
     } catch (error) {
       console.error('Erreur lors de la création du dessin:', error);
@@ -325,27 +366,40 @@ class AttachmentService {
 
       // Récupérer les médias
       if (!filters.type || filters.type === 'media') {
-        results.media = await cameraService.getMediaByConversation(conversationId, filters);
+        results.media = await cameraService.getMediaByConversation(
+          conversationId,
+          filters
+        );
       }
 
       // Récupérer les documents
       if (!filters.type || filters.type === 'document') {
-        results.documents = await documentService.getDocumentsByConversation(conversationId, filters);
+        results.documents = await documentService.getDocumentsByConversation(
+          conversationId,
+          filters
+        );
       }
 
       // Récupérer les sondages
       if (!filters.type || filters.type === 'poll') {
-        results.polls = await pollService.getPollsByConversation(conversationId);
+        results.polls = await pollService.getPollsByConversation(
+          conversationId
+        );
       }
 
       // Récupérer les dessins
       if (!filters.type || filters.type === 'drawing') {
-        results.drawings = await drawingService.getDrawingsByConversation(conversationId);
+        results.drawings = await drawingService.getDrawingsByConversation(
+          conversationId
+        );
       }
 
       // Récupérer les contacts partagés
       if (!filters.type || filters.type === 'contact') {
-        results.contacts = await contactSharingService.getSharedContactsByConversation(conversationId);
+        results.contacts =
+          await contactSharingService.getSharedContactsByConversation(
+            conversationId
+          );
       }
 
       return results;
@@ -361,20 +415,36 @@ class AttachmentService {
       const results = {};
 
       // Rechercher dans les médias
-      results.media = await cameraService.searchMedia(query, conversationId, limit);
+      results.media = await cameraService.searchMedia(
+        query,
+        conversationId,
+        limit
+      );
 
       // Rechercher dans les documents
-      results.documents = await documentService.searchDocuments(query, conversationId, limit);
+      results.documents = await documentService.searchDocuments(
+        query,
+        conversationId,
+        limit
+      );
 
       // Rechercher dans les dessins
-      results.drawings = await drawingService.searchDrawings(query, conversationId, limit);
+      results.drawings = await drawingService.searchDrawings(
+        query,
+        conversationId,
+        limit
+      );
 
       // Rechercher dans les contacts partagés
-      results.contacts = await contactSharingService.searchSharedContacts(query, conversationId, limit);
+      results.contacts = await contactSharingService.searchSharedContacts(
+        query,
+        conversationId,
+        limit
+      );
 
       return results;
     } catch (error) {
-      console.error('Erreur lors de la recherche d\'attachements:', error);
+      console.error("Erreur lors de la recherche d'attachements:", error);
       throw error;
     }
   }
@@ -397,7 +467,10 @@ class AttachmentService {
       stats.polls = await pollService.getPollStats(conversationId);
 
       // Statistiques des contacts partagés
-      stats.contacts = await contactSharingService.getContactSharingStats(null, conversationId);
+      stats.contacts = await contactSharingService.getContactSharingStats(
+        null,
+        conversationId
+      );
 
       return stats;
     } catch (error) {
@@ -412,13 +485,22 @@ class AttachmentService {
       const results = {};
 
       // Nettoyer les médias
-      results.media = await cameraService.cleanupOldMedia(daysOld, conversationId);
+      results.media = await cameraService.cleanupOldMedia(
+        daysOld,
+        conversationId
+      );
 
       // Nettoyer les documents
-      results.documents = await documentService.cleanupOldDocuments(daysOld, conversationId);
+      results.documents = await documentService.cleanupOldDocuments(
+        daysOld,
+        conversationId
+      );
 
       // Nettoyer les dessins
-      results.drawings = await drawingService.cleanupOldDrawings(daysOld, conversationId);
+      results.drawings = await drawingService.cleanupOldDrawings(
+        daysOld,
+        conversationId
+      );
 
       return results;
     } catch (error) {
@@ -431,7 +513,9 @@ class AttachmentService {
   async checkAttachmentPermissions(userId, conversationId, attachmentType) {
     try {
       // Vérifier que l'utilisateur est participant de la conversation
-      const participants = await firebaseServerService.getParticipants(conversationId);
+      const participants = await firebaseServerService.getParticipants(
+        conversationId
+      );
       const isParticipant = participants.some(p => p.user_id === userId);
 
       if (!isParticipant) {
@@ -454,9 +538,11 @@ class AttachmentService {
 
         case 'document':
           // Vérifier la limite de taille pour les documents
-          const storageUsage = await documentService.getStorageUsage(conversationId);
+          const storageUsage = await documentService.getStorageUsage(
+            conversationId
+          );
           const maxStorage = 100 * 1024 * 1024; // 100MB par conversation
-          
+
           if (storageUsage.total_size > maxStorage) {
             return { allowed: false, reason: 'Limite de stockage atteinte' };
           }
@@ -466,14 +552,17 @@ class AttachmentService {
           // Vérifier la limite de taille pour les médias
           const mediaStats = await cameraService.getMediaStats(conversationId);
           const maxMediaStorage = 500 * 1024 * 1024; // 500MB par conversation
-          
+
           if (mediaStats.total_size > maxMediaStorage) {
-            return { allowed: false, reason: 'Limite de stockage média atteinte' };
+            return {
+              allowed: false,
+              reason: 'Limite de stockage média atteinte',
+            };
           }
           return { allowed: true };
 
         default:
-          return { allowed: false, reason: 'Type d\'attachement non reconnu' };
+          return { allowed: false, reason: "Type d'attachement non reconnu" };
       }
     } catch (error) {
       console.error('Erreur lors de la vérification des permissions:', error);

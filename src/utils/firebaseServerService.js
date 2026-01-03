@@ -1,16 +1,16 @@
-import { 
-  collection, 
-  doc, 
-  addDoc, 
-  getDoc, 
-  getDocs, 
-  updateDoc, 
+import {
+  collection,
+  doc,
+  addDoc,
+  getDoc,
+  getDocs,
+  updateDoc,
   setDoc,
-  deleteDoc, 
-  query, 
-  where, 
-  orderBy, 
-  Timestamp 
+  deleteDoc,
+  query,
+  where,
+  orderBy,
+  Timestamp,
 } from 'firebase/firestore';
 import { db } from './firebaseConfig';
 
@@ -29,22 +29,25 @@ class FirebaseServerService {
         description,
         created_by = 1,
         is_temporary = true,
-        custom_settings = {}
+        custom_settings = {},
       } = conversationData;
 
       // Créer la conversation dans Firestore
       const currentTimestamp = new Date();
-      const conversationRef = await addDoc(collection(this.db, 'conversations'), {
-        type: 'individual',
-        name,
-        description,
-        created_by,
-        avatar_url,
-        custom_settings,
-        is_temporary,
-        created_at: currentTimestamp,
-        updated_at: currentTimestamp
-      });
+      const conversationRef = await addDoc(
+        collection(this.db, 'conversations'),
+        {
+          type: 'individual',
+          name,
+          description,
+          created_by,
+          avatar_url,
+          custom_settings,
+          is_temporary,
+          created_at: currentTimestamp,
+          updated_at: currentTimestamp,
+        }
+      );
 
       // Ajouter le créateur comme participant
       await addDoc(collection(this.db, 'conversation_participants'), {
@@ -55,40 +58,45 @@ class FirebaseServerService {
         notification_settings: {
           muted: false,
           sound: true,
-          vibration: true
+          vibration: true,
         },
-        joined_at: currentTimestamp
+        joined_at: currentTimestamp,
       });
 
-              // Si un contact est fourni dans custom_settings, l'ajouter comme participant virtuel
-        if (custom_settings.contact) {
-          await addDoc(collection(this.db, 'conversation_participants'), {
-            conversation_id: conversationRef.id,
-            user_id: `virtual_${custom_settings.contact.id || Date.now()}`,
-            role: 'member',
-            is_active: true,
-            notification_settings: {
-              muted: false,
-              sound: true,
-              vibration: true
-            },
-            joined_at: currentTimestamp,
-            is_virtual_contact: true
-          });
-        }
+      // Si un contact est fourni dans custom_settings, l'ajouter comme participant virtuel
+      if (custom_settings.contact) {
+        await addDoc(collection(this.db, 'conversation_participants'), {
+          conversation_id: conversationRef.id,
+          user_id: `virtual_${custom_settings.contact.id || Date.now()}`,
+          role: 'member',
+          is_active: true,
+          notification_settings: {
+            muted: false,
+            sound: true,
+            vibration: true,
+          },
+          joined_at: currentTimestamp,
+          is_virtual_contact: true,
+        });
+      }
 
-      console.log(`✅ Conversation temporaire créée dans Firestore avec l'ID: ${conversationRef.id}`);
-      
+      console.log(
+        `✅ Conversation temporaire créée dans Firestore avec l'ID: ${conversationRef.id}`
+      );
+
       return {
         id: conversationRef.id,
         name,
         avatar_url,
         custom_settings,
         is_temporary: true,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       };
     } catch (error) {
-      console.error('❌ Erreur lors de la création de la conversation temporaire:', error);
+      console.error(
+        '❌ Erreur lors de la création de la conversation temporaire:',
+        error
+      );
       throw error;
     }
   }
@@ -106,7 +114,7 @@ class FirebaseServerService {
       const querySnapshot = await getDocs(q);
       const conversations = [];
 
-      querySnapshot.forEach((doc) => {
+      querySnapshot.forEach(doc => {
         const data = doc.data();
         // Filtrer côté client pour éviter les erreurs d'index
         if (data.is_temporary === true) {
@@ -115,21 +123,32 @@ class FirebaseServerService {
             name: data.name || 'Conversation temporaire',
             avatar_url: data.avatar_url || '/default-avatar.png',
             custom_settings: data.custom_settings || {},
-            created_at: data.created_at?.toDate?.()?.toISOString() || new Date().toISOString(),
-            updated_at: data.updated_at?.toDate?.()?.toISOString() || new Date().toISOString(),
+            created_at:
+              data.created_at?.toDate?.()?.toISOString() ||
+              new Date().toISOString(),
+            updated_at:
+              data.updated_at?.toDate?.()?.toISOString() ||
+              new Date().toISOString(),
             is_temporary: data.is_temporary,
-            contact: data.custom_settings?.contact || null
+            contact: data.custom_settings?.contact || null,
           });
         }
       });
 
       // Trier côté client
-      conversations.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+      conversations.sort(
+        (a, b) => new Date(b.updated_at) - new Date(a.updated_at)
+      );
 
-      console.log(`✅ ${conversations.length} conversations temporaires récupérées depuis Firestore`);
+      console.log(
+        `✅ ${conversations.length} conversations temporaires récupérées depuis Firestore`
+      );
       return conversations;
     } catch (error) {
-      console.error('❌ Erreur lors de la récupération des conversations temporaires:', error);
+      console.error(
+        '❌ Erreur lors de la récupération des conversations temporaires:',
+        error
+      );
       return [];
     }
   }
@@ -137,10 +156,15 @@ class FirebaseServerService {
   async cleanupOldTempConversations() {
     try {
       // DÉSACTIVÉ: Ne plus supprimer automatiquement les conversations
-      console.log('⚠️ Nettoyage automatique des conversations temporaires désactivé');
+      console.log(
+        '⚠️ Nettoyage automatique des conversations temporaires désactivé'
+      );
       return 0;
     } catch (error) {
-      console.error('❌ Erreur lors du nettoyage des conversations temporaires:', error);
+      console.error(
+        '❌ Erreur lors du nettoyage des conversations temporaires:',
+        error
+      );
       return 0;
     }
   }
@@ -153,7 +177,9 @@ class FirebaseServerService {
         where('conversation_id', '==', conversationId)
       );
       const participantsSnapshot = await getDocs(participantsQuery);
-      const participantDeletePromises = participantsSnapshot.docs.map(doc => deleteDoc(doc.ref));
+      const participantDeletePromises = participantsSnapshot.docs.map(doc =>
+        deleteDoc(doc.ref)
+      );
       await Promise.all(participantDeletePromises);
 
       // Supprimer les messages
@@ -162,7 +188,9 @@ class FirebaseServerService {
         where('conversation_id', '==', conversationId)
       );
       const messagesSnapshot = await getDocs(messagesQuery);
-      const messageDeletePromises = messagesSnapshot.docs.map(doc => deleteDoc(doc.ref));
+      const messageDeletePromises = messagesSnapshot.docs.map(doc =>
+        deleteDoc(doc.ref)
+      );
       await Promise.all(messageDeletePromises);
 
       // Supprimer la conversation
@@ -171,7 +199,10 @@ class FirebaseServerService {
 
       return true;
     } catch (error) {
-      console.error('❌ Erreur lors de la suppression de la conversation temporaire:', error);
+      console.error(
+        '❌ Erreur lors de la suppression de la conversation temporaire:',
+        error
+      );
       throw error;
     }
   }
@@ -189,7 +220,7 @@ class FirebaseServerService {
         reactions = [],
         isStarred = false,
         isRead = false,
-        metadata = {}
+        metadata = {},
       } = messageData;
 
       // Créer le message dans Firestore avec la structure compatible
@@ -205,27 +236,36 @@ class FirebaseServerService {
         is_starred: isStarred,
         is_read: isRead,
         metadata,
-        time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+        time: new Date().toLocaleTimeString('fr-FR', {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
         date: new Date().toLocaleDateString('fr-FR'),
         created_at: currentTimestamp,
-        updated_at: currentTimestamp
+        updated_at: currentTimestamp,
       });
 
       // Mettre à jour la conversation avec le dernier message
       const conversationRef = doc(this.db, 'conversations', conversationId);
       const messageTimestamp = new Date();
-      await setDoc(conversationRef, {
-        last_message: {
-          text: text || (media ? `📎 ${media[0]?.type || 'fichier'}` : ''),
-          type,
-          sender,
-          timestamp: messageTimestamp
+      await setDoc(
+        conversationRef,
+        {
+          last_message: {
+            text: text || (media ? `📎 ${media[0]?.type || 'fichier'}` : ''),
+            type,
+            sender,
+            timestamp: messageTimestamp,
+          },
+          updated_at: messageTimestamp,
         },
-        updated_at: messageTimestamp
-      }, { merge: true });
+        { merge: true }
+      );
 
-      console.log(`✅ Message sauvegardé dans Firestore avec l'ID: ${messageRef.id}`);
-      
+      console.log(
+        `✅ Message sauvegardé dans Firestore avec l'ID: ${messageRef.id}`
+      );
+
       // Retourner la structure compatible avec l'interface existante
       return {
         id: messageRef.id,
@@ -234,13 +274,16 @@ class FirebaseServerService {
         text,
         type,
         media,
-        time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+        time: new Date().toLocaleTimeString('fr-FR', {
+          hour: '2-digit',
+          minute: '2-digit',
+        }),
         date: new Date().toLocaleDateString('fr-FR'),
         read: isRead,
         reactions,
         reply_to: replyTo,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       };
     } catch (error) {
       console.error('❌ Erreur lors de la sauvegarde du message:', error);
@@ -259,7 +302,7 @@ class FirebaseServerService {
       const querySnapshot = await getDocs(q);
       const messages = [];
 
-      querySnapshot.forEach((doc) => {
+      querySnapshot.forEach(doc => {
         const data = doc.data();
         messages.push({
           id: doc.id,
@@ -268,13 +311,22 @@ class FirebaseServerService {
           text: data.text,
           type: data.type || 'text',
           media: data.media || null, // Ajout du champ media
-          time: data.time || new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+          time:
+            data.time ||
+            new Date().toLocaleTimeString('fr-FR', {
+              hour: '2-digit',
+              minute: '2-digit',
+            }),
           date: data.date || new Date().toLocaleDateString('fr-FR'),
           read: data.is_read || false,
           reactions: data.reactions || [],
           reply_to: data.reply_to,
-          created_at: data.created_at?.toDate?.()?.toISOString() || new Date().toISOString(),
-          updated_at: data.updated_at?.toDate?.()?.toISOString() || new Date().toISOString()
+          created_at:
+            data.created_at?.toDate?.()?.toISOString() ||
+            new Date().toISOString(),
+          updated_at:
+            data.updated_at?.toDate?.()?.toISOString() ||
+            new Date().toISOString(),
         });
       });
 
@@ -284,7 +336,9 @@ class FirebaseServerService {
       // Appliquer la pagination
       const paginatedMessages = messages.slice(offset, offset + limit);
 
-      console.log(`✅ ${paginatedMessages.length} messages récupérés pour la conversation ${conversationId}`);
+      console.log(
+        `✅ ${paginatedMessages.length} messages récupérés pour la conversation ${conversationId}`
+      );
       return paginatedMessages;
     } catch (error) {
       console.error('❌ Erreur lors de la récupération des messages:', error);
@@ -297,7 +351,7 @@ class FirebaseServerService {
       const messageRef = doc(this.db, 'messages', messageId);
       await updateDoc(messageRef, {
         ...updates,
-        updated_at: new Date()
+        updated_at: new Date(),
       });
 
       console.log(`✅ Message ${messageId} mis à jour dans Firestore`);
@@ -331,27 +385,30 @@ class FirebaseServerService {
         description,
         created_by,
         avatar_url,
-        custom_settings = {}
+        custom_settings = {},
       } = conversationData;
 
       const currentTimestamp = new Date();
-      const conversationRef = await addDoc(collection(this.db, 'conversations'), {
-        type,
-        name,
-        description,
-        created_by,
-        avatar_url,
-        custom_settings,
-        is_temporary: false,
-        created_at: currentTimestamp,
-        updated_at: currentTimestamp
-      });
+      const conversationRef = await addDoc(
+        collection(this.db, 'conversations'),
+        {
+          type,
+          name,
+          description,
+          created_by,
+          avatar_url,
+          custom_settings,
+          is_temporary: false,
+          created_at: currentTimestamp,
+          updated_at: currentTimestamp,
+        }
+      );
 
       return {
         id: conversationRef.id,
         ...conversationData,
         created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       };
     } catch (error) {
       console.error('❌ Erreur lors de la création de la conversation:', error);
@@ -367,8 +424,10 @@ class FirebaseServerService {
         where('user_id', '==', userId)
       );
       const participantsSnapshot = await getDocs(participantsQuery);
-      
-      const conversationIds = participantsSnapshot.docs.map(doc => doc.data().conversation_id);
+
+      const conversationIds = participantsSnapshot.docs.map(
+        doc => doc.data().conversation_id
+      );
 
       if (conversationIds.length === 0) {
         return [];
@@ -379,23 +438,32 @@ class FirebaseServerService {
       for (const convId of conversationIds) {
         const conversationRef = doc(this.db, 'conversations', convId);
         const conversationSnap = await getDoc(conversationRef);
-        
+
         if (conversationSnap.exists()) {
           const data = conversationSnap.data();
           conversations.push({
             id: conversationSnap.id,
             ...data,
-            created_at: data.created_at?.toDate?.()?.toISOString() || new Date().toISOString(),
-            updated_at: data.updated_at?.toDate?.()?.toISOString() || new Date().toISOString()
+            created_at:
+              data.created_at?.toDate?.()?.toISOString() ||
+              new Date().toISOString(),
+            updated_at:
+              data.updated_at?.toDate?.()?.toISOString() ||
+              new Date().toISOString(),
           });
         }
       }
 
       // Trier par date de mise à jour et appliquer la pagination
-      conversations.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+      conversations.sort(
+        (a, b) => new Date(b.updated_at) - new Date(a.updated_at)
+      );
       return conversations.slice(offset, offset + limitCount);
     } catch (error) {
-      console.error('❌ Erreur lors de la récupération des conversations:', error);
+      console.error(
+        '❌ Erreur lors de la récupération des conversations:',
+        error
+      );
       return [];
     }
   }
@@ -403,12 +471,16 @@ class FirebaseServerService {
   async searchConversations(userId, query, filters = {}) {
     try {
       const conversations = await this.getConversationsByUserId(userId);
-      
-      return conversations.filter(conv => 
-        conv.name && conv.name.toLowerCase().includes(query.toLowerCase())
+
+      return conversations.filter(
+        conv =>
+          conv.name && conv.name.toLowerCase().includes(query.toLowerCase())
       );
     } catch (error) {
-      console.error('❌ Erreur lors de la recherche dans conversations:', error);
+      console.error(
+        '❌ Erreur lors de la recherche dans conversations:',
+        error
+      );
       return [];
     }
   }
@@ -416,14 +488,17 @@ class FirebaseServerService {
   async getConversationStats(userId) {
     try {
       const conversations = await this.getConversationsByUserId(userId);
-      
+
       return {
         total: conversations.length,
         unread: conversations.filter(c => c.unread_count > 0).length,
-        pinned: conversations.filter(c => c.is_pinned).length
+        pinned: conversations.filter(c => c.is_pinned).length,
       };
     } catch (error) {
-      console.error('❌ Erreur lors de la récupération des statistiques:', error);
+      console.error(
+        '❌ Erreur lors de la récupération des statistiques:',
+        error
+      );
       return { total: 0, unread: 0, pinned: 0 };
     }
   }
@@ -439,14 +514,14 @@ class FirebaseServerService {
         notification_settings: participantData.notification_settings || {
           muted: false,
           sound: true,
-          vibration: true
+          vibration: true,
         },
-        joined_at: new Date()
+        joined_at: new Date(),
       });
 
       return true;
     } catch (error) {
-      console.error('❌ Erreur lors de l\'ajout du participant:', error);
+      console.error("❌ Erreur lors de l'ajout du participant:", error);
       throw error;
     }
   }
@@ -461,18 +536,23 @@ class FirebaseServerService {
       const querySnapshot = await getDocs(q);
       const participants = [];
 
-      querySnapshot.forEach((doc) => {
+      querySnapshot.forEach(doc => {
         const data = doc.data();
         participants.push({
           id: doc.id,
           ...data,
-          joined_at: data.joined_at?.toDate?.()?.toISOString() || new Date().toISOString()
+          joined_at:
+            data.joined_at?.toDate?.()?.toISOString() ||
+            new Date().toISOString(),
         });
       });
 
       return participants;
     } catch (error) {
-      console.error('❌ Erreur lors de la récupération des participants:', error);
+      console.error(
+        '❌ Erreur lors de la récupération des participants:',
+        error
+      );
       return [];
     }
   }
