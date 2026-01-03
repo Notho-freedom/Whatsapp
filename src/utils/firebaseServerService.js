@@ -5,6 +5,7 @@ import {
   getDoc, 
   getDocs, 
   updateDoc, 
+  setDoc,
   deleteDoc, 
   query, 
   where, 
@@ -213,7 +214,7 @@ class FirebaseServerService {
       // Mettre à jour la conversation avec le dernier message
       const conversationRef = doc(this.db, 'conversations', conversationId);
       const messageTimestamp = new Date();
-      await updateDoc(conversationRef, {
+      await setDoc(conversationRef, {
         last_message: {
           text: text || (media ? `📎 ${media[0]?.type || 'fichier'}` : ''),
           type,
@@ -221,7 +222,7 @@ class FirebaseServerService {
           timestamp: messageTimestamp
         },
         updated_at: messageTimestamp
-      });
+      }, { merge: true });
 
       console.log(`✅ Message sauvegardé dans Firestore avec l'ID: ${messageRef.id}`);
       
