@@ -1,41 +1,24 @@
 'use client';
 
 import React from 'react';
-import { 
-  Titlebar, 
-  Sidebar, 
-  Splitter 
-} from '@/components/layout';
-import { 
-  Profile, 
-  ProfilePanel
-} from '@/components/common';
+import { Titlebar, Sidebar, Splitter } from '@/components/layout';
+import { Profile, ProfilePanel } from '@/components/common';
 import CacheStats from '@/components/common/CacheStats';
 import RealtimeNotification from '@/components/common/RealtimeNotification';
 import { AvatarCacheStats } from '@/components/common';
-import {
-  GoogleAuth
-} from '@/components/auth';
-import { 
-  ChatList, 
-  StarredMessages 
-} from '@/components/chat';
-import { 
-  ChatHeader,
-  ChatBody,
-  ChatFooter
-} from '@/components/chat';
-import { 
-  StatusPanel, 
-  StatusView 
-} from '@/components/status';
-import { 
-  CallPanel, 
-  CallScreen,
-  CallManager
-} from '@/components/calls';
+import { GoogleAuth } from '@/components/auth';
+import { ChatList, StarredMessages } from '@/components/chat';
+import { ChatHeader, ChatBody, ChatFooter } from '@/components/chat';
+import { StatusPanel, StatusView } from '@/components/status';
+import { CallPanel, CallScreen, CallManager } from '@/components/calls';
 import { useAppContext } from '@/context';
-import { useGoogleAuth, useEventManager, useTokenRefresh, useTempConversations, useRealtime, useLocalCache } from '@/hooks';
+import {
+  useGoogleAuth,
+  useEventManager,
+  useTokenRefresh,
+  useRealtime,
+  useLocalCache,
+} from '@/hooks';
 
 export default function WhatsApp() {
   const [isClient, setIsClient] = React.useState(false);
@@ -44,12 +27,13 @@ export default function WhatsApp() {
   const [profileActiveTab, setProfileActiveTab] = React.useState('overview'); // État pour l'onglet actif du profil
   const [activeCall, setActiveCall] = React.useState(null); // État pour l'appel actif
   const [user, setUser] = React.useState(null);
-  
+
   // Charger l'utilisateur depuis localStorage uniquement côté client
   React.useEffect(() => {
     setIsClient(true);
     try {
-      const storedUser = typeof window !== 'undefined' ? localStorage.getItem('userData') : null;
+      const storedUser =
+        typeof window !== 'undefined' ? localStorage.getItem('userData') : null;
       if (storedUser) {
         try {
           const parsedUser = JSON.parse(storedUser);
@@ -62,29 +46,25 @@ export default function WhatsApp() {
       console.warn('⚠️ Erreur lors de la récupération de userData:', error);
     }
   }, []);
-  
+
   // Initialiser le gestionnaire d'événements seulement côté client
   const eventManager = useEventManager();
-  
+
   // Hook d'authentification Google
   const { isAuthenticated, isLoading: authLoading } = useGoogleAuth();
 
-  
   // Hook de rafraîchissement automatique des tokens
   useTokenRefresh();
-  
-  // Hook pour gérer les conversations temporaires
-  const { loadTempConversations, cleanupOldConversations } = useTempConversations();
-  
+
   // Hook pour les fonctionnalités temps réel
   const currentUserId = user?.id || user?.uid || 'default-user';
-  const { 
-    updatePresence, 
-    listenToUserPresence, 
+  const {
+    updatePresence,
+    listenToUserPresence,
     setTypingStatus,
     presence,
     typingUsers,
-    notifications
+    notifications,
   } = useRealtime(currentUserId);
 
   // Hook pour la gestion du cache local
@@ -94,7 +74,7 @@ export default function WhatsApp() {
     syncWithCache,
     preloadData,
     getAllConversations,
-    getLastMessages
+    getLastMessages,
   } = useLocalCache();
 
   // État pour gérer les phases de chargement
@@ -109,7 +89,7 @@ export default function WhatsApp() {
     conversations: 0,
     contacts: 0,
     statuses: 0,
-    messages: 0
+    messages: 0,
   });
 
   // Fonction pour vérifier la synchronisation avec Firebase (discrètement)
@@ -117,30 +97,35 @@ export default function WhatsApp() {
     try {
       // Vérifier uniquement si nécessaire (pas à chaque action)
       const timeSinceLastCheck = Date.now() - (window.lastSyncCheck || 0);
-      if (timeSinceLastCheck < 60000) { // 1 minute entre vérifications
+      if (timeSinceLastCheck < 60000) {
+        // 1 minute entre vérifications
         return;
       }
-      
+
       window.lastSyncCheck = Date.now();
       console.log('🔍 Vérification discrète de la synchronisation...');
-      
+
       // Importer le service intelligent
       const smartCacheService = require('@/utils/smartCacheService').default;
-      
+
       // Vérifier les statistiques de performance
       const stats = smartCacheService.getPerformanceStats();
-      
+
       if (stats.sync.queueSize > 0) {
-        console.log(`📊 ${stats.sync.queueSize} éléments en attente de synchronisation`);
+        console.log(
+          `📊 ${stats.sync.queueSize} éléments en attente de synchronisation`
+        );
       }
-      
+
       // Vérifier les erreurs de synchronisation
       if (stats.sync.isSyncing && stats.sync.queueSize === 0) {
         console.log('✅ Synchronisation en cours, tout semble normal');
       }
-      
     } catch (error) {
-      console.warn('⚠️ Erreur lors de la vérification de synchronisation:', error);
+      console.warn(
+        '⚠️ Erreur lors de la vérification de synchronisation:',
+        error
+      );
     }
   }, []);
 
@@ -149,17 +134,16 @@ export default function WhatsApp() {
     try {
       setIsSyncing(true);
       setSyncErrors([]);
-      
+
       console.log('🔄 Synchronisation forcée en cours...');
-      
+
       // Importer le service intelligent
       const smartCacheService = require('@/utils/smartCacheService').default;
-      
+
       // Forcer le traitement de la queue
       await smartCacheService.processSyncQueue();
-      
+
       console.log('✅ Synchronisation forcée terminée');
-      
     } catch (error) {
       console.error('❌ Erreur lors de la synchronisation forcée:', error);
       setSyncErrors([error.message]);
@@ -167,10 +151,10 @@ export default function WhatsApp() {
       setIsSyncing(false);
     }
   }, []);
-  
-  const { 
-    selectedChat, 
-    sendMessage, 
+
+  const {
+    selectedChat,
+    sendMessage,
     selectChat,
     loading,
     error,
@@ -178,12 +162,12 @@ export default function WhatsApp() {
     setActiveTab,
     users,
     getUserStatuses,
-    actions
+    actions,
   } = useAppContext();
 
   React.useEffect(() => {
     setIsClient(true);
-    
+
     // Calculer la largeur initiale basée sur 25% de la largeur de l'écran
     const calculateInitialWidth = () => {
       const screenWidth = window.innerWidth;
@@ -192,14 +176,14 @@ export default function WhatsApp() {
       const initialWidth = Math.max(270, Math.min(400, availableWidth * 0.25));
       setChatListWidth(initialWidth);
     };
-    
+
     calculateInitialWidth();
     window.addEventListener('resize', calculateInitialWidth);
-    
+
     // Gestionnaires d'événements pour les appels
-    const handleStartCall = (event) => {
+    const handleStartCall = event => {
       const { type, participant, fromProfile, fromChat, chatId } = event.detail;
-      
+
       // Créer l'appel sortant
       const callData = {
         id: Date.now(),
@@ -211,38 +195,38 @@ export default function WhatsApp() {
         startTime: new Date(),
         fromProfile,
         fromChat,
-        chatId
+        chatId,
       };
-      
+
       setActiveCall(callData);
       setActiveTab('calls');
     };
 
-    const handleIncomingCall = (event) => {
+    const handleIncomingCall = event => {
       const callData = event.detail;
       setActiveCall(callData);
     };
 
-    const handleCallEnded = (event) => {
+    const handleCallEnded = event => {
       setActiveCall(null);
     };
 
-    const handleCallAccepted = (event) => {
+    const handleCallAccepted = event => {
       const callData = event.detail;
       setActiveCall(prev => ({ ...prev, state: 'active' }));
     };
 
-    const handleCallDeclined = (event) => {
+    const handleCallDeclined = event => {
       setActiveCall(null);
     };
-    
+
     // Écouter les événements d'appels
     window.addEventListener('start-call', handleStartCall);
     window.addEventListener('incoming-call', handleIncomingCall);
     window.addEventListener('call-ended', handleCallEnded);
     window.addEventListener('call-accepted', handleCallAccepted);
     window.addEventListener('call-declined', handleCallDeclined);
-    
+
     return () => {
       window.removeEventListener('resize', calculateInitialWidth);
       window.removeEventListener('start-call', handleStartCall);
@@ -254,15 +238,16 @@ export default function WhatsApp() {
   }, [setActiveTab]);
 
   // Charger les conversations temporaires au démarrage
-  React.useEffect(() => {
-    if (isClient && isAuthenticated) {
-      // Charger les conversations temporaires
-      loadTempConversations();
-      
-      // DÉSACTIVÉ: Nettoyer les anciennes conversations temporaires
-      // cleanupOldConversations();
-    }
-  }, [isClient, isAuthenticated, loadTempConversations]);
+  // DÉSACTIVÉ: Migration vers Firebase - les conversations sont maintenant gérées par Firestore
+  // React.useEffect(() => {
+  //   if (isClient && isAuthenticated) {
+  //     // Charger les conversations temporaires
+  //     loadTempConversations();
+  //
+  //     // DÉSACTIVÉ: Nettoyer les anciennes conversations temporaires
+  //     // cleanupOldConversations();
+  //   }
+  // }, [isClient, isAuthenticated, loadTempConversations]);
 
   // Gestion de la présence et des fonctionnalités temps réel
   React.useEffect(() => {
@@ -288,10 +273,10 @@ export default function WhatsApp() {
     if (cacheInitialized && isAuthenticated) {
       // Vérifier la synchronisation toutes les 2 minutes (au lieu de 30 secondes)
       const syncInterval = setInterval(checkFirebaseSync, 120000);
-      
+
       // Vérification initiale après un délai
       const initialCheck = setTimeout(checkFirebaseSync, 10000);
-      
+
       return () => {
         clearInterval(syncInterval);
         clearTimeout(initialCheck);
@@ -304,16 +289,21 @@ export default function WhatsApp() {
     if (cacheInitialized && isAuthenticated) {
       setLoadingPhase(1);
       setIsSyncing(false);
-      console.log('🚀 Phase 1 : Chargement asynchrone depuis le cache local...');
+      console.log(
+        '🚀 Phase 1 : Chargement asynchrone depuis le cache local...'
+      );
 
       // Charger les conversations de manière asynchrone et non-bloquante
       const loadConversationsAsync = async () => {
         try {
           // Utiliser requestIdleCallback pour ne pas bloquer le rendu
           if (window.requestIdleCallback) {
-            window.requestIdleCallback(async () => {
-              await loadConversationsFromCache();
-            }, { timeout: 1000 });
+            window.requestIdleCallback(
+              async () => {
+                await loadConversationsFromCache();
+              },
+              { timeout: 1000 }
+            );
           } else {
             // Fallback pour les navigateurs qui ne supportent pas requestIdleCallback
             setTimeout(async () => {
@@ -328,12 +318,12 @@ export default function WhatsApp() {
       // Charger les contacts et statuts en parallèle
       const loadContactsAndStatuses = async () => {
         try {
-          await Promise.all([
-            loadContacts(),
-            loadStatuses()
-          ]);
+          await Promise.all([loadContacts(), loadStatuses()]);
         } catch (error) {
-          console.warn('⚠️ Erreur lors du chargement des contacts/statuts:', error);
+          console.warn(
+            '⚠️ Erreur lors du chargement des contacts/statuts:',
+            error
+          );
         }
       };
 
@@ -345,13 +335,16 @@ export default function WhatsApp() {
         setLoadingPhase(2);
         setIsSyncing(true);
         console.log('☁️ Phase 2 : Synchronisation discrète en arrière-plan...');
-        
+
         try {
           // Utiliser requestIdleCallback pour la synchronisation
           if (window.requestIdleCallback) {
-            window.requestIdleCallback(async () => {
-              await performBackgroundSync();
-            }, { timeout: 2000 });
+            window.requestIdleCallback(
+              async () => {
+                await performBackgroundSync();
+              },
+              { timeout: 2000 }
+            );
           } else {
             await performBackgroundSync();
           }
@@ -372,23 +365,28 @@ export default function WhatsApp() {
     try {
       setConversationsLoading(true);
       setLoadingProgress(prev => ({ ...prev, conversations: 0 }));
-      
+
       const cachedConversations = getAllConversations();
       if (cachedConversations.length > 0) {
-        console.log(`📦 ${cachedConversations.length} conversations chargées depuis le cache local`);
-        
+        console.log(
+          `📦 ${cachedConversations.length} conversations chargées depuis le cache local`
+        );
+
         // Traitement par lots pour éviter de bloquer l'interface
         const batchSize = 10;
         for (let i = 0; i < cachedConversations.length; i += batchSize) {
           const batch = cachedConversations.slice(i, i + batchSize);
-          
+
           // Traiter le lot de manière asynchrone
           await new Promise(resolve => {
             if (window.requestIdleCallback) {
-              window.requestIdleCallback(() => {
-                processConversationBatch(batch);
-                resolve();
-              }, { timeout: 100 });
+              window.requestIdleCallback(
+                () => {
+                  processConversationBatch(batch);
+                  resolve();
+                },
+                { timeout: 100 }
+              );
             } else {
               setTimeout(() => {
                 processConversationBatch(batch);
@@ -396,12 +394,15 @@ export default function WhatsApp() {
               }, 10);
             }
           });
-          
+
           // Mettre à jour le progrès
-          const progress = Math.min(100, ((i + batchSize) / cachedConversations.length) * 100);
+          const progress = Math.min(
+            100,
+            ((i + batchSize) / cachedConversations.length) * 100
+          );
           setLoadingProgress(prev => ({ ...prev, conversations: progress }));
         }
-        
+
         setLoadingProgress(prev => ({ ...prev, conversations: 100 }));
       } else {
         console.log('🤷 Aucune conversation trouvée dans le cache local.');
@@ -415,53 +416,58 @@ export default function WhatsApp() {
   }, [getAllConversations]);
 
   // Fonction pour traiter un lot de conversations
-  const processConversationBatch = React.useCallback((conversations) => {
-    const transformedConversations = conversations.map(conv => ({
-      id: conv.id,
-      name: conv.name || 'Conversation inconnue',
-      lastMessage: conv.lastMessage,
-      timestamp: conv.timestamp,
-      unreadCount: conv.unreadCount || 0,
-      isGroup: conv.isGroup || false,
-      participants: conv.participants || [],
-      avatar: conv.avatar || '',
-    }));
-    
-    actions.setUsers(transformedConversations);
+  const processConversationBatch = React.useCallback(
+    conversations => {
+      const transformedConversations = conversations.map(conv => ({
+        id: conv.id,
+        name: conv.name || 'Conversation inconnue',
+        lastMessage: conv.lastMessage,
+        timestamp: conv.timestamp,
+        unreadCount: conv.unreadCount || 0,
+        isGroup: conv.isGroup || false,
+        participants: conv.participants || [],
+        avatar: conv.avatar || '',
+      }));
 
-    // Charger les derniers messages de manière asynchrone
-    conversations.forEach(conv => {
-      if (window.requestIdleCallback) {
-        window.requestIdleCallback(() => {
-          const lastMessages = getLastMessages(conv.id, 5);
-          if (lastMessages.length > 0) {
-            actions.setMessages(conv.id, lastMessages);
-          }
-        }, { timeout: 50 });
-      } else {
-        setTimeout(() => {
-          const lastMessages = getLastMessages(conv.id, 5);
-          if (lastMessages.length > 0) {
-            actions.setMessages(conv.id, lastMessages);
-          }
-        }, 10);
-      }
-    });
-  }, [actions, getLastMessages]);
+      actions.setUsers(transformedConversations);
+
+      // Charger les derniers messages de manière asynchrone
+      conversations.forEach(conv => {
+        if (window.requestIdleCallback) {
+          window.requestIdleCallback(
+            () => {
+              const lastMessages = getLastMessages(conv.id, 5);
+              if (lastMessages.length > 0) {
+                actions.setMessages(conv.id, lastMessages);
+              }
+            },
+            { timeout: 50 }
+          );
+        } else {
+          setTimeout(() => {
+            const lastMessages = getLastMessages(conv.id, 5);
+            if (lastMessages.length > 0) {
+              actions.setMessages(conv.id, lastMessages);
+            }
+          }, 10);
+        }
+      });
+    },
+    [actions, getLastMessages]
+  );
 
   // Fonction pour charger les contacts
   const loadContacts = React.useCallback(async () => {
     try {
       setContactsLoading(true);
       setLoadingProgress(prev => ({ ...prev, contacts: 0 }));
-      
+
       // Simuler le chargement des contacts (à remplacer par l'appel réel)
       await new Promise(resolve => setTimeout(resolve, 500));
-      
+
       // Mettre à jour le progrès
       setLoadingProgress(prev => ({ ...prev, contacts: 100 }));
       console.log('✅ Contacts chargés');
-      
     } catch (error) {
       console.warn('⚠️ Erreur lors du chargement des contacts:', error);
     } finally {
@@ -474,14 +480,13 @@ export default function WhatsApp() {
     try {
       setStatusesLoading(true);
       setLoadingProgress(prev => ({ ...prev, statuses: 0 }));
-      
+
       // Simuler le chargement des statuts (à remplacer par l'appel réel)
       await new Promise(resolve => setTimeout(resolve, 300));
-      
+
       // Mettre à jour le progrès
       setLoadingProgress(prev => ({ ...prev, statuses: 100 }));
       console.log('✅ Statuts chargés');
-      
     } catch (error) {
       console.warn('⚠️ Erreur lors du chargement des statuts:', error);
     } finally {
@@ -500,17 +505,13 @@ export default function WhatsApp() {
     }
   }, []);
 
-
-
   if (!isClient) {
     return null;
   }
 
   // Afficher l'authentification Google si l'utilisateur n'est pas connecté
   if (!isAuthenticated && !authLoading) {
-    return (
-          <GoogleAuth />
-    );
+    return <GoogleAuth />;
   }
 
   // Afficher le chargement de l'authentification
@@ -525,14 +526,13 @@ export default function WhatsApp() {
     );
   }
 
-
   if (error) {
     return (
       <div className="h-screen flex items-center justify-center bg-whatsapp-dark-950">
         <div className="text-center">
           <p className="text-red-400 mb-4">Erreur: {error}</p>
-          <button 
-            onClick={() => window.location.reload()} 
+          <button
+            onClick={() => window.location.reload()}
             className="px-4 py-2 bg-whatsapp-primary text-white rounded-md hover:bg-whatsapp-primary-dark transition-colors"
           >
             Réessayer
@@ -542,47 +542,47 @@ export default function WhatsApp() {
     );
   }
 
-  const handleChatSelect = (chat) => {
+  const handleChatSelect = chat => {
     selectChat(chat);
   };
 
-  const handleStatusSelect = (status) => {
+  const handleStatusSelect = status => {
     setSelectedStatus(status);
   };
 
   // Fonction pour passer au prochain utilisateur avec des statuts
   const handleNextUser = () => {
     if (!selectedStatus) return;
-    
-    const usersWithStatuses = users.filter(user => 
-      user.statuses && user.statuses.length > 0
+
+    const usersWithStatuses = users.filter(
+      user => user.statuses && user.statuses.length > 0
     );
-    
-    const currentUserIndex = usersWithStatuses.findIndex(user => 
-      user.id === selectedStatus.userId
+
+    const currentUserIndex = usersWithStatuses.findIndex(
+      user => user.id === selectedStatus.userId
     );
-    
+
     if (currentUserIndex < usersWithStatuses.length - 1) {
       const nextUser = usersWithStatuses[currentUserIndex + 1];
       const nextUserStatuses = getUserStatuses(nextUser.id);
       if (nextUserStatuses.length > 0) {
         handleStatusSelect({
           ...nextUserStatuses[0],
-          user: nextUser
+          user: nextUser,
         });
       }
     }
   };
 
   // Fonction pour naviguer vers les statuts depuis la chatlist
-  const handleStatusFromChatList = (statusData) => {
+  const handleStatusFromChatList = statusData => {
     // Changer vers l'onglet status
     setActiveTab('status');
     // Sélectionner le statut
     handleStatusSelect(statusData);
   };
 
-  const handleSendMessage = (messageData) => {
+  const handleSendMessage = messageData => {
     if (selectedChat) {
       // Si messageData est une chaîne (ancien format), la convertir
       if (typeof messageData === 'string') {
@@ -594,29 +594,32 @@ export default function WhatsApp() {
     }
   };
 
-  const handleSplitterResize = (newWidth) => {
+  const handleSplitterResize = newWidth => {
     setChatListWidth(newWidth);
   };
 
   // Gestionnaires d'appels
-  const handleEndCall = (callData) => {
+  const handleEndCall = callData => {
     setActiveCall(null);
   };
 
-  const handleAcceptCall = (callData) => {
+  const handleAcceptCall = callData => {
     setActiveCall(prev => ({ ...prev, state: 'active' }));
   };
 
-  const handleDeclineCall = (callData) => {
+  const handleDeclineCall = callData => {
     setActiveCall(null);
   };
 
   // Indicateur de chargement intelligent avec phases et progrès détaillé
   const LoadingIndicator = ({ phase = 1, isSyncing = false }) => {
     const totalProgress = Math.round(
-      (loadingProgress.conversations + loadingProgress.contacts + loadingProgress.statuses) / 3
+      (loadingProgress.conversations +
+        loadingProgress.contacts +
+        loadingProgress.statuses) /
+        3
     );
-    
+
     return (
       <div className="absolute top-0 left-0 right-0 z-50 bg-whatsapp-primary/90 text-white py-2 px-4">
         <div className="flex flex-col space-y-2">
@@ -625,17 +628,22 @@ export default function WhatsApp() {
             {phase === 1 ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                <span className="text-sm">Chargement depuis le cache local... {totalProgress}%</span>
+                <span className="text-sm">
+                  Chargement depuis le cache local... {totalProgress}%
+                </span>
               </>
             ) : (
               <>
                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                <span className="text-sm">Synchronisation furtive en cours...</span>
-                {isSyncing && <span className="text-xs opacity-75">(arrière-plan)</span>}
+                <span className="text-sm">
+                  Synchronisation furtive en cours...
+                </span>
+                {isSyncing && (
+                  <span className="text-xs opacity-75">(arrière-plan)</span>
+                )}
               </>
             )}
           </div>
-          
         </div>
       </div>
     );
@@ -644,17 +652,22 @@ export default function WhatsApp() {
   return (
     <div className="h-screen w-screen flex flex-col bg-[#202020] font-segoe overflow-hidden rounded-md relative">
       {/* Indicateur de chargement intelligent avec phases */}
-      {(loading || conversationsLoading || contactsLoading || statusesLoading) && (
+      {(loading ||
+        conversationsLoading ||
+        contactsLoading ||
+        statusesLoading) && (
         <LoadingIndicator phase={loadingPhase} isSyncing={isSyncing} />
       )}
-      
+
       {/* Indicateur de synchronisation Firebase */}
       {syncErrors.length > 0 && (
         <div className="absolute top-16 left-0 right-0 z-40 bg-yellow-600/90 text-white py-2 px-4 text-center text-sm">
           <div className="flex items-center justify-center space-x-2">
             <div className="animate-pulse">⚠️</div>
-            <span>{syncErrors.length} erreur(s) de synchronisation détectée(s)</span>
-            <button 
+            <span>
+              {syncErrors.length} erreur(s) de synchronisation détectée(s)
+            </span>
+            <button
               onClick={forceSync}
               className="ml-2 px-3 py-1 bg-yellow-700 hover:bg-yellow-800 rounded text-xs"
             >
@@ -663,7 +676,7 @@ export default function WhatsApp() {
           </div>
         </div>
       )}
-      
+
       {/* Indicateur de synchronisation en cours */}
       {isSyncing && (
         <div className="absolute top-20 left-0 right-0 z-40 bg-blue-600/90 text-white py-2 px-4 text-center text-sm">
@@ -673,7 +686,7 @@ export default function WhatsApp() {
           </div>
         </div>
       )}
-      
+
       {/* Titlebar */}
       <Titlebar />
 
@@ -683,7 +696,7 @@ export default function WhatsApp() {
         <Sidebar currentUser={user} />
 
         {/* Chat List avec largeur fixe */}
-        <div 
+        <div
           className="ml-12 rounded-tl-xl flex-shrink-0 bg-[#2C2C2C] border-r border-neutral-800 chat-list-container"
           style={{ width: `${chatListWidth}px`, minWidth: `270px` }}
         >
@@ -698,16 +711,18 @@ export default function WhatsApp() {
           {activeTab === 'calls' && <CallPanel />}
           {activeTab === 'star' && <StarredMessages />}
           {activeTab === 'status' && (
-            <StatusPanel 
+            <StatusPanel
               onStatusSelect={handleStatusSelect}
               selectedStatus={selectedStatus}
             />
           )}
-          {activeTab === 'profile' && <ProfilePanel 
-                activeTab={profileActiveTab} 
-                onTabChange={setProfileActiveTab}
-                user={user}
-              />}
+          {activeTab === 'profile' && (
+            <ProfilePanel
+              activeTab={profileActiveTab}
+              onTabChange={setProfileActiveTab}
+              user={user}
+            />
+          )}
         </div>
 
         {/* Splitter */}
@@ -732,16 +747,21 @@ export default function WhatsApp() {
             </>
           )}
           {activeTab === 'calls' && <CallScreen />}
-          {activeTab === 'status' && <StatusView selectedStatus={selectedStatus} onNextUser={handleNextUser} />}
+          {activeTab === 'status' && (
+            <StatusView
+              selectedStatus={selectedStatus}
+              onNextUser={handleNextUser}
+            />
+          )}
           {activeTab === 'star' && <StarredMessages />}
           {activeTab === 'profile' && <Profile activeTab={profileActiveTab} />}
         </div>
       </div>
 
       {/* Notifications temps réel */}
-      <RealtimeNotification 
+      <RealtimeNotification
         notifications={notifications}
-        onDismiss={(notificationId) => {
+        onDismiss={notificationId => {
           console.log('Notification fermée:', notificationId);
         }}
       />
@@ -765,8 +785,6 @@ export default function WhatsApp() {
           onDeclineCall={handleDeclineCall}
         />
       )}
-
-      
     </div>
   );
 }

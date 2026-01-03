@@ -26,6 +26,7 @@ import { useGoogleContacts } from '@/hooks';
 import { useAutoAvatarPreloader } from '@/hooks';
 import { userService } from '@/utils';
 import { API_ENDPOINTS } from '@/utils/config';
+import { generateConversationId } from '@/utils/conversationHelper';
 import ContactList from './ContactList';
 
 export default function ChatList({
@@ -143,10 +144,15 @@ export default function ChatList({
       return;
     }
 
+    // ⭐ IMPORTANT: Générer l'ID de conversation dès maintenant avec la même logique 
+    // que dans sendMessage() pour éviter les doublons de tuiles
+    const conversationId = generateConversationId(currentUser.id, recipientId);
+
     // Create a temporary chat object for UI display
-    // Store recipientId directly in the chat object (not nested in contact)
+    // Store conversationId (not recipientId) to ensure consistency
     const tempChat = {
-      id: recipientId, // Utiliser directement l'ID Firebase (email)
+      id: conversationId, // ⭐ Utiliser l'ID déterministe comme ID principal
+      conversationId: conversationId, // Garder aussi cette propriété pour la cohérence
       recipientId: recipientId, // ID du destinataire pour sendMessage
       name: recipientName,
       avatar: recipientAvatar,
@@ -173,6 +179,7 @@ export default function ChatList({
     };
 
     console.log('🎯 Chat temporaire créé avec utilisateur Firebase:', {
+      conversationId,
       recipientId,
       recipientName,
       tempChat,

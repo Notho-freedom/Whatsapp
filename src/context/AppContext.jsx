@@ -853,28 +853,60 @@ export function AppProvider({ children }) {
 
         // Préparer les infos destinataire (utilisées pour création ou mise à jour)
         let recipientInfo;
+        
+        // 1️⃣ Chercher d'abord dans les infos du chat temporaire
         if (
           selectedChat?.isTemporary &&
           selectedChat?.participants_info?.[recipientUserId]
         ) {
           recipientInfo = selectedChat.participants_info[recipientUserId];
-        } else {
-          const foundUser = state.users.find(
-            u => u.id === recipientUserId || u.email === recipientUserId
+          console.log('📋 Infos destinataire trouvées dans le chat temporaire');
+        } 
+        // 2️⃣ Chercher dans les conversations existantes
+        else {
+          const foundConv = state.users.find(
+            u => u.id === conversationId || u.otherParticipantId === recipientUserId
           );
-          if (foundUser) {
+          if (foundConv?.participants_info?.[recipientUserId]) {
+            recipientInfo = foundConv.participants_info[recipientUserId];
+            console.log('📋 Infos destinataire trouvées dans la conversation existante');
+          }
+        }
+
+        // 3️⃣ Si pas trouvé, récupérer directement depuis Firebase
+        if (!recipientInfo) {
+          try {
+            const userRef = doc(db, 'users', recipientUserId);
+            const userSnap = await getDoc(userRef);
+            if (userSnap.exists()) {
+              const userData = userSnap.data();
+              recipientInfo = {
+                name:
+                  userData.displayName ||
+                  userData.name ||
+                  recipientUserId.split('@')[0] ||
+                  'Utilisateur',
+                avatar:
+                  userData.photoURL || userData.avatar || '/default-avatar.png',
+              };
+              console.log(
+                '📋 Infos destinataire récupérées depuis Firebase users'
+              );
+            } else {
+              // Utiliser l'ID comme fallback
+              recipientInfo = {
+                name: recipientUserId.split('@')[0] || recipientUserId,
+                avatar: '/default-avatar.png',
+              };
+              console.log('📋 Document utilisateur Firebase non trouvé');
+            }
+          } catch (error) {
+            console.warn(
+              '⚠️ Erreur lors de la récupération des infos utilisateur:',
+              error
+            );
             recipientInfo = {
-              name:
-                foundUser.displayName ||
-                foundUser.name ||
-                foundUser.email ||
-                'Utilisateur',
-              avatar:
-                foundUser.photoURL || foundUser.avatar || '/default-avatar.png',
-            };
-          } else {
-            recipientInfo = {
-              name: recipientUserId,
+              name: recipientUserId.split('@')[0] || recipientUserId,
               avatar: '/default-avatar.png',
             };
           }
@@ -938,12 +970,27 @@ export function AppProvider({ children }) {
             await firebaseService.addConversation(conversationData);
             console.log('✅ Conversation créée dans Firebase');
 
-            // Ajouter la conversation à l'état local
-            const transformedConv = transformConversationForDisplay(
-              conversationData,
-              currentUser.id
-            );
-            actions.addUser(transformedConv);
+            // Ajouter la conversation à l'état local (optimiste) avec les bonnes infos destinataire
+            const optimisticConv = {
+              id: conversationId,
+              conversationId,
+              name: recipientInfo.name || 'Contact',
+              avatar: recipientInfo.avatar || '/default-avatar.png',
+              otherParticipantId: recipientUserId,
+              lastMessage: null,
+              lastMessageTime: null,
+              unreadCount: 0,
+              isPinned: false,
+              isMuted: false,
+              isContact: false,
+              isConversation: true,
+              participants: [currentUser.id, recipientUserId],
+            };
+
+            actions.setUsers([
+              optimisticConv,
+              ...state.users.filter(u => u.id !== conversationId),
+            ]);
           } catch (error) {
             console.error(
               '❌ Erreur lors de la création de la conversation:',
@@ -966,6 +1013,28 @@ export function AppProvider({ children }) {
                 avatar: recipientInfo?.avatar || '/default-avatar.png',
               },
             });
+
+            // Mise à jour optimiste de la tuile avec les bonnes infos
+            const optimisticConv = {
+              id: conversationId,
+              conversationId,
+              name: recipientInfo?.name || 'Contact',
+              avatar: recipientInfo?.avatar || '/default-avatar.png',
+              otherParticipantId: recipientUserId,
+              lastMessage: null,
+              lastMessageTime: null,
+              unreadCount: 0,
+              isPinned: false,
+              isMuted: false,
+              isContact: false,
+              isConversation: true,
+              participants: [currentUser.id, recipientUserId],
+            };
+
+            actions.setUsers([
+              optimisticConv,
+              ...state.users.filter(u => u.id !== conversationId),
+            ]);
           } catch (error) {
             console.warn(
               '⚠️ Impossible de mettre à jour participants_info:',
