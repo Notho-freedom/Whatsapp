@@ -17,56 +17,119 @@ import { useMediaContextMenu } from '@/hooks';
  * - Utilise de vrais avatars d'utilisateurs
  */
 
-export default function MediaGroup({ media = [], isMe = false, isMobile = false, messageId, onAudioStateChange, userInfo = null }) {
-  const { updateAudioState, getAudioState, stopAllAudio } = useAudioEventManager();
-  
+export default function MediaGroup({
+  media = [],
+  isMe = false,
+  isMobile = false,
+  messageId,
+  onAudioStateChange,
+  userInfo = null,
+}) {
+  const { updateAudioState, getAudioState, stopAllAudio } =
+    useAudioEventManager();
+
   // Hook pour les menus contextuels natifs d'Electron
   const nativeMediaMenu = useMediaContextMenu((actionId, data) => {
     console.log('Action de menu contextuel de média:', actionId, data);
     // Ici vous pouvez ajouter la logique pour les actions de média
   });
-  
-  const handleAudioStart = useCallback((audioItem) => {
-    if (audioItem.type === 'audio') {
-      stopAllAudio();
-      updateAudioState(messageId, { isPlaying: true, currentTime: 0 });
-      onAudioStateChange?.({ isPlaying: true, currentTime: 0 });
-    }
-  }, [messageId, stopAllAudio, updateAudioState, onAudioStateChange]);
+
+  const handleAudioStart = useCallback(
+    audioItem => {
+      if (audioItem.type === 'audio') {
+        stopAllAudio();
+        updateAudioState(messageId, { isPlaying: true, currentTime: 0 });
+        onAudioStateChange?.({ isPlaying: true, currentTime: 0 });
+      }
+    },
+    [messageId, stopAllAudio, updateAudioState, onAudioStateChange]
+  );
 
   if (!media.length) return null;
 
-  const isSingleMedia = media.length === 1;
-  const gridCols = media.length === 2 ? 'grid-cols-2' : media.length >= 3 ? 'grid-cols-3' : '';
+  const normalizedMedia = media
+    .map(item => normalizeMedia(item))
+    .filter(item => !!item);
+
+  const isSingleMedia = normalizedMedia.length === 1;
+  const gridCols =
+    normalizedMedia.length === 2
+      ? 'grid-cols-2'
+      : normalizedMedia.length >= 3
+      ? 'grid-cols-3'
+      : '';
 
   return (
     <div className={`${!isSingleMedia && `grid gap-[2px] ${gridCols}`}`}>
-      {media.map((item, idx) => {
-        if ((item.type === 'images') || (item.type === 'image')) return <ImageItem key={idx} item={item} isSingleMedia={isSingleMedia} isMobile={isMobile} />;
-        if ((item.type === 'videos') || (item.type === 'video')) return <VideoItem key={idx} item={item} isSingleMedia={isSingleMedia} isMobile={isMobile} />;
-        if ((item.type === 'audios') || (item.type === 'audio')) return (
-          <AudioMessage
-            key={idx}
-            audio={item}
-            isMe={isMe}
-            isMobile={isMobile}
-            messageId={messageId}
-            userInfo={userInfo}
-            onAudioStart={() => handleAudioStart(item)}
-            onAudioStateChange={onAudioStateChange}
-          />
-        );
+      {normalizedMedia.map((item, idx) => {
+        if (item.mediaType === 'image')
+          return (
+            <ImageItem
+              key={idx}
+              item={item}
+              isSingleMedia={isSingleMedia}
+              isMobile={isMobile}
+            />
+          );
+        if (item.mediaType === 'video')
+          return (
+            <VideoItem
+              key={idx}
+              item={item}
+              isSingleMedia={isSingleMedia}
+              isMobile={isMobile}
+            />
+          );
+        if (item.mediaType === 'audio')
+          return (
+            <AudioMessage
+              key={idx}
+              audio={item}
+              isMe={isMe}
+              isMobile={isMobile}
+              messageId={messageId}
+              userInfo={userInfo}
+              onAudioStart={() => handleAudioStart(item)}
+              onAudioStateChange={onAudioStateChange}
+            />
+          );
         return null;
       })}
     </div>
   );
 }
 
+// Normalise les payloads issus de Firestore/attachments pour garantir un rendu visuel
+function normalizeMedia(item) {
+  if (!item) return null;
+
+  const rawType = (item.type || item.mediaType || '').toLowerCase();
+  let mediaType = rawType;
+
+  if (['image', 'images', 'photo', 'picture', 'img'].includes(rawType))
+    mediaType = 'image';
+  else if (['video', 'videos'].includes(rawType)) mediaType = 'video';
+  else if (['audio', 'audios', 'voice'].includes(rawType)) mediaType = 'audio';
+
+  const url =
+    item.url || item.file_url || item.downloadURL || item.fileUrl || item.path;
+  if (!url && mediaType !== 'audio') return null; // rien à afficher
+
+  return {
+    ...item,
+    mediaType,
+    url,
+    duration: item.duration || item.metadata?.duration,
+    waveform: item.waveform || item.metadata?.waveform,
+    name: item.original_name || item.name || item.filename,
+  };
+}
+
 function ImageItem({ item, isSingleMedia, isMobile }) {
   return (
-    <div 
+    <div
       className="relative overflow-hidden bg-[#0b0e11]"
-      onContextMenu={(e) => {
+      onContextMenu={e => {
         // Menu contextuel natif Electron pour les images
         if (window.electronAPI) {
           window.electronAPI.showContextMenu('media', [], e.clientX, e.clientY);
@@ -77,8 +140,11 @@ function ImageItem({ item, isSingleMedia, isMobile }) {
         src={item.url}
         className={`w-full object-cover cursor-pointer ${
           isSingleMedia
-            ? (isMobile ? 'max-h-[250px]' : 'max-h-[330px]') + ' rounded-[7.5px]'
-            : isMobile ? 'h-[80px]' : 'h-[120px]'
+            ? (isMobile ? 'max-h-[250px]' : 'max-h-[330px]') +
+              ' rounded-[7.5px]'
+            : isMobile
+            ? 'h-[80px]'
+            : 'h-[120px]'
         }`}
         alt=""
       />
@@ -88,9 +154,9 @@ function ImageItem({ item, isSingleMedia, isMobile }) {
 
 function VideoItem({ item, isSingleMedia, isMobile }) {
   return (
-    <div 
+    <div
       className="relative overflow-hidden bg-[#0b0e11] group cursor-pointer"
-      onContextMenu={(e) => {
+      onContextMenu={e => {
         // Menu contextuel natif Electron pour les vidéos
         if (window.electronAPI) {
           window.electronAPI.showContextMenu('media', [], e.clientX, e.clientY);
@@ -101,12 +167,19 @@ function VideoItem({ item, isSingleMedia, isMobile }) {
         src={item.url}
         className={`w-full object-cover ${
           isSingleMedia
-            ? (isMobile ? 'max-h-[250px]' : 'max-h-[330px]') + ' rounded-[7.5px]'
-            : isMobile ? 'h-[80px]' : 'h-[120px]'
+            ? (isMobile ? 'max-h-[250px]' : 'max-h-[330px]') +
+              ' rounded-[7.5px]'
+            : isMobile
+            ? 'h-[80px]'
+            : 'h-[120px]'
         }`}
       />
       <div className="absolute inset-0 flex items-center justify-center">
-        <div className={`${isMobile ? 'w-[35px] h-[35px]' : 'w-[40px] h-[40px]'} rounded-full bg-[rgba(11,20,26,0.8)] flex items-center justify-center group-hover:scale-110 transition-transform`}>
+        <div
+          className={`${
+            isMobile ? 'w-[35px] h-[35px]' : 'w-[40px] h-[40px]'
+          } rounded-full bg-[rgba(11,20,26,0.8)] flex items-center justify-center group-hover:scale-110 transition-transform`}
+        >
           <FaPlay size={isMobile ? 12 : 14} className="text-white ml-1" />
         </div>
       </div>
@@ -119,7 +192,15 @@ function VideoItem({ item, isSingleMedia, isMobile }) {
   );
 }
 
-function AudioMessage({ audio, isMe, isMobile, messageId, onAudioStart, onAudioStateChange, userInfo }) {
+function AudioMessage({
+  audio,
+  isMe,
+  isMobile,
+  messageId,
+  onAudioStart,
+  onAudioStateChange,
+  userInfo,
+}) {
   const { updateAudioState, getAudioState } = useAudioEventManager();
   const audioRef = useRef(null);
   const containerRef = useRef(null);
@@ -132,10 +213,17 @@ function AudioMessage({ audio, isMe, isMobile, messageId, onAudioStart, onAudioS
 
   const waveformBars = useMemo(() => {
     // Utiliser la forme d'onde fournie ou générer une courbe stable
-    if (audio.waveform && Array.isArray(audio.waveform) && audio.waveform.length) return audio.waveform;
+    if (
+      audio.waveform &&
+      Array.isArray(audio.waveform) &&
+      audio.waveform.length
+    )
+      return audio.waveform;
     const len = isMobile ? 25 : 35;
     // Génération pseudo-aléatoire déterministe selon l'URL
-    const seed = (audio.url || '').split('').reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 1e9, 7);
+    const seed = (audio.url || '')
+      .split('')
+      .reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 1e9, 7);
     let x = seed;
     const arr = [];
     for (let i = 0; i < len; i++) {
@@ -150,7 +238,7 @@ function AudioMessage({ audio, isMe, isMobile, messageId, onAudioStart, onAudioS
   const bubbleColor = isMe ? 'bg-[#005c4b]' : 'bg-[#202c33]';
   const accent = '#00a884';
 
-  const fmt = useCallback((sec) => {
+  const fmt = useCallback(sec => {
     if (!isFinite(sec)) return '0:00';
     const s = Math.max(0, Math.floor(sec));
     const m = Math.floor(s / 60);
@@ -189,7 +277,8 @@ function AudioMessage({ audio, isMe, isMobile, messageId, onAudioStart, onAudioS
   // Synchroniser avec l'état global (si une autre piste démarre)
   useEffect(() => {
     const g = getAudioState(messageId) || {};
-    if (g.isPlaying !== undefined && g.isPlaying !== isPlaying) setIsPlaying(g.isPlaying);
+    if (g.isPlaying !== undefined && g.isPlaying !== isPlaying)
+      setIsPlaying(g.isPlaying);
   }, [getAudioState, messageId, isPlaying]);
 
   const togglePlay = useCallback(() => {
@@ -201,14 +290,27 @@ function AudioMessage({ audio, isMe, isMobile, messageId, onAudioStart, onAudioS
       onAudioStart?.();
       el.playbackRate = rate;
       el.play().catch(() => setIsPlaying(false));
-      updateAudioState(messageId, { isPlaying: true, currentTime: el.currentTime });
+      updateAudioState(messageId, {
+        isPlaying: true,
+        currentTime: el.currentTime,
+      });
       onAudioStateChange?.({ isPlaying: true, currentTime: el.currentTime });
     } else {
       el.pause();
-      updateAudioState(messageId, { isPlaying: false, currentTime: el.currentTime });
+      updateAudioState(messageId, {
+        isPlaying: false,
+        currentTime: el.currentTime,
+      });
       onAudioStateChange?.({ isPlaying: false, currentTime: el.currentTime });
     }
-  }, [isPlaying, rate, messageId, onAudioStart, onAudioStateChange, updateAudioState]);
+  }, [
+    isPlaying,
+    rate,
+    messageId,
+    onAudioStart,
+    onAudioStateChange,
+    updateAudioState,
+  ]);
 
   const cycleRate = useCallback(() => {
     const next = rate === 1 ? 1.5 : rate === 1.5 ? 2 : 1;
@@ -216,7 +318,7 @@ function AudioMessage({ audio, isMe, isMobile, messageId, onAudioStart, onAudioS
     if (audioRef.current) audioRef.current.playbackRate = next;
   }, [rate]);
 
-  const onWaveClick = useCallback((e) => {
+  const onWaveClick = useCallback(e => {
     const el = audioRef.current;
     const box = e.currentTarget.getBoundingClientRect();
     const ratio = Math.min(1, Math.max(0, (e.clientX - box.left) / box.width));
@@ -226,7 +328,7 @@ function AudioMessage({ audio, isMe, isMobile, messageId, onAudioStart, onAudioS
     }
   }, []);
 
-  const onWaveMove = useCallback((e) => {
+  const onWaveMove = useCallback(e => {
     const box = e.currentTarget.getBoundingClientRect();
     setHoverX(Math.min(1, Math.max(0, (e.clientX - box.left) / box.width)));
   }, []);
@@ -234,11 +336,13 @@ function AudioMessage({ audio, isMe, isMobile, messageId, onAudioStart, onAudioS
   const onWaveLeave = useCallback(() => setHoverX(null), []);
 
   const playedBars = Math.round(progress * waveformBars.length);
-  const hoverBars = hoverX != null ? Math.round(hoverX * waveformBars.length) : null;
+  const hoverBars =
+    hoverX != null ? Math.round(hoverX * waveformBars.length) : null;
 
   const timeLabel = useMemo(() => {
     const el = audioRef.current;
-    const d = duration || (audio.duration && parseTimeString(audio.duration)) || 0;
+    const d =
+      duration || (audio.duration && parseTimeString(audio.duration)) || 0;
     const cur = el ? el.currentTime : progress * d;
     return `${fmt(cur)} / ${fmt(d)}`;
   }, [duration, progress, fmt]);
@@ -247,19 +351,35 @@ function AudioMessage({ audio, isMe, isMobile, messageId, onAudioStart, onAudioS
   const getAvatarSrc = () => {
     if (isMe) {
       // Pour l'utilisateur actuel, utiliser un avatar par défaut ou l'avatar de l'utilisateur connecté
-      return userInfo?.avatar || `https://ui-avatars.com/api/?name=Me&background=005c4b&color=fff&size=40`;
+      return (
+        userInfo?.avatar ||
+        `https://ui-avatars.com/api/?name=Me&background=005c4b&color=fff&size=40`
+      );
     } else {
       // Pour les autres utilisateurs, utiliser leur vrai avatar
-      return userInfo?.avatar || `https://ui-avatars.com/api/?name=${userInfo?.name || 'Contact'}&background=6a7175&color=fff&size=40`;
+      return (
+        userInfo?.avatar ||
+        `https://ui-avatars.com/api/?name=${
+          userInfo?.name || 'Contact'
+        }&background=6a7175&color=fff&size=40`
+      );
     }
   };
 
   return (
-    <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} items-end gap-2`}>
+    <div
+      className={`flex ${
+        isMe ? 'justify-end' : 'justify-start'
+      } items-end gap-2`}
+    >
       <audio ref={audioRef} src={audio.url} preload="metadata" />
 
       {/* Bulle */}
-      <div className={`rounded-lg py-2 max-w-[320px]  ${isMobile ? 'max-w-[260px]' : ''} `}>
+      <div
+        className={`rounded-lg py-2 max-w-[320px]  ${
+          isMobile ? 'max-w-[260px]' : ''
+        } `}
+      >
         <div className="flex items-center gap-3">
           {/* Pastille lecture/pause */}
           <button
@@ -267,7 +387,11 @@ function AudioMessage({ audio, isMe, isMobile, messageId, onAudioStart, onAudioS
             onClick={togglePlay}
             aria-label={isPlaying ? 'Pause' : 'Lire'}
           >
-            {isPlaying ? <FaPause size={14} className="text-[#00a884]" /> : <FaPlay size={14} className="text-[#00a884]" />}
+            {isPlaying ? (
+              <FaPause size={14} className="text-[#00a884]" />
+            ) : (
+              <FaPlay size={14} className="text-[#00a884]" />
+            )}
           </button>
 
           {/* Waveform cliquable */}
@@ -285,9 +409,16 @@ function AudioMessage({ audio, isMe, isMobile, messageId, onAudioStart, onAudioS
                 <div
                   key={i}
                   className={`w-[2px] rounded-full transition-all duration-100 flex-shrink-0 ${
-                    isHover ? 'bg-white' : isPlayed ? 'bg-[#00a884]' : 'bg-white/40'
+                    isHover
+                      ? 'bg-white'
+                      : isPlayed
+                      ? 'bg-[#00a884]'
+                      : 'bg-white/40'
                   }`}
-                  style={{ height: `${h * 16}px`, opacity: isHover ? 1 : isPlayed ? 0.9 : 0.5 }}
+                  style={{
+                    height: `${h * 16}px`,
+                    opacity: isHover ? 1 : isPlayed ? 0.9 : 0.5,
+                  }}
                 />
               );
             })}
@@ -295,7 +426,11 @@ function AudioMessage({ audio, isMe, isMobile, messageId, onAudioStart, onAudioS
             {/* Indicateur rond */}
             <div
               className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full shadow"
-              style={{ left: `${progress * 100}%`, transform: 'translate(-50%, -50%)', backgroundColor: accent }}
+              style={{
+                left: `${progress * 100}%`,
+                transform: 'translate(-50%, -50%)',
+                backgroundColor: accent,
+              }}
             />
           </div>
 
@@ -307,7 +442,6 @@ function AudioMessage({ audio, isMe, isMobile, messageId, onAudioStart, onAudioS
           >
             {rate}x
           </button>
-          
 
           {/* Download */}
           {audio.url && (
@@ -321,22 +455,29 @@ function AudioMessage({ audio, isMe, isMobile, messageId, onAudioStart, onAudioS
             </a>
           )}
         </div>
-        <span className="text-[10px] text-white/70 min-w-[55px] left-5 absolute bottom-0">{timeLabel}</span>
-
-
-
+        <span className="text-[10px] text-white/70 min-w-[55px] left-5 absolute bottom-0">
+          {timeLabel}
+        </span>
       </div>
 
       {/* Avatar avec micro (optionnel) */}
       <div className="relative flex-shrink-0 bottom-2 -right-1 ">
-        <div className={`${isMobile ? 'w-[32px] h-[32px]' : 'w-[36px] h-[36px]'} rounded-full overflow-hidden`}>
+        <div
+          className={`${
+            isMobile ? 'w-[32px] h-[32px]' : 'w-[36px] h-[36px]'
+          } rounded-full overflow-hidden`}
+        >
           <img
             src={getAvatarSrc()}
             alt={userInfo?.name || (isMe ? 'Me' : 'Contact')}
             className="w-full h-full object-cover"
           />
         </div>
-        <div className={`absolute -bottom-1 -right-1 ${isMobile ? 'w-[12px] h-[12px]' : 'w-[14px] h-[14px]'} rounded-full bg-[#00a884] flex items-center justify-center border-2 border-white`}>
+        <div
+          className={`absolute -bottom-1 -right-1 ${
+            isMobile ? 'w-[12px] h-[12px]' : 'w-[14px] h-[14px]'
+          } rounded-full bg-[#00a884] flex items-center justify-center border-2 border-white`}
+        >
           <FaMicrophone size={isMobile ? 4 : 5} className="text-white" />
         </div>
       </div>
@@ -347,6 +488,8 @@ function AudioMessage({ audio, isMe, isMobile, messageId, onAudioStart, onAudioS
 function parseTimeString(s) {
   // '0:14' -> 14
   if (!s) return 0;
-  const [m, sec] = String(s).split(':').map((x) => parseInt(x, 10) || 0);
+  const [m, sec] = String(s)
+    .split(':')
+    .map(x => parseInt(x, 10) || 0);
   return m * 60 + sec;
 }
