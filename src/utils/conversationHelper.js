@@ -121,6 +121,11 @@ export function transformConversationForDisplay(conversation, currentUserId) {
     otherParticipantId ||
     'Contact';
 
+  // Si on tombe sur un email, afficher seulement la partie locale pour un rendu plus lisible
+  if (otherParticipantName && otherParticipantName.includes('@')) {
+    otherParticipantName = otherParticipantName.split('@')[0];
+  }
+
   let otherParticipantAvatar =
     conversation.participants_info?.[otherParticipantId]?.avatar ||
     conversation.avatar_url ||

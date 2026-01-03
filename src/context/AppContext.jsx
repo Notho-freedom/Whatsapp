@@ -22,7 +22,7 @@ import {
   transformConversationForDisplay,
   getOtherParticipantId,
 } from '@/utils/conversationHelper';
-import { doc, getDoc } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/utils/firebaseConfig';
 
 // Types d'actions
@@ -850,6 +850,26 @@ export function AppProvider({ children }) {
           const conversationRef = doc(db, 'conversations', conversationId);
           const snap = await getDoc(conversationRef);
           conversationExists = snap.exists();
+
+          // Si la conversation déterministe n'existe pas, essayer d'en retrouver une avec les mêmes participants
+          if (!conversationExists) {
+            const convQuery = query(
+              collection(db, 'conversations'),
+              where('participants', 'array-contains', currentUser.id)
+            );
+            const convSnap = await getDocs(convQuery);
+
+            convSnap.forEach(docSnap => {
+              const data = docSnap.data();
+              if (
+                Array.isArray(data.participants) &&
+                data.participants.includes(recipientUserId)
+              ) {
+                conversationExists = true;
+                conversationId = docSnap.id; // réutiliser la conversation existante
+              }
+            });
+          }
         } catch (error) {
           console.warn(
             '⚠️ Erreur lors de la vérification de la conversation:',
@@ -1004,7 +1024,11 @@ export function AppProvider({ children }) {
 
         // PHASE 2 : Synchronisation avec Firebase
         try {
-          await firebaseService.addMessage(conversationId, firebaseData);
+          await firebaseService.addMessage(
+            conversationId,
+            { ...firebaseData, tempId: message.id },
+            message.id
+          );
           console.log('✅ Message envoyé avec succès');
         } catch (error) {
           console.error("❌ Erreur lors de l'envoi du message:", error);

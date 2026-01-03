@@ -25,7 +25,7 @@ class FirebaseService {
 
   // ===== GESTION DES MESSAGES =====
 
-  async addMessage(conversationId, messageData) {
+  async addMessage(conversationId, messageData, customMessageId = null) {
     try {
       const messagesRef = collection(this.db, 'messages');
       const messageWithTimestamp = {
@@ -35,7 +35,15 @@ class FirebaseService {
         updated_at: serverTimestamp(),
       };
 
-      const docRef = await addDoc(messagesRef, messageWithTimestamp);
+      let docRef;
+
+      if (customMessageId) {
+        // Utiliser un ID déterministe pour éviter les doublons client/serveur
+        docRef = doc(messagesRef, customMessageId);
+        await setDoc(docRef, messageWithTimestamp);
+      } else {
+        docRef = await addDoc(messagesRef, messageWithTimestamp);
+      }
 
       console.log(`✅ Message ajouté dans Firebase: ${docRef.id}`);
 
@@ -971,14 +979,25 @@ class FirebaseService {
    */
   async addConversation(conversationData) {
     try {
-      const conversationRef = await addDoc(
-        collection(this.db, 'conversations'),
-        {
+      const docId = conversationData.id;
+      let conversationRef;
+
+      if (docId) {
+        // ID déterministe (conv-userA_userB)
+        conversationRef = doc(this.db, 'conversations', docId);
+        await setDoc(conversationRef, {
+          ...conversationData,
+          id: docId,
+          created_at: serverTimestamp(),
+          updated_at: serverTimestamp(),
+        });
+      } else {
+        conversationRef = await addDoc(collection(this.db, 'conversations'), {
           ...conversationData,
           created_at: serverTimestamp(),
           updated_at: serverTimestamp(),
-        }
-      );
+        });
+      }
 
       console.log(`✅ Conversation créée: ${conversationRef.id}`);
 
