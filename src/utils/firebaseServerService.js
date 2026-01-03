@@ -216,6 +216,7 @@ class FirebaseServerService {
         sender,
         type = 'text',
         media = null,
+        document = null,
         replyTo = null,
         reactions = [],
         isStarred = false,
@@ -231,6 +232,7 @@ class FirebaseServerService {
         sender,
         type,
         media, // Ajout du champ media pour les messages média
+        document, // Ajout du champ document pour les documents
         reply_to: replyTo,
         reactions,
         is_starred: isStarred,
@@ -274,6 +276,7 @@ class FirebaseServerService {
         text,
         type,
         media,
+        document,
         time: new Date().toLocaleTimeString('fr-FR', {
           hour: '2-digit',
           minute: '2-digit',

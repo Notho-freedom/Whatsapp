@@ -11,11 +11,16 @@ export default function DocumentItem({ document, isMobile = false }) {
   // Extraire les informations du document
   const fileName = document.original_name || document.name || 'Document';
   const fileSize = document.file_size || document.size || 0;
-  const fileUrl = document.url || document.file_url || document.downloadURL || document.fileUrl;
-  const fileType = document.file_type || document.type || 'application/octet-stream';
+  const fileUrl =
+    document.url ||
+    document.file_url ||
+    document.downloadURL ||
+    document.fileUrl;
+  const fileType =
+    document.file_type || document.type || 'application/octet-stream';
 
   // Formater la taille du fichier
-  const formatFileSize = (bytes) => {
+  const formatFileSize = bytes => {
     if (!bytes) return '0 B';
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
@@ -48,24 +53,27 @@ export default function DocumentItem({ document, isMobile = false }) {
     }
   };
 
-  const handleDownload = useCallback(async (e) => {
-    e.preventDefault();
-    if (!fileUrl || isDownloading) return;
+  const handleDownload = useCallback(
+    async e => {
+      e.preventDefault();
+      if (!fileUrl || isDownloading) return;
 
-    try {
-      setIsDownloading(true);
-      const a = document.createElement('a');
-      a.href = fileUrl;
-      a.download = fileName;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    } catch (error) {
-      console.error('Erreur lors du téléchargement:', error);
-    } finally {
-      setIsDownloading(false);
-    }
-  }, [fileUrl, fileName, isDownloading]);
+      try {
+        setIsDownloading(true);
+        const a = globalThis.document.createElement('a');
+        a.href = fileUrl;
+        a.download = fileName;
+        globalThis.document.body.appendChild(a);
+        a.click();
+        globalThis.document.body.removeChild(a);
+      } catch (error) {
+        console.error('Erreur lors du téléchargement:', error);
+      } finally {
+        setIsDownloading(false);
+      }
+    },
+    [fileUrl, fileName, isDownloading]
+  );
 
   return (
     <div className="w-full max-w-sm">
@@ -76,13 +84,14 @@ export default function DocumentItem({ document, isMobile = false }) {
         className="flex items-center gap-3 p-3 bg-neutral-800/50 rounded-lg border border-neutral-700 hover:bg-neutral-700/50 transition-colors cursor-pointer"
       >
         {/* Icône du fichier */}
-        <div className="flex-shrink-0 text-2xl">
-          {getFileIcon()}
-        </div>
+        <div className="flex-shrink-0 text-2xl">{getFileIcon()}</div>
 
         {/* Informations du fichier */}
         <div className="flex-1 min-w-0">
-          <div className="text-sm font-medium text-white truncate" title={fileName}>
+          <div
+            className="text-sm font-medium text-white truncate"
+            title={fileName}
+          >
             {fileName}
           </div>
           <div className="text-xs text-gray-400">
