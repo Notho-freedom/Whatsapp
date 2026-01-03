@@ -2,6 +2,7 @@
 
 import { FaAngleDown, FaStar, FaSmile } from 'react-icons/fa';
 import MediaGroup from './MediaGroup';
+import DocumentItem from './DocumentItem';
 import PreviewLink from './PreviewLink';
 import ReactionBar from './ReactionBar';
 import MessageContextMenu from './MessageContextMenu';
@@ -388,6 +389,14 @@ const MessageBubble = memo(function MessageBubble({ message, isFirstInGroup, isL
                 // Ici on pourrait mettre à jour l'état global des messages audio
                 console.log('Audio state changed:', audioState);
               }}
+            />
+          )}
+
+          {/* Document */}
+          {message.document && (
+            <DocumentItem
+              document={message.document}
+              isMobile={isMobile}
             />
           )}
 
