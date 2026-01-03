@@ -19,6 +19,21 @@ export default function DocumentItem({ document, isMobile = false }) {
   const fileType =
     document.file_type || document.type || 'application/octet-stream';
 
+  // Debug: Afficher les informations du document
+  console.log('📄 DocumentItem - Données du document:', {
+    fileName,
+    fileSize,
+    fileUrl,
+    fileType,
+    fullDocument: document
+  });
+
+  // Si pas d'URL, ne rien afficher
+  if (!fileUrl) {
+    console.warn('⚠️ DocumentItem - Pas d\'URL pour le document:', document);
+    return null;
+  }
+
   // Formater la taille du fichier
   const formatFileSize = bytes => {
     if (!bytes) return '0 B';
