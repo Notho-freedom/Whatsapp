@@ -540,6 +540,23 @@ const MessageBubble = memo(
               />
             )}
 
+            {/* Audio message */}
+            {isAudioMessage && message.audio && (
+              <AudioMessage
+                audio={message.audio}
+                isMe={isMe}
+                isMobile={isMobile}
+                messageId={message.id}
+                userInfo={getUserInfo()}
+                onAudioStart={() => {
+                  console.log('Audio started:', message.audio);
+                }}
+                onAudioStateChange={audioState => {
+                  console.log('Audio state changed:', audioState);
+                }}
+              />
+            )}
+
             {/* Link preview */}
             {message.link && <PreviewLink link={message.link} />}
 
@@ -599,23 +616,6 @@ const MessageBubble = memo(
                 isMobile={isMobile}
                 onAddReaction={handleAddReaction}
                 onRemoveReaction={handleRemoveReaction}
-              />
-            )}
-
-            {/* Audio message */}
-            {isAudioMessage && message.audio && (
-              <AudioMessage
-                audio={message.audio}
-                isMe={isMe}
-                isMobile={isMobile}
-                messageId={message.id}
-                userInfo={getUserInfo()}
-                onAudioStart={() => {
-                  console.log('Audio started:', message.audio);
-                }}
-                onAudioStateChange={audioState => {
-                  console.log('Audio state changed:', audioState);
-                }}
               />
             )}
           </div>

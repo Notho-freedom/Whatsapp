@@ -404,7 +404,7 @@ function AudioMessage({
 
       {/* Bulle */}
       <div
-        className={`rounded-lg py-2 max-w-[320px] ${
+        className={`rounded-lg py-1 max-w-[320px] ${
           isMobile ? 'max-w-[260px]' : ''
         }`}
       >
