@@ -17,6 +17,7 @@ import {
   MapPinMinus,
   SmileIcon,
 } from 'lucide-react';
+import { BsCheck2All } from 'react-icons/bs';
 import { useAppContext } from '@/context';
 import { StatusCircle } from '@/components/ui';
 import Avatar from '@/components/ui/Avatar';
@@ -253,8 +254,37 @@ export default function ChatList({
       );
     }
 
+    const isSentByMe =
+      !!chat.lastMessage?.sender && chat.lastMessage.sender === currentUser?.id;
+
+    const getLastMessageAtMs = value => {
+      if (!value) return null;
+      if (value instanceof Date) return value.getTime();
+      if (typeof value === 'number') return value;
+      const parsed = new Date(value);
+      return Number.isNaN(parsed.getTime()) ? null : parsed.getTime();
+    };
+
+    const lastMessageAtMs = getLastMessageAtMs(chat.lastMessageAt);
+    const otherReadAtMs = getLastMessageAtMs(
+      chat.lastReadAt?.[chat.otherParticipantId]
+    );
+    const isReadByOther =
+      isSentByMe &&
+      lastMessageAtMs !== null &&
+      otherReadAtMs !== null &&
+      otherReadAtMs >= lastMessageAtMs;
+
     return (
       <>
+        {isSentByMe && (
+          <BsCheck2All
+            className={`mr-1 ${
+              isReadByOther ? 'text-[#53bdeb]' : 'text-gray-400'
+            }`}
+            size={16}
+          />
+        )}
         <MessageIcon type={chat.lastMessage.type} />
         <span className="truncate">
           {(chat.lastMessage.type === 'voice' ||

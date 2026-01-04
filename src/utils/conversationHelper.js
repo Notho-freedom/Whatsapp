@@ -147,6 +147,9 @@ export function transformConversationForDisplay(conversation, currentUserId) {
       })
     : conversation.last_message_time;
 
+  const lastMessageAt = conversation.last_message_time || null;
+  const lastReadAt = conversation.last_read_at || {};
+
   return {
     id: conversation.id,
     conversationId: conversation.id,
@@ -155,6 +158,8 @@ export function transformConversationForDisplay(conversation, currentUserId) {
     otherParticipantId,
     lastMessage: conversation.last_message,
     lastMessageTime: lastMessageTimeFormatted,
+    lastMessageAt,
+    lastReadAt,
     unreadCount:
       (conversation.unread_counts && currentUserId
         ? conversation.unread_counts[currentUserId]

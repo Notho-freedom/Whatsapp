@@ -954,6 +954,7 @@ export function AppProvider({ children }) {
               await firebaseService.updateConversation(chatId, {
                 unread_count: 0, // backward-compat
                 [`unread_counts.${currentUserId}`]: 0,
+                [`last_read_at.${currentUserId}`]: new Date().toISOString(),
               });
 
               console.log(`✅ Conversation ${chatId} marquée comme lue`);
