@@ -68,21 +68,25 @@ const PollCreator = ({ isOpen, onClose, conversationId, userId }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-[500px] max-h-[80vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold flex items-center">
-            <BarChart3 size={20} className="mr-2 text-blue-500" />
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 backdrop-blur-sm">
+      <div className="rounded-xl p-0 w-[500px] max-h-[80vh] overflow-hidden flex flex-col shadow-2xl" style={{ backgroundColor: 'var(--wa-panel)' }}>
+        {/* Header */}
+        <div className="flex justify-between items-center px-6 pt-6 pb-4">
+          <h3 className="text-lg font-bold flex items-center" style={{ color: 'var(--wa-primary-strong)' }}>
+            <BarChart3 size={20} className="mr-2" style={{ color: 'var(--wa-highlight)' }} />
             Créer un sondage
           </h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+          <button onClick={onClose} className="p-2 rounded-full transition hover:bg-neutral-700/30" style={{ color: 'var(--wa-secondary)' }}>
             <X size={20} />
           </button>
         </div>
 
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto px-6 pb-4">
+
         {/* Question */}
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-semibold mb-3" style={{ color: 'var(--wa-primary-strong)' }}>
             Question du sondage *
           </label>
           <input
@@ -90,29 +94,42 @@ const PollCreator = ({ isOpen, onClose, conversationId, userId }) => {
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             placeholder="Ex: Quel est votre plat préféré ?"
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-4 py-3 rounded-lg focus:outline-none transition focus:ring-2"
+            style={{
+              backgroundColor: 'rgba(255,255,255,0.08)',
+              borderColor: 'rgba(255,255,255,0.1)',
+              color: 'var(--wa-primary-strong)',
+              border: '1px solid rgba(255,255,255,0.1)',
+            }}
           />
         </div>
 
         {/* Options */}
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-semibold mb-3" style={{ color: 'var(--wa-primary-strong)' }}>
             Options de réponse * (minimum 2)
           </label>
           <div className="space-y-2">
             {options.map((option, index) => (
-              <div key={index} className="flex items-center space-x-2">
+              <div key={index} className="flex items-center gap-2">
                 <input
                   type="text"
                   value={option}
                   onChange={(e) => updateOption(index, e.target.value)}
                   placeholder={`Option ${index + 1}`}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="flex-1 px-4 py-2.5 rounded-lg focus:outline-none transition focus:ring-2"
+                  style={{
+                    backgroundColor: 'rgba(255,255,255,0.08)',
+                    borderColor: 'rgba(255,255,255,0.1)',
+                    color: 'var(--wa-primary-strong)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                  }}
                 />
                 {options.length > 2 && (
                   <button
                     onClick={() => removeOption(index)}
-                    className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded"
+                    className="p-2 rounded-lg transition"
+                    style={{ color: '#ff4444', backgroundColor: 'rgba(255,0,0,0.1)' }}
                   >
                     <Trash2 size={16} />
                   </button>
@@ -123,7 +140,8 @@ const PollCreator = ({ isOpen, onClose, conversationId, userId }) => {
           {options.length < 10 && (
             <button
               onClick={addOption}
-              className="mt-2 flex items-center text-blue-500 hover:text-blue-700 text-sm"
+              className="mt-3 flex items-center text-sm font-medium transition hover:opacity-80"
+              style={{ color: 'var(--wa-highlight)' }}
             >
               <Plus size={16} className="mr-1" />
               Ajouter une option
@@ -132,49 +150,66 @@ const PollCreator = ({ isOpen, onClose, conversationId, userId }) => {
         </div>
 
         {/* Paramètres */}
-        <div className="mb-4 space-y-3">
+        <div className="space-y-3 pt-2">
           <div className="flex items-center">
             <input
               type="checkbox"
               id="allowMultiple"
               checked={allowMultiple}
               onChange={(e) => setAllowMultiple(e.target.checked)}
-              className="mr-2"
+              className="rounded"
+              style={{
+                accentColor: 'var(--wa-highlight)',
+              }}
             />
-            <label htmlFor="allowMultiple" className="text-sm text-gray-700">
+            <label htmlFor="allowMultiple" className="text-sm ml-3" style={{ color: 'var(--wa-primary-strong)' }}>
               Permettre la sélection de plusieurs options
             </label>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-semibold mb-2" style={{ color: 'var(--wa-primary-strong)' }}>
               Expire le (optionnel)
             </label>
             <input
               type="datetime-local"
               value={expiresAt}
               onChange={(e) => setExpiresAt(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2.5 rounded-lg focus:outline-none transition focus:ring-2"
+              style={{
+                backgroundColor: 'rgba(255,255,255,0.08)',
+                borderColor: 'rgba(255,255,255,0.1)',
+                color: 'var(--wa-primary-strong)',
+                border: '1px solid rgba(255,255,255,0.1)',
+              }}
             />
           </div>
         </div>
+        </div>
 
         {/* Actions */}
-        <div className="flex justify-end space-x-2">
+        <div className="flex justify-end gap-3 p-6 pt-4 border-t" style={{ borderColor: 'rgba(255,255,255,0.1)' }}>
           <button
             onClick={onClose}
-            className="px-4 py-2 text-gray-600 hover:text-gray-800"
+            className="px-4 py-2.5 font-medium rounded-lg transition hover:bg-neutral-700/30"
+            style={{
+              color: 'var(--wa-secondary)',
+            }}
           >
             Annuler
           </button>
           <button
             onClick={handleCreatePoll}
             disabled={!isValid || isCreating}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50 flex items-center"
+            className="px-4 py-2.5 font-semibold rounded-lg flex items-center transition disabled:opacity-60 disabled:cursor-not-allowed hover:opacity-90"
+            style={{
+              backgroundColor: 'var(--wa-highlight)',
+              color: '#0d1419',
+            }}
           >
             {isCreating ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 mr-2" style={{ borderColor: '#0d1419' }}></div>
                 Création en cours...
               </>
             ) : (

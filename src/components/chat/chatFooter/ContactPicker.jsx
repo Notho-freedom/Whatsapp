@@ -67,137 +67,216 @@ const ContactPicker = ({ isOpen, onClose, conversationId, userId }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg p-6 w-[500px] max-h-[80vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold">Partager des contacts</h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+    <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 50, backdropFilter: 'blur(4px)' }}>
+      <div style={{ backgroundColor: 'var(--wa-panel)', color: 'var(--wa-primary-strong)', borderRadius: '8px', width: '500px', maxHeight: '80vh', overflowY: 'auto', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+        {/* Header */}
+        <div style={{ padding: '24px 24px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+          <h3 style={{ fontSize: '18px', fontWeight: '600', margin: 0 }}>Partager des contacts</h3>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center' }}>
             <X size={20} />
           </button>
         </div>
 
-        {/* Barre de recherche */}
-        <div className="mb-4">
-          <div className="relative">
-            <Search size={20} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Rechercher des contacts..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-        </div>
-
-        {/* Contacts sélectionnés */}
-        {selectedContacts.length > 0 && (
-          <div className="mb-4">
-            <h4 className="font-medium mb-2">Contacts sélectionnés:</h4>
-            <div className="space-y-2">
-              {selectedContacts.map((contact) => (
-                <div key={contact.id} className="flex items-center justify-between p-2 bg-blue-50 border border-blue-200 rounded">
-                  <div className="flex items-center">
-                    <User size={16} className="text-blue-500 mr-2" />
-                    <span className="text-sm font-medium">
-                      {contact.first_name} {contact.last_name}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => handleContactSelect(contact)}
-                    className="text-blue-500 hover:text-blue-700"
-                  >
-                    <X size={16} />
-                  </button>
-                </div>
-              ))}
+        {/* Content */}
+        <div style={{ padding: '24px' }}>
+          {/* Barre de recherche */}
+          <div style={{ marginBottom: '20px' }}>
+            <div style={{ position: 'relative' }}>
+              <Search size={20} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.4)' }} />
+              <input
+                type="text"
+                placeholder="Rechercher des contacts..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{
+                  width: '100%',
+                  paddingLeft: '40px',
+                  paddingRight: '16px',
+                  paddingTop: '10px',
+                  paddingBottom: '10px',
+                  backgroundColor: 'rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  borderRadius: '8px',
+                  color: 'var(--wa-primary-strong)',
+                  fontSize: '14px'
+                }}
+              />
             </div>
           </div>
-        )}
 
-        {/* Liste des contacts */}
-        <div className="mb-4">
-          <h4 className="font-medium mb-2">Contacts disponibles:</h4>
-          {isLoading ? (
-            <div className="text-center py-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-              <p className="text-gray-500 mt-2">Chargement des contacts...</p>
-            </div>
-          ) : filteredContacts.length === 0 ? (
-            <div className="text-center py-4 text-gray-500">
-              Aucun contact trouvé
-            </div>
-          ) : (
-            <div className="space-y-2 max-h-64 overflow-y-auto">
-              {filteredContacts.map((contact) => (
-                <div
-                  key={contact.id}
-                  onClick={() => handleContactSelect(contact)}
-                  className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                    isContactSelected(contact)
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      <User size={20} className="text-gray-500 mr-3" />
-                      <div>
-                        <p className="font-medium text-gray-900">
-                          {contact.first_name} {contact.last_name}
-                        </p>
-                        {contact.phone_number && (
-                          <p className="text-sm text-gray-500 flex items-center">
-                            <Phone size={14} className="mr-1" />
-                            {contact.phone_number}
-                          </p>
-                        )}
-                        {contact.email && (
-                          <p className="text-sm text-gray-500 flex items-center">
-                            <Mail size={14} className="mr-1" />
-                            {contact.email}
-                          </p>
-                        )}
-                      </div>
+          {/* Contacts sélectionnés */}
+          {selectedContacts.length > 0 && (
+            <div style={{ marginBottom: '20px' }}>
+              <h4 style={{ fontWeight: '500', marginBottom: '12px', fontSize: '14px', color: 'rgba(255,255,255,0.7)' }}>Contacts sélectionnés:</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {selectedContacts.map((contact) => (
+                  <div key={contact.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', backgroundColor: 'rgba(6,207,156,0.15)', border: '1px solid rgba(6,207,156,0.3)', borderRadius: '6px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                      <User size={16} style={{ color: 'var(--wa-highlight)', marginRight: '8px' }} />
+                      <span style={{ fontSize: '14px', fontWeight: '500' }}>
+                        {contact.first_name} {contact.last_name}
+                      </span>
                     </div>
-                    {isContactSelected(contact) && (
-                      <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                        <UserPlus size={14} className="text-white" />
-                      </div>
-                    )}
+                    <button
+                      onClick={() => handleContactSelect(contact)}
+                      style={{ background: 'none', border: 'none', color: 'var(--wa-highlight)', cursor: 'pointer', padding: '2px', display: 'flex', alignItems: 'center' }}
+                    >
+                      <X size={16} />
+                    </button>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
+
+          {/* Liste des contacts */}
+          <div style={{ marginBottom: '20px' }}>
+            <h4 style={{ fontWeight: '500', marginBottom: '12px', fontSize: '14px', color: 'rgba(255,255,255,0.7)' }}>Contacts disponibles:</h4>
+            {isLoading ? (
+              <div style={{ textAlign: 'center', padding: '32px 16px' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '50%', border: '2px solid var(--wa-highlight)', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite', margin: '0 auto', marginBottom: '12px' }}></div>
+                <p style={{ color: 'rgba(255,255,255,0.6)', margin: 0, fontSize: '14px' }}>Chargement des contacts...</p>
+              </div>
+            ) : filteredContacts.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '32px 16px', color: 'rgba(255,255,255,0.6)', fontSize: '14px' }}>
+                Aucun contact trouvé
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '256px', overflowY: 'auto' }}>
+                {filteredContacts.map((contact) => (
+                  <div
+                    key={contact.id}
+                    onClick={() => handleContactSelect(contact)}
+                    style={{
+                      padding: '12px',
+                      border: isContactSelected(contact) ? '1px solid var(--wa-highlight)' : '1px solid rgba(255,255,255,0.1)',
+                      backgroundColor: isContactSelected(contact) ? 'rgba(6,207,156,0.15)' : 'transparent',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isContactSelected(contact)) {
+                        e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.04)';
+                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isContactSelected(contact)) {
+                        e.currentTarget.style.backgroundColor = 'transparent';
+                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+                      }
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+                        <User size={20} style={{ color: 'rgba(255,255,255,0.5)', marginRight: '12px', flexShrink: 0 }} />
+                        <div>
+                          <p style={{ fontWeight: '500', margin: '0 0 4px 0', fontSize: '14px' }}>
+                            {contact.first_name} {contact.last_name}
+                          </p>
+                          {contact.phone_number && (
+                            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', margin: '2px 0', display: 'flex', alignItems: 'center' }}>
+                              <Phone size={12} style={{ marginRight: '6px' }} />
+                              {contact.phone_number}
+                            </p>
+                          )}
+                          {contact.email && (
+                            <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)', margin: '2px 0', display: 'flex', alignItems: 'center' }}>
+                              <Mail size={12} style={{ marginRight: '6px' }} />
+                              {contact.email}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      {isContactSelected(contact) && (
+                        <div style={{ width: '20px', height: '20px', backgroundColor: 'var(--wa-highlight)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginLeft: '12px' }}>
+                          <UserPlus size={12} style={{ color: '#0d1419' }} />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Actions */}
-        <div className="flex justify-end space-x-2">
+        {/* Footer */}
+        <div style={{ padding: '16px 24px', borderTop: '1px solid rgba(255,255,255,0.1)', display: 'flex', justifyContent: 'flex-end', gap: '12px', backgroundColor: 'rgba(0,0,0,0.2)' }}>
           <button
             onClick={onClose}
-            className="px-4 py-2 text-gray-600 hover:text-gray-800"
+            style={{
+              padding: '10px 16px',
+              backgroundColor: 'transparent',
+              border: '1px solid rgba(255,255,255,0.2)',
+              color: 'rgba(255,255,255,0.7)',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '500',
+              transition: 'all 0.2s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)';
+              e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)';
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }}
           >
             Annuler
           </button>
           <button
             onClick={handleShareContacts}
             disabled={selectedContacts.length === 0 || isSharing}
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50 flex items-center"
+            style={{
+              padding: '10px 20px',
+              backgroundColor: selectedContacts.length === 0 || isSharing ? 'rgba(6,207,156,0.5)' : 'var(--wa-highlight)',
+              color: '#0d1419',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: selectedContacts.length === 0 || isSharing ? 'not-allowed' : 'pointer',
+              fontSize: '14px',
+              fontWeight: '600',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              transition: 'all 0.2s ease',
+              opacity: selectedContacts.length === 0 || isSharing ? 0.6 : 1
+            }}
+            onMouseEnter={(e) => {
+              if (selectedContacts.length > 0 && !isSharing) {
+                e.currentTarget.style.backgroundColor = '#05b8a0';
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (selectedContacts.length > 0 && !isSharing) {
+                e.currentTarget.style.backgroundColor = 'var(--wa-highlight)';
+              }
+            }}
           >
             {isSharing ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                <div style={{ width: '16px', height: '16px', borderRadius: '50%', border: '2px solid #0d1419', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }}></div>
                 Partage en cours...
               </>
             ) : (
               <>
-                <UserPlus size={16} className="mr-2" />
+                <UserPlus size={16} />
                 Partager ({selectedContacts.length})
               </>
             )}
           </button>
         </div>
+
+        <style>{`
+          @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+          }
+        `}</style>
       </div>
     </div>
   );
