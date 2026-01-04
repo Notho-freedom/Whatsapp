@@ -1,27 +1,28 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { 
-  Image, 
-  Camera, 
-  FileText, 
-  User, 
-  BarChart3, 
+import {
+  Image,
+  Camera,
+  FileText,
+  User,
+  BarChart3,
   PenTool,
-  X
+  Music,
+  X,
 } from 'lucide-react';
 
 export default function AttachmentMenu({ isOpen, onClose, onSelectOption }) {
   const menuRef = useRef(null);
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
+    const handleClickOutside = event => {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
         onClose();
       }
     };
 
-    const handleEscape = (event) => {
+    const handleEscape = event => {
       if (event.key === 'Escape') {
         onClose();
       }
@@ -43,41 +44,47 @@ export default function AttachmentMenu({ isOpen, onClose, onSelectOption }) {
       id: 'photos-videos',
       label: 'Photos & videos',
       icon: Image,
-      action: 'select-media'
+      action: 'select-media',
     },
     {
       id: 'camera',
       label: 'Camera',
       icon: Camera,
-      action: 'open-camera'
+      action: 'open-camera',
     },
     {
       id: 'document',
       label: 'Document',
       icon: FileText,
-      action: 'select-document'
+      action: 'select-document',
+    },
+    {
+      id: 'audio',
+      label: 'Audio',
+      icon: Music,
+      action: 'select-audio',
     },
     {
       id: 'contact',
       label: 'Contact',
       icon: User,
-      action: 'select-contact'
+      action: 'select-contact',
     },
     {
       id: 'poll',
       label: 'Poll',
       icon: BarChart3,
-      action: 'create-poll'
+      action: 'create-poll',
     },
     {
       id: 'drawing',
       label: 'Drawing',
       icon: PenTool,
-      action: 'open-drawing'
-    }
+      action: 'open-drawing',
+    },
   ];
 
-  const handleOptionClick = (option) => {
+  const handleOptionClick = option => {
     onSelectOption(option);
     onClose();
   };
@@ -91,7 +98,7 @@ export default function AttachmentMenu({ isOpen, onClose, onSelectOption }) {
       style={{ fontSize: '14px', lineHeight: '1.4' }}
     >
       <ul className="py-1">
-        {attachmentOptions.map((option) => {
+        {attachmentOptions.map(option => {
           const IconComponent = option.icon;
           return (
             <li

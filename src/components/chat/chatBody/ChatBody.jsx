@@ -134,6 +134,7 @@ const ChatBody = memo(function ChatBody({ selectedChat, currentUser }) {
     if (msg.poll || msg.metadata?.poll_id) return 'poll';
     if (msg.document) return 'document';
     if (msg.drawing || msg.type === 'drawing') return 'drawing';
+    if (msg.type === 'audio' || msg.audio) return 'audio';
     if (msg.media && msg.media.length > 0) return 'media';
     return 'text';
   };

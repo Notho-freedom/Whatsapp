@@ -939,7 +939,11 @@ export function AppProvider({ children }) {
           return;
         }
 
-        if (!messageData.text?.trim() && messageData.type !== 'media') {
+        if (
+          !messageData.text?.trim() &&
+          messageData.type !== 'media' &&
+          messageData.type !== 'audio'
+        ) {
           console.warn('⚠️ Message vide');
           return;
         }
@@ -1212,6 +1216,48 @@ export function AppProvider({ children }) {
             isRead: false,
             metadata: {},
           };
+        } else if (messageData.type === 'audio') {
+          // Gérer les messages audio
+          const audioData = messageData.audio || {};
+          message = createTextMessage(
+            conversationId,
+            'me',
+            messageData.text || '🎵 Audio file',
+            {
+              replyTo: replyTo,
+            }
+          );
+
+          // Ajouter les données audio au message
+          message.type = 'audio';
+          message.audio = {
+            url: audioData.url,
+            name: audioData.name,
+            size: audioData.size,
+            type: audioData.type,
+            duration: audioData.duration,
+          };
+
+          firebaseData = {
+            text: messageData.text || '🎵 Audio file',
+            sender: currentUser.id,
+            sender_name: currentUser.name || currentUser.displayName,
+            sender_avatar: currentUser.avatar || currentUser.photoURL,
+            type: 'audio',
+            audio: {
+              url: audioData.url,
+              name: audioData.name,
+              size: audioData.size,
+              type: audioData.type,
+              duration: audioData.duration,
+            },
+            conversation_id: conversationId,
+            replyTo: replyTo,
+            reactions: [],
+            isStarred: false,
+            isRead: false,
+            metadata: {},
+          };
         } else {
           message = createTextMessage(
             conversationId,
@@ -1263,7 +1309,9 @@ export function AppProvider({ children }) {
         // Mettre à jour le dernier message
         let lastMessageText =
           messageData.text?.trim() ||
-          `📎 ${messageData.media[0]?.fileName || 'fichier'}`;
+          (messageData.type === 'audio'
+            ? '🎵 Audio file'
+            : `📎 ${messageData.media[0]?.fileName || 'fichier'}`);
         actions.updateLastMessage(conversationId, {
           text: lastMessageText,
           type: messageData.type || 'text',

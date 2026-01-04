@@ -13,13 +13,18 @@ import DocumentPicker from './DocumentPicker';
 import ContactPicker from './ContactPicker';
 import PollCreator from './PollCreator';
 import DrawingBoard from './DrawingBoard';
+import AudioPicker from './AudioPicker';
 
-export default function ChatFooter({ selectedChat, onSendMessage, currentUser }) {
+export default function ChatFooter({
+  selectedChat,
+  onSendMessage,
+  currentUser,
+}) {
   const [message, setMessage] = useState('');
   const [isClient, setIsClient] = useState(false);
   const [isAttachmentMenuOpen, setIsAttachmentMenuOpen] = useState(false);
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
-  
+
   // États pour les composants d'attachement
   const [isMediaPickerOpen, setIsMediaPickerOpen] = useState(false);
   const [isCameraCaptureOpen, setIsCameraCaptureOpen] = useState(false);
@@ -27,9 +32,10 @@ export default function ChatFooter({ selectedChat, onSendMessage, currentUser })
   const [isContactPickerOpen, setIsContactPickerOpen] = useState(false);
   const [isPollCreatorOpen, setIsPollCreatorOpen] = useState(false);
   const [isDrawingBoardOpen, setIsDrawingBoardOpen] = useState(false);
-  
+  const [isAudioPickerOpen, setIsAudioPickerOpen] = useState(false);
+
   const { replyTo, clearReplyTo, users } = useAppContext();
-  
+
   // Hook temps réel pour les indicateurs de frappe
   const currentUserId = currentUser?.id || 'default-user';
   const { setTypingStatus } = useRealtime(currentUserId);
@@ -38,14 +44,14 @@ export default function ChatFooter({ selectedChat, onSendMessage, currentUser })
     setIsClient(true);
   }, []);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = e => {
     e.preventDefault();
     if (message.trim() && selectedChat) {
       // Envoyer le message avec la réponse si elle existe
       const messageData = {
         text: message,
         type: 'text',
-        replyTo: replyTo
+        replyTo: replyTo,
       };
       onSendMessage(messageData);
       setMessage('');
@@ -54,7 +60,7 @@ export default function ChatFooter({ selectedChat, onSendMessage, currentUser })
     }
   };
 
-  const handleKeyPress = (e) => {
+  const handleKeyPress = e => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e);
@@ -62,10 +68,10 @@ export default function ChatFooter({ selectedChat, onSendMessage, currentUser })
   };
 
   // Gestion des indicateurs de frappe
-  const handleInputChange = (e) => {
+  const handleInputChange = e => {
     const newMessage = e.target.value;
     setMessage(newMessage);
-    
+
     // Mettre à jour l'indicateur de frappe
     if (selectedChat?.id) {
       if (newMessage.length > 0) {
@@ -106,12 +112,12 @@ export default function ChatFooter({ selectedChat, onSendMessage, currentUser })
     setIsAttachmentMenuOpen(false);
   };
 
-  const handleAttachmentOptionSelect = (option) => {
+  const handleAttachmentOptionSelect = option => {
     console.log('Selected attachment option:', option);
-    
+
     // Fermer le menu d'attachement
     setIsAttachmentMenuOpen(false);
-    
+
     // Actions spécifiques selon l'option
     switch (option.action) {
       case 'select-media':
@@ -132,6 +138,9 @@ export default function ChatFooter({ selectedChat, onSendMessage, currentUser })
       case 'open-drawing':
         setIsDrawingBoardOpen(true);
         break;
+      case 'select-audio':
+        setIsAudioPickerOpen(true);
+        break;
       default:
         break;
     }
@@ -149,7 +158,7 @@ export default function ChatFooter({ selectedChat, onSendMessage, currentUser })
     setIsEmojiPickerOpen(false);
   };
 
-  const handleEmojiSelect = (emoji) => {
+  const handleEmojiSelect = emoji => {
     setMessage(prev => prev + emoji);
   };
 
@@ -170,7 +179,7 @@ export default function ChatFooter({ selectedChat, onSendMessage, currentUser })
   return (
     <div className="relative w-full">
       {/* ReplyCap - apparaît au-dessus du footer quand on répond */}
-      <ReplyCap 
+      <ReplyCap
         replyTo={replyTo}
         onCancelReply={handleCancelReply}
         isMobile={false}
@@ -178,12 +187,12 @@ export default function ChatFooter({ selectedChat, onSendMessage, currentUser })
         selectedChat={selectedChat}
         users={users}
       />
-      
+
       {/* Footer principal */}
       <footer className="flex items-center justify-between px-2 py-1 border-t bg-[#2C2C2C] border-neutral-800">
         <div className="relative">
-          <button 
-            aria-label="Emoji picker" 
+          <button
+            aria-label="Emoji picker"
             className={`hover:bg-neutral-700/50 p-[9px] mb-[5.4px] transition-colors rounded-md ${
               isEmojiPickerOpen ? 'bg-neutral-700/50' : ''
             }`}
@@ -191,7 +200,7 @@ export default function ChatFooter({ selectedChat, onSendMessage, currentUser })
           >
             <Smile size={19} />
           </button>
-          
+
           {/* Emoji picker */}
           <EmojiPicker
             isOpen={isEmojiPickerOpen}
@@ -200,8 +209,8 @@ export default function ChatFooter({ selectedChat, onSendMessage, currentUser })
           />
         </div>
         <div className="relative">
-          <button 
-            aria-label="Attach file" 
+          <button
+            aria-label="Attach file"
             className={`hover:bg-neutral-700/50 p-[9px] mb-[5.4px] rounded-md transition-colors ${
               isAttachmentMenuOpen ? 'bg-neutral-700/50' : ''
             }`}
@@ -209,7 +218,7 @@ export default function ChatFooter({ selectedChat, onSendMessage, currentUser })
           >
             <Paperclip size={19} className="rotate-180" />
           </button>
-          
+
           {/* Menu d'attachement */}
           <AttachmentMenu
             isOpen={isAttachmentMenuOpen}
@@ -223,7 +232,7 @@ export default function ChatFooter({ selectedChat, onSendMessage, currentUser })
             autoFocus
             aria-label="Type a message"
             className="w-full bg-transparent py-2 px-4 text-sm text-white placeholder-gray-400 focus:outline-none font-segoe resize-none hover:bg-neutral-700"
-            placeholder={replyTo ? "Reply to a message" : "Type a message"}
+            placeholder={replyTo ? 'Reply to a message' : 'Type a message'}
             value={message}
             onChange={handleInputChange}
             onKeyPress={handleKeyPress}
@@ -231,20 +240,30 @@ export default function ChatFooter({ selectedChat, onSendMessage, currentUser })
             onBlur={handleInputBlur}
           />
         </form>
-        <button 
-          aria-label={message.trim() ? "Send message" : "Voice message"}
+        <button
+          aria-label={message.trim() ? 'Send message' : 'Voice message'}
           className={`transition-colors p-[9px] mb-[5.4px] rounded-md hover:bg-neutral-700/50`}
-          onClick={message.trim() ? handleSubmit : () => {
-            // Démarrer l'enregistrement vocal
-            window.dispatchEvent(new CustomEvent('start-voice-recording', { 
-              detail: { 
-                chatId: selectedChat.id,
-                action: 'start'
-              } 
-            }));
-          }}
+          onClick={
+            message.trim()
+              ? handleSubmit
+              : () => {
+                  // Démarrer l'enregistrement vocal
+                  window.dispatchEvent(
+                    new CustomEvent('start-voice-recording', {
+                      detail: {
+                        chatId: selectedChat.id,
+                        action: 'start',
+                      },
+                    })
+                  );
+                }
+          }
         >
-          {message.trim() ? <Send size={19} className="rotate-[45deg]" /> : <Mic size={19} />}
+          {message.trim() ? (
+            <Send size={19} className="rotate-[45deg]" />
+          ) : (
+            <Mic size={19} />
+          )}
         </button>
       </footer>
 
@@ -255,40 +274,53 @@ export default function ChatFooter({ selectedChat, onSendMessage, currentUser })
         conversationId={selectedChat.id}
         userId={currentUserId}
       />
-      
+
       <CameraCapture
         isOpen={isCameraCaptureOpen}
         onClose={() => setIsCameraCaptureOpen(false)}
         conversationId={selectedChat.id}
         userId={currentUserId}
       />
-      
+
       <DocumentPicker
         isOpen={isDocumentPickerOpen}
         onClose={() => setIsDocumentPickerOpen(false)}
         conversationId={selectedChat.id}
         userId={currentUserId}
       />
-      
+
       <ContactPicker
         isOpen={isContactPickerOpen}
         onClose={() => setIsContactPickerOpen(false)}
         conversationId={selectedChat.id}
         userId={currentUserId}
       />
-      
+
       <PollCreator
         isOpen={isPollCreatorOpen}
         onClose={() => setIsPollCreatorOpen(false)}
         conversationId={selectedChat.id}
         userId={currentUserId}
       />
-      
+
       <DrawingBoard
         isOpen={isDrawingBoardOpen}
         onClose={() => setIsDrawingBoardOpen(false)}
         conversationId={selectedChat.id}
         userId={currentUserId}
+      />
+
+      <AudioPicker
+        isOpen={isAudioPickerOpen}
+        onClose={() => setIsAudioPickerOpen(false)}
+        onAudioSelect={audio => {
+          onSendMessage({
+            type: 'audio',
+            audio: audio,
+            text: '',
+          });
+          setIsAudioPickerOpen(false);
+        }}
       />
     </div>
   );

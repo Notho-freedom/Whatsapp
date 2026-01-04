@@ -1,7 +1,7 @@
 'use client';
 
 import { FaAngleDown, FaStar, FaSmile } from 'react-icons/fa';
-import MediaGroup from './MediaGroup';
+import MediaGroup, { AudioMessage } from './MediaGroup';
 import DocumentItem from './DocumentItem';
 import PollItem from './PollItem';
 import ContactGroup from './ContactGroup';
@@ -396,6 +396,8 @@ const MessageBubble = memo(
       };
     }, []);
 
+    const isAudioMessage = message?.type === 'audio';
+
     return (
       <div
         className={`flex ${
@@ -542,11 +544,12 @@ const MessageBubble = memo(
             {message.link && <PreviewLink link={message.link} />}
 
             {/* Text message */}
-            {message.text &&
+            {(message.text &&
               (!isDrawingMessage || message.text !== '🎨 Dessin créé') &&
               (!message.poll ||
                 !String(message.text).startsWith('📊 Sondage:')) &&
-              !message.contact || (message.text).includes('Contact partagé:') && (
+              !message.contact) ||
+              (message.text.includes('Contact partagé:') && (
                 <div className="wa-message-text">
                   <span>{message.text}</span>
                   {/* Spacer for metadata */}
@@ -555,7 +558,7 @@ const MessageBubble = memo(
                     style={{ width: message.edited ? '85px' : '74px' }}
                   ></span>
                 </div>
-              )}
+              ))}
 
             {/* Message metadata (time + status) */}
             <div className="wa-message-meta">
@@ -596,6 +599,23 @@ const MessageBubble = memo(
                 isMobile={isMobile}
                 onAddReaction={handleAddReaction}
                 onRemoveReaction={handleRemoveReaction}
+              />
+            )}
+
+            {/* Audio message */}
+            {isAudioMessage && message.audio && (
+              <AudioMessage
+                audio={message.audio}
+                isMe={isMe}
+                isMobile={isMobile}
+                messageId={message.id}
+                userInfo={getUserInfo()}
+                onAudioStart={() => {
+                  console.log('Audio started:', message.audio);
+                }}
+                onAudioStateChange={audioState => {
+                  console.log('Audio state changed:', audioState);
+                }}
               />
             )}
           </div>
