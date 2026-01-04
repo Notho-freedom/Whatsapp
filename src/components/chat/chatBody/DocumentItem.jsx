@@ -1,9 +1,16 @@
 'use client';
 
-import { FaDownload, FaFilePdf, FaFileWord, FaFileExcel, FaFilePowerpoint, FaFileAlt } from 'react-icons/fa';
+import {
+  FaDownload,
+  FaFilePdf,
+  FaFileWord,
+  FaFileExcel,
+  FaFilePowerpoint,
+  FaFileAlt,
+} from 'react-icons/fa';
 import { useState, useCallback } from 'react';
 
-export default function DocumentItem({ document, isMobile = false }) {
+export default function DocumentItem({ document, isMobile = false, isMe = false }) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [previewError, setPreviewError] = useState(false);
 
@@ -14,10 +21,7 @@ export default function DocumentItem({ document, isMobile = false }) {
   const fileName = docData.original_name || docData.name || 'Document';
   const fileSize = docData.file_size || docData.size || 0;
   const fileUrl =
-    docData.url ||
-    docData.file_url ||
-    docData.downloadURL ||
-    docData.fileUrl;
+    docData.url || docData.file_url || docData.downloadURL || docData.fileUrl;
   const fileType =
     docData.file_type || docData.type || 'application/octet-stream';
   const pageCount = docData.page_count || docData.pages || null;
@@ -57,7 +61,11 @@ export default function DocumentItem({ document, isMobile = false }) {
     }
   };
 
-  const { icon: FileIcon, color: iconColor, bg: bgColor } = getFileIconAndColor();
+  const {
+    icon: FileIcon,
+    color: iconColor,
+    bg: bgColor,
+  } = getFileIconAndColor();
 
   const handleDownload = useCallback(
     async e => {
@@ -95,7 +103,11 @@ export default function DocumentItem({ document, isMobile = false }) {
   if (!hasDocument) return null;
 
   return (
-    <div className={`w-full ${isMobile ? 'max-w-[280px]' : 'max-w-[340px]'} overflow-hidden rounded-lg`}>
+    <div
+      className={`w-full ${
+        isMobile ? 'max-w-[280px]' : 'max-w-[340px]'
+      } overflow-hidden rounded-lg`}
+    >
       {/* Prévisualisation du document */}
       <div className="relative bg-white aspect-[4/3] flex items-center justify-center overflow-hidden">
         {fileUrl && !previewError ? (
@@ -110,11 +122,14 @@ export default function DocumentItem({ document, isMobile = false }) {
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                <FileIcon size={isMobile ? 48 : 64} style={{ color: iconColor }} />
+                <FileIcon
+                  size={isMobile ? 48 : 64}
+                  style={{ color: iconColor }}
+                />
               </div>
             )}
             {/* Overlay avec icône du type de fichier */}
-            <div 
+            <div
               className="absolute top-3 left-3 rounded-md p-2 shadow-lg"
               style={{ backgroundColor: bgColor }}
             >
@@ -129,14 +144,21 @@ export default function DocumentItem({ document, isMobile = false }) {
       </div>
 
       {/* Informations du document */}
-      <div className="bg-[#202C33] p-3">
+      <div className={`${isMe ? 'bg-[#005C4B]' : 'bg-[#202C33]'} p-3`}>
         <div className="flex items-start justify-between gap-2 mb-2">
           <div className="flex-1 min-w-0">
-            <h4 className="text-[15px] font-medium text-white truncate" title={fileName}>
+            <h4
+              className="text-[15px] font-medium text-white truncate"
+              title={fileName}
+            >
               {fileName}
             </h4>
             <div className="flex items-center gap-1.5 text-[13px] text-[#8696A0] mt-0.5">
-              {pageCount && <span>{pageCount} page{pageCount > 1 ? 's' : ''}</span>}
+              {pageCount && (
+                <span>
+                  {pageCount} page{pageCount > 1 ? 's' : ''}
+                </span>
+              )}
               {pageCount && <span>•</span>}
               <span>{getFileExtension()}</span>
               <span>•</span>
