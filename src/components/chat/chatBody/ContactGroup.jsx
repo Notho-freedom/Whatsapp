@@ -65,6 +65,9 @@ const ContactGroup = ({ contacts, isMobile = false }) => {
               contact.profile_picture_url ||
               contact.primaryPhoto ||
               contact.photos?.[0]?.url ||
+              contact.avatar ||
+              contact.photoURL ||
+              contact.picture ||
               '';
 
             return (
@@ -150,7 +153,7 @@ const ContactGroup = ({ contacts, isMobile = false }) => {
 
       {/* Bouton pour replier */}
       <button
-        className='text-green-500 rounded-none p-0 hover:bg-transparent'
+        className="text-green-500 rounded-none p-0 hover:bg-transparent"
         onClick={() => setShowAll(false)}
         style={{
           padding: '8px',

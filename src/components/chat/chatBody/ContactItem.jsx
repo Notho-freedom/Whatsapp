@@ -21,6 +21,9 @@ const ContactItem = ({ contact, isMobile = false }) => {
     contact.profile_picture_url ||
     contact.primaryPhoto ||
     contact.photos?.[0]?.url ||
+    contact.avatar ||
+    contact.photoURL ||
+    contact.picture ||
     '';
 
   const handleDownloadVCard = () => {

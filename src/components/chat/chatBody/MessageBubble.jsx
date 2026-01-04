@@ -60,14 +60,19 @@ const MessageBubble = memo(
           if (user) {
             return {
               name: user.name,
-              avatar: user.avatar,
+              avatar:
+                user.avatar ||
+                user.photoURL ||
+                user.picture ||
+                message.sender_avatar ||
+                null,
             };
           }
         }
-        // Fallback si pas d'utilisateur trouvé
+        // Fallback si pas d'utilisateur trouvé - essayer d'utiliser l'avatar du message
         return {
           name: message.senderName || 'Contact',
-          avatar: null,
+          avatar: message.sender_avatar || message.senderAvatar || null,
         };
       }
     }, [isMe, selectedChat, users, message.senderName, currentUser]);
@@ -565,12 +570,12 @@ const MessageBubble = memo(
             {message.link && <PreviewLink link={message.link} />}
 
             {/* Text message */}
-            {(message.text &&
-              (!isDrawingMessage || message.text !== '🎨 Dessin créé') &&
+            {message.text &&
+              !isDrawingMessage &&
               (!message.poll ||
                 !String(message.text).startsWith('📊 Sondage:')) &&
-              !message.contact) ||
-              (message.text.includes('Contact partagé:') && (
+              !message.contact &&
+              !isAudioMessage && (
                 <div className="wa-message-text">
                   <span>{message.text}</span>
                   {/* Spacer for metadata */}
@@ -579,7 +584,7 @@ const MessageBubble = memo(
                     style={{ width: message.edited ? '85px' : '74px' }}
                   ></span>
                 </div>
-              ))}
+              )}
 
             {/* Message metadata (time + status) */}
             <div className="wa-message-meta">
