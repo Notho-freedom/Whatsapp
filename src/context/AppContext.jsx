@@ -32,6 +32,8 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/utils/firebaseConfig';
 
+const DOCUMENTS_COLLECTION = 'documents';
+
 // Types d'actions
 const ACTIONS = {
   SET_LOADING: 'SET_LOADING',
@@ -783,6 +785,16 @@ export function AppProvider({ children }) {
             };
           });
 
+          // Backfill: hydrater les documents manquants (anciens messages)
+          transformedMessages.forEach(m => {
+            if (m.type !== 'document') return;
+            const docId = m.document?.id;
+            const hasUrl = !!(m.document?.file_url || m.document?.url);
+            if (docId && !hasUrl) {
+              hydrateDocumentMessage(chatId, m.id, docId);
+            }
+          });
+
           actions.setMessages(chatId, transformedMessages);
           console.log(
             `✅ ${transformedMessages.length} messages chargés avec cache pour la conversation ${chatId}`
@@ -799,13 +811,59 @@ export function AppProvider({ children }) {
         actions.setLoading(false);
       }
     },
-    [actions, currentUserId, currentUser]
+    [actions, currentUserId, currentUser, hydrateDocumentMessage]
   );
 
   // Toujours garder une référence des messages à jour pour éviter les doublons en temps réel
   useEffect(() => {
     latestMessagesRef.current = state.messages;
   }, [state.messages]);
+
+  // Cache local pour hydrater les messages "document" existants (backfill côté client)
+  const documentCacheRef = useRef(new Map()); // documentId -> document data
+  const documentFetchRef = useRef(new Map()); // documentId -> Promise
+
+  const hydrateDocumentMessage = useCallback(
+    async (chatId, messageId, documentId) => {
+      if (!chatId || !messageId || !documentId) return;
+
+      const cached = documentCacheRef.current.get(documentId);
+      if (cached) {
+        actions.updateMessage(chatId, messageId, { document: cached });
+        return;
+      }
+
+      if (documentFetchRef.current.has(documentId)) return;
+
+      const p = (async () => {
+        try {
+          const snap = await getDoc(doc(db, DOCUMENTS_COLLECTION, documentId));
+          if (!snap.exists()) return null;
+
+          const data = snap.data();
+          const normalized = {
+            id: snap.id,
+            ...data,
+            created_at: data.created_at?.toDate?.() || data.created_at,
+            updated_at: data.updated_at?.toDate?.() || data.updated_at,
+          };
+
+          documentCacheRef.current.set(documentId, normalized);
+          actions.updateMessage(chatId, messageId, { document: normalized });
+          return normalized;
+        } catch (e) {
+          console.warn('⚠️ Hydratation document impossible:', e);
+          return null;
+        } finally {
+          documentFetchRef.current.delete(documentId);
+        }
+      })();
+
+      documentFetchRef.current.set(documentId, p);
+      await p;
+    },
+    [actions]
+  );
 
   const sendMessage = useCallback(
     async (recipientUserIdOrChatId, messageData, replyTo = null) => {
@@ -1233,6 +1291,16 @@ export function AppProvider({ children }) {
             };
           });
 
+          // Backfill: hydrater les documents manquants (anciens messages)
+          transformedMessages.forEach(m => {
+            if (m.type !== 'document') return;
+            const docId = m.document?.id;
+            const hasUrl = !!(m.document?.file_url || m.document?.url);
+            if (docId && !hasUrl) {
+              hydrateDocumentMessage(chat.id, m.id, docId);
+            }
+          });
+
           // Ajouter les messages à l'état local
           if (transformedMessages.length > 0) {
             actions.setMessages(chat.id, transformedMessages);
@@ -1318,6 +1386,18 @@ export function AppProvider({ children }) {
                     timestamp: new Date(message.created_at || Date.now()),
                   };
 
+                  // Backfill: hydrater le document si l'URL est manquante
+                  if (transformedMessage.type === 'document') {
+                    const docId = transformedMessage.document?.id;
+                    const hasUrl = !!(
+                      transformedMessage.document?.file_url ||
+                      transformedMessage.document?.url
+                    );
+                    if (docId && !hasUrl) {
+                      hydrateDocumentMessage(chat.id, transformedMessage.id, docId);
+                    }
+                  }
+
                   actions.addMessage(chat.id, transformedMessage);
 
                   // Mettre à jour le dernier message dans la liste
@@ -1372,6 +1452,19 @@ export function AppProvider({ children }) {
                   read: message.is_read || message.read || false,
                   timestamp: new Date(message.created_at || Date.now()),
                 });
+
+                // Backfill: hydrater le document si l'URL est manquante
+                const docId =
+                  (message.document && (message.document.id || message.document.document_id)) ||
+                  message.metadata?.document_id;
+                const hasUrl = !!(
+                  message.document?.file_url ||
+                  message.document?.url ||
+                  message.metadata?.file_url
+                );
+                if (message.type === 'document' && docId && !hasUrl) {
+                  hydrateDocumentMessage(chat.id, message.id, docId);
+                }
               } else if (type === 'removed') {
                 console.log(`🗑️ Message supprimé:`, message.id);
                 actions.deleteMessage(chat.id, message.id);
@@ -1386,6 +1479,7 @@ export function AppProvider({ children }) {
     },
     [
       actions,
+      hydrateDocumentMessage,
       listenToMessages,
       state.selectedChat,
       state.messages,
