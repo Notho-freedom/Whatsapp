@@ -3,6 +3,7 @@ import {
   collection,
   doc,
   addDoc,
+  setDoc,
   updateDoc,
   deleteDoc,
   getDoc,
@@ -16,6 +17,13 @@ class PollService {
   constructor() {
     this.pollsCollection = 'polls';
     this.votesCollection = 'poll_votes';
+  }
+
+  makeVoteId(pollId, userId) {
+    // Ensure a stable ID per (poll, user) to prevent duplicate votes
+    const safePollId = String(pollId).replace(/[\\/]/g, '_');
+    const safeUserId = String(userId).replace(/[\\/]/g, '_');
+    return `${safePollId}__${safeUserId}`;
   }
 
   // Créer un nouveau sondage
@@ -98,24 +106,19 @@ class PollService {
   // Voter pour une option
   async voteForOption(pollId, optionId, userId) {
     try {
-      // Vérifier si l'utilisateur a déjà voté
-      const existingVote = await this.getUserVote(pollId, userId);
+      const voteId = this.makeVoteId(pollId, userId);
 
-      if (existingVote) {
-        // Mettre à jour le vote existant
-        await updateDoc(doc(db, this.votesCollection, existingVote.id), {
-          option_id: optionId,
-          updated_at: new Date(),
-        });
-      } else {
-        // Créer un nouveau vote
-        await addDoc(collection(db, this.votesCollection), {
+      // Vote idempotent: one doc per user per poll
+      await setDoc(
+        doc(db, this.votesCollection, voteId),
+        {
           poll_id: pollId,
           user_id: userId,
           option_id: optionId,
-          created_at: new Date(),
-        });
-      }
+          updated_at: new Date(),
+        },
+        { merge: true }
+      );
 
       // Mettre à jour les statistiques du sondage
       await this.updatePollStats(pollId);
@@ -125,6 +128,30 @@ class PollService {
       console.error('Erreur lors du vote:', error);
       throw new Error('Impossible de voter');
     }
+  }
+
+  // Calculer les statistiques d'un sondage à partir des votes
+  async getPollStats(pollId) {
+    const votesQuery = query(
+      collection(db, this.votesCollection),
+      where('poll_id', '==', pollId)
+    );
+
+    const querySnapshot = await getDocs(votesQuery);
+    const voteCounts = {};
+    let totalVotes = 0;
+
+    querySnapshot.forEach(docSnap => {
+      const vote = docSnap.data();
+      const key = String(vote.option_id);
+      voteCounts[key] = (voteCounts[key] || 0) + 1;
+      totalVotes++;
+    });
+
+    return {
+      total_votes: totalVotes,
+      option_votes: voteCounts,
+    };
   }
 
   // Récupérer le vote d'un utilisateur pour un sondage

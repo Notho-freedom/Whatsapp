@@ -23,6 +23,11 @@ service cloud.firestore {
       return isAuthenticated() && 
         request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.admins;
     }
+
+    // Helper pour récupérer l'ID de conversation d'un sondage
+    function pollConversationId(pollId) {
+      return get(/databases/$(database)/documents/polls/$(pollId)).data.conversation_id;
+    }
     
     // Règles pour la collection users
     match /users/{userId} {
@@ -104,6 +109,48 @@ service cloud.firestore {
       // Suppression : auteur ou admin de la conversation
       allow delete: if isMessageAuthor() || 
         isConversationAdmin(resource.data.conversationId);
+    }
+
+    // Règles pour les sondages (polls)
+    match /polls/{pollId} {
+      allow read: if isAuthenticated() && isParticipant(pollConversationId(pollId));
+
+      allow create: if isAuthenticated() &&
+        request.resource.data.conversation_id != null &&
+        isParticipant(request.resource.data.conversation_id) &&
+        request.auth.uid == request.resource.data.created_by;
+
+      // Autoriser la mise à jour des stats ou la fermeture du sondage par les participants
+      allow update: if isAuthenticated() &&
+        isParticipant(pollConversationId(pollId)) &&
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'total_votes', 'option_votes', 'updated_at', 'closed_at', 'is_active'
+        ]);
+
+      // Suppression: uniquement le créateur ou un admin de la conversation
+      allow delete: if isAuthenticated() && (
+        request.auth.uid == resource.data.created_by ||
+        isConversationAdmin(pollConversationId(pollId))
+      );
+    }
+
+    // Règles pour les votes de sondage (poll_votes)
+    match /poll_votes/{voteId} {
+      function votePollId() {
+        return request.resource.data.poll_id != null
+          ? request.resource.data.poll_id
+          : resource.data.poll_id;
+      }
+
+      allow read: if isAuthenticated() && isParticipant(pollConversationId(votePollId()));
+
+      allow create, update: if isAuthenticated() &&
+        request.resource.data.poll_id != null &&
+        request.resource.data.user_id == request.auth.uid &&
+        isParticipant(pollConversationId(request.resource.data.poll_id));
+
+      // Pas de delete de vote (optionnel) – sinon restreindre au votant
+      allow delete: if isAuthenticated() && resource.data.user_id == request.auth.uid;
     }
     
     // Règles pour la collection contacts

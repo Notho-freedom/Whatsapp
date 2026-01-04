@@ -514,8 +514,14 @@ const MessageBubble = memo(
             )}
 
             {/* Poll */}
-            {message.poll && (
-              <PollItem poll={message.poll} isMobile={isMobile} />
+            {isPollMessage && (
+              <PollItem
+                poll={message.poll}
+                pollId={message.poll?.id || message.metadata?.poll_id}
+                chatId={selectedChat?.id}
+                messageId={message.id}
+                isMobile={isMobile}
+              />
             )}
 
             {/* Link preview */}
@@ -524,7 +530,7 @@ const MessageBubble = memo(
             {/* Text message */}
             {message.text &&
               (!isDrawingMessage || message.text !== '🎨 Dessin créé') &&
-              (!isPollMessage ||
+              (!message.poll ||
                 !String(message.text).startsWith('📊 Sondage:')) && (
                 <div className="wa-message-text">
                   <span>{message.text}</span>
