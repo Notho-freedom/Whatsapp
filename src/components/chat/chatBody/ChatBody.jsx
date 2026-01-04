@@ -13,6 +13,7 @@ const ChatBody = memo(function ChatBody({ selectedChat, currentUser }) {
   const [isMobile, setIsMobile] = useState(false);
   const [autoScroll, setAutoScroll] = useState(true);
   const { messages, markMessagesRead } = useAppContext();
+  const lastMarkedChatIdRef = useRef(null); // Tracker pour éviter les re-marks
 
   // Hook temps réel pour les receipts de lecture et indicateurs de frappe
   const currentUserId = currentUser?.id || 'default-user';
@@ -52,40 +53,35 @@ const ChatBody = memo(function ChatBody({ selectedChat, currentUser }) {
     // Scroll instantané au changement de chat
     scrollToBottom(false);
   }, [selectedChat, scrollToBottom]);
-
   useEffect(() => {
     // Scroll smooth pour les nouveaux messages
     scrollToBottom(true);
   }, [messages, scrollToBottom]);
 
-  // Marquer les messages comme lus quand on sélectionne un chat
+  // Marquer les messages comme lus quand on sélectionne un chat (une fois par chat)
   const selectedChatId = selectedChat?.id;
-  const selectedChatMessages = useMemo(() => {
-    if (!selectedChatId) return [];
-    return messages?.[selectedChatId] || [];
-  }, [messages, selectedChatId]);
-  const selectedChatLastMessageId =
-    selectedChatMessages.length > 0
-      ? selectedChatMessages[selectedChatMessages.length - 1]?.id
-      : null;
 
   useEffect(() => {
-    const chatId = selectedChatId;
-    if (!chatId) return;
+    if (!selectedChatId) return;
 
-    const chatMessages = selectedChatMessages;
+    // Ne marquer comme lu que si c'est un nouveau chat (pas de re-mark)
+    if (lastMarkedChatIdRef.current === selectedChatId) return;
+
+    lastMarkedChatIdRef.current = selectedChatId;
+
+    const chatMessages = messages?.[selectedChatId] || [];
     if (chatMessages.length === 0) return;
 
     // Marquer la conversation comme lue (unread_counts + last_read_at)
-    markMessagesRead(chatId);
+    markMessagesRead(selectedChatId);
 
     // Marquer les messages individuels comme lus dans Firestore (déclenche 'modified' côté expéditeur)
     chatMessages.forEach(message => {
       if (message.sender !== 'me' && !message.read) {
-        markMessageAsRead(chatId, message.id);
+        markMessageAsRead(selectedChatId, message.id);
       }
     });
-  }, [selectedChatId, selectedChatMessages, selectedChatLastMessageId, markMessagesRead, markMessageAsRead]);
+  }, [selectedChatId, messages, markMessagesRead, markMessageAsRead]);
 
   // Écouter les receipts de lecture et indicateurs de frappe
   useEffect(() => {

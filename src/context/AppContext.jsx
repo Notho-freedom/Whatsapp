@@ -361,6 +361,8 @@ export function AppProvider({ children }) {
   const messageListenersRef = useRef(new Map());
   const conversationListenerRef = useRef(null);
   const latestMessagesRef = useRef({});
+  const recentlySentMessagesRef = useRef(new Set());
+  const latestConversationsRef = useRef(null);
 
   // Hook temps réel pour les messages et conversations
   const {
@@ -1350,6 +1352,12 @@ export function AppProvider({ children }) {
           console.error("❌ Erreur lors de l'envoi du message:", error);
         }
 
+        // Marquer comme "recently sent" pour éviter le doublon au listener
+        recentlySentMessagesRef.current.add(message.id);
+        setTimeout(() => {
+          recentlySentMessagesRef.current.delete(message.id);
+        }, 2000);
+
         // Ajouter le message à l'état local
         actions.addMessage(conversationId, message);
 
@@ -1522,7 +1530,12 @@ export function AppProvider({ children }) {
                   m => m.id === message.id
                 );
 
-                if (!alreadyExists) {
+                // Ignorer les messages juste envoyés (court délai de 2s pour Firestore round-trip)
+                const isRecentlySent = recentlySentMessagesRef.current.has(
+                  message.id
+                );
+
+                if (!alreadyExists && !isRecentlySent) {
                   console.log(
                     `📩 Nouveau message reçu:`,
                     message.text?.substring(0, 30)
@@ -2205,8 +2218,22 @@ export function AppProvider({ children }) {
 
         console.log(`✅ ${finalConversations.length} conversations uniques`);
 
-        // Mettre à jour la liste des conversations
-        actions.setUsers(finalConversations);
+        // Vérifier si les conversations ont réellement changé
+        const conversationsChanged =
+          !latestConversationsRef.current ||
+          latestConversationsRef.current.length !== finalConversations.length ||
+          finalConversations.some(
+            (conv, idx) =>
+              latestConversationsRef.current[idx]?.id !== conv.id ||
+              latestConversationsRef.current[idx]?.lastMessage?.text !==
+                conv.lastMessage?.text
+          );
+
+        if (conversationsChanged) {
+          // Mettre à jour la liste des conversations seulement si ça a changé
+          latestConversationsRef.current = finalConversations;
+          dispatch({ type: ACTIONS.SET_USERS, payload: finalConversations });
+        }
 
         // Logger les changements
         changes.forEach(change => {
@@ -2231,7 +2258,7 @@ export function AppProvider({ children }) {
         conversationListenerRef.current = null;
       }
     };
-  }, [currentUserId, listenToConversations, actions]);
+  }, [currentUserId, listenToConversations]);
 
   const value = useMemo(
     () => ({

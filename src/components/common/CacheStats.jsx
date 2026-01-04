@@ -20,9 +20,9 @@ export default function CacheStats() {
     const interval = setInterval(updateStats, 5000);
 
     return () => clearInterval(interval);
-  }, [getCacheStats]);
+  }, []);
 
-  const formatBytes = (bytes) => {
+  const formatBytes = bytes => {
     if (bytes === 0) return '0 B';
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
@@ -30,7 +30,7 @@ export default function CacheStats() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const getHitRateColor = (hitRate) => {
+  const getHitRateColor = hitRate => {
     if (hitRate > 0.7) return 'text-green-400';
     if (hitRate > 0.4) return 'text-yellow-400';
     return 'text-red-400';
@@ -83,7 +83,11 @@ export default function CacheStats() {
             {/* Taux de réussite */}
             <div className="flex items-center justify-between">
               <span className="text-gray-300 text-xs">Taux de réussite:</span>
-              <span className={`text-xs font-medium ${getHitRateColor(stats.hitRate)}`}>
+              <span
+                className={`text-xs font-medium ${getHitRateColor(
+                  stats.hitRate
+                )}`}
+              >
                 {(stats.hitRate * 100).toFixed(1)}%
               </span>
             </div>
@@ -116,7 +120,11 @@ export default function CacheStats() {
                 <div className="text-gray-400">Cache actif</div>
               </div>
               <div className="text-center p-2 bg-[#1f2c34] rounded">
-                <div className={`font-medium ${stats.hitRate > 0.5 ? 'text-green-400' : 'text-yellow-400'}`}>
+                <div
+                  className={`font-medium ${
+                    stats.hitRate > 0.5 ? 'text-green-400' : 'text-yellow-400'
+                  }`}
+                >
                   {stats.hitRate > 0.5 ? '🚀' : '🐌'}
                 </div>
                 <div className="text-gray-400">Performance</div>
