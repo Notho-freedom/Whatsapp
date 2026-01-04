@@ -43,7 +43,8 @@ export default function ChatList({
     searchQuery,
     setSearchQuery,
     addUser,
-    currentUser, // Récupérer currentUser depuis le contexte
+    currentUser,
+    markMessagesRead,
   } = useAppContext();
   const {
     contacts: googleContacts,
@@ -415,6 +416,11 @@ export default function ChatList({
                 key={chat.id}
                 onClick={() => {
                   onChatSelect(chat);
+
+                  // Marquer les messages comme lus
+                  if (chat.unreadCount > 0) {
+                    markMessagesRead(chat.id);
+                  }
 
                   // Émettre un événement pour notifier l'application
                   window.dispatchEvent(

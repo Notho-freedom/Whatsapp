@@ -736,6 +736,12 @@ export function AppProvider({ children }) {
     latestMessagesRef.current = state.messages;
   }, [state.messages]);
 
+  // Ref pour tracker l'état actuel des users/chats
+  const latestUsersRef = useRef({});
+  useEffect(() => {
+    latestUsersRef.current = state.users;
+  }, [state.users]);
+
   // Cache local pour hydrater les messages "document" existants (backfill côté client)
   const documentCacheRef = useRef(new Map()); // documentId -> document data
   const documentFetchRef = useRef(new Map()); // documentId -> Promise
@@ -876,7 +882,8 @@ export function AppProvider({ children }) {
                   minute: '2-digit',
                 }),
               date: msg.date || new Date().toLocaleDateString('fr-FR'),
-              read: msg.is_read || msg.read || false,
+              read:
+                msg.is_read !== undefined ? msg.is_read : msg.isRead ?? false,
               reactions: msg.reactions || [],
               replyTo: msg.reply_to,
               type: msg.type || 'text',
@@ -930,6 +937,34 @@ export function AppProvider({ children }) {
       hydrateDocumentMessage,
       hydratePollMessage,
     ]
+  );
+
+  const markChatAsRead = useCallback(
+    async chatId => {
+      try {
+        // Dispatch l'action locale immédiatement pour une UI réactive
+        actions.markMessagesRead(chatId);
+
+        // Mettre à jour Firebase en arrière-plan sans bloquer l'UI
+        setTimeout(async () => {
+          try {
+            if (currentUserId) {
+              // Mettre à jour le compteur de la conversation directement
+              await firebaseService.updateConversation(chatId, {
+                unread_count: 0,
+              });
+
+              console.log(`✅ Conversation ${chatId} marquée comme lue`);
+            }
+          } catch (error) {
+            console.error('❌ Erreur lors de la mise à jour Firebase:', error);
+          }
+        }, 0);
+      } catch (error) {
+        console.error('❌ Erreur lors du marquage comme lu:', error);
+      }
+    },
+    [actions, currentUserId]
   );
 
   const sendMessage = useCallback(
@@ -1410,7 +1445,8 @@ export function AppProvider({ children }) {
               date:
                 msg.date ||
                 new Date(msg.created_at).toLocaleDateString('fr-FR'),
-              read: msg.is_read || msg.read || false,
+              read:
+                msg.is_read !== undefined ? msg.is_read : msg.isRead ?? false,
               timestamp: new Date(msg.created_at),
             };
           });
@@ -1520,7 +1556,10 @@ export function AppProvider({ children }) {
                       new Date(
                         message.created_at || Date.now()
                       ).toLocaleDateString('fr-FR'),
-                    read: message.is_read || message.read || false,
+                    read:
+                      message.is_read !== undefined
+                        ? message.is_read
+                        : message.isRead ?? false,
                     timestamp: new Date(message.created_at || Date.now()),
                   };
 
@@ -1561,6 +1600,30 @@ export function AppProvider({ children }) {
                     text: transformedMessage.text,
                     type: transformedMessage.type,
                   });
+
+                  // Incrémenter unreadCount si c'est un message reçu (sender === 'other')
+                  if (
+                    normalizedSender === 'other' &&
+                    !transformedMessage.read
+                  ) {
+                    const latestUsers = latestUsersRef.current;
+                    const currentChat = latestUsers.find(u => u.id === chat.id);
+                    const currentUnreadCount = currentChat?.unreadCount || 0;
+                    const newUnreadCount = currentUnreadCount + 1;
+
+                    // Mettre à jour l'unreadCount dans la liste des users
+                    actions.setUsers(
+                      latestUsers.map(user =>
+                        user.id === chat.id
+                          ? { ...user, unreadCount: newUnreadCount }
+                          : user
+                      )
+                    );
+
+                    console.log(
+                      `🔔 unreadCount incrémenté pour ${chat.id}: ${newUnreadCount} (was ${currentUnreadCount})`
+                    );
+                  }
                 }
               } else if (type === 'modified') {
                 console.log(`✏️ Message modifié:`, message.id);
@@ -1610,7 +1673,10 @@ export function AppProvider({ children }) {
                     new Date(
                       message.created_at || Date.now()
                     ).toLocaleDateString('fr-FR'),
-                  read: message.is_read || message.read || false,
+                  read:
+                    message.is_read !== undefined
+                      ? message.is_read
+                      : message.isRead ?? false,
                   timestamp: new Date(message.created_at || Date.now()),
                 });
 
@@ -2180,7 +2246,7 @@ export function AppProvider({ children }) {
       setSearchQuery: actions.setSearchQuery,
       toggleSidebar: actions.toggleSidebar,
       setActiveTab: actions.setActiveTab,
-      markMessagesRead: actions.markMessagesRead,
+      markMessagesRead: markChatAsRead,
       addReaction: actions.addReaction,
       removeReaction: actions.removeReaction,
       setReplyTo: actions.setReplyTo,
