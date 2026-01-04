@@ -138,6 +138,14 @@ class DrawingService {
 
       return drawings.slice(0, limit);
     } catch (error) {
+      const msg = String(error?.message || '');
+      // Si un index Firestore manque, ne pas casser l'app: retourner une liste vide.
+      if (msg.includes('requires an index')) {
+        console.warn(
+          'Index Firestore manquant pour dessins; retour liste vide.'
+        );
+        return [];
+      }
       console.error('Erreur lors de la récupération des dessins:', error);
       throw new Error('Impossible de récupérer les dessins');
     }

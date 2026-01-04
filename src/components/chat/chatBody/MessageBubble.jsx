@@ -3,6 +3,7 @@
 import { FaAngleDown, FaStar, FaSmile } from 'react-icons/fa';
 import MediaGroup from './MediaGroup';
 import DocumentItem from './DocumentItem';
+import PollItem from './PollItem';
 import PreviewLink from './PreviewLink';
 import ReactionBar from './ReactionBar';
 import MessageContextMenu from './MessageContextMenu';
@@ -197,6 +198,7 @@ const MessageBubble = memo(
 
     const hasMedia = computedMedia.length > 0;
     const isDrawingMessage = message?.type === 'drawing' || !!drawingUrl;
+    const isPollMessage = message?.type === 'poll' || !!message?.poll;
 
     const handleStarMessage = useCallback(
       async messageData => {
@@ -511,12 +513,19 @@ const MessageBubble = memo(
               />
             )}
 
+            {/* Poll */}
+            {message.poll && (
+              <PollItem poll={message.poll} isMobile={isMobile} />
+            )}
+
             {/* Link preview */}
             {message.link && <PreviewLink link={message.link} />}
 
             {/* Text message */}
             {message.text &&
-              (!isDrawingMessage || message.text !== '🎨 Dessin créé') && (
+              (!isDrawingMessage || message.text !== '🎨 Dessin créé') &&
+              (!isPollMessage ||
+                !String(message.text).startsWith('📊 Sondage:')) && (
                 <div className="wa-message-text">
                   <span>{message.text}</span>
                   {/* Spacer for metadata */}

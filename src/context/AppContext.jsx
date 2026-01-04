@@ -31,6 +31,7 @@ import {
   where,
 } from 'firebase/firestore';
 import { db } from '@/utils/firebaseConfig';
+import pollService from '@/utils/pollService';
 
 const DOCUMENTS_COLLECTION = 'documents';
 
@@ -730,7 +731,6 @@ export function AppProvider({ children }) {
     return selected;
   }, []);
 
-
   // Toujours garder une référence des messages à jour pour éviter les doublons en temps réel
   useEffect(() => {
     latestMessagesRef.current = state.messages;
@@ -739,6 +739,9 @@ export function AppProvider({ children }) {
   // Cache local pour hydrater les messages "document" existants (backfill côté client)
   const documentCacheRef = useRef(new Map()); // documentId -> document data
   const documentFetchRef = useRef(new Map()); // documentId -> Promise
+
+  const pollCacheRef = useRef(new Map()); // pollId -> poll data
+  const pollFetchRef = useRef(new Map()); // pollId -> Promise
 
   const hydrateDocumentMessage = useCallback(
     async (chatId, messageId, documentId) => {
@@ -782,7 +785,47 @@ export function AppProvider({ children }) {
     [actions]
   );
 
-  
+  const hydratePollMessage = useCallback(
+    async (chatId, messageId, pollId) => {
+      if (!chatId || !messageId || !pollId) return;
+
+      const cached = pollCacheRef.current.get(pollId);
+      if (cached) {
+        actions.updateMessage(chatId, messageId, { poll: cached });
+        return;
+      }
+
+      if (pollFetchRef.current.has(pollId)) return;
+
+      const p = (async () => {
+        try {
+          const poll = await pollService.getPollById(pollId);
+          if (!poll) return null;
+
+          const normalized = {
+            ...poll,
+            created_at: poll.created_at?.toDate?.() || poll.created_at,
+            updated_at: poll.updated_at?.toDate?.() || poll.updated_at,
+            closed_at: poll.closed_at?.toDate?.() || poll.closed_at,
+          };
+
+          pollCacheRef.current.set(pollId, normalized);
+          actions.updateMessage(chatId, messageId, { poll: normalized });
+          return normalized;
+        } catch (e) {
+          console.warn('⚠️ Hydratation sondage impossible:', e);
+          return null;
+        } finally {
+          pollFetchRef.current.delete(pollId);
+        }
+      })();
+
+      pollFetchRef.current.set(pollId, p);
+      await p;
+    },
+    [actions]
+  );
+
   // Méthodes métier optimisées avec cache
   const loadMessages = useCallback(
     async chatId => {
@@ -821,6 +864,10 @@ export function AppProvider({ children }) {
               text: msg.text,
               media: msg.media,
               document: msg.document || fallbackDocument,
+              poll: msg.poll || null,
+              drawing: msg.drawing || null,
+              contact: msg.contact || null,
+              metadata: msg.metadata || {},
               time:
                 msg.time ||
                 new Date().toLocaleTimeString('fr-FR', {
@@ -850,6 +897,15 @@ export function AppProvider({ children }) {
             }
           });
 
+          // Backfill: hydrater les sondages manquants (anciens messages)
+          transformedMessages.forEach(m => {
+            if (m.type !== 'poll') return;
+            const pollId = m.poll?.id || m.metadata?.poll_id;
+            if (!m.poll && pollId) {
+              hydratePollMessage(chatId, m.id, pollId);
+            }
+          });
+
           actions.setMessages(chatId, transformedMessages);
           console.log(
             `✅ ${transformedMessages.length} messages chargés avec cache pour la conversation ${chatId}`
@@ -866,9 +922,15 @@ export function AppProvider({ children }) {
         actions.setLoading(false);
       }
     },
-    [actions, currentUserId, currentUser, hydrateDocumentMessage]
+    [
+      actions,
+      currentUserId,
+      currentUser,
+      hydrateDocumentMessage,
+      hydratePollMessage,
+    ]
   );
-  
+
   const sendMessage = useCallback(
     async (recipientUserIdOrChatId, messageData, replyTo = null) => {
       try {
@@ -1281,6 +1343,10 @@ export function AppProvider({ children }) {
               type: msg.type || 'text',
               media: msg.media || null,
               document: msg.document || fallbackDocument,
+              poll: msg.poll || null,
+              drawing: msg.drawing || null,
+              contact: msg.contact || null,
+              metadata: msg.metadata || {},
               replyTo: msg.reply_to,
               reactions: msg.reactions || [],
               time:
@@ -1304,6 +1370,15 @@ export function AppProvider({ children }) {
             const hasUrl = !!(m.document?.file_url || m.document?.url);
             if (docId && !hasUrl) {
               hydrateDocumentMessage(chat.id, m.id, docId);
+            }
+          });
+
+          // Backfill: hydrater les sondages manquants (anciens messages)
+          transformedMessages.forEach(m => {
+            if (m.type !== 'poll') return;
+            const pollId = m.poll?.id || m.metadata?.poll_id;
+            if (!m.poll && pollId) {
+              hydratePollMessage(chat.id, m.id, pollId);
             }
           });
 
@@ -1373,6 +1448,10 @@ export function AppProvider({ children }) {
                     type: message.type || 'text',
                     media: message.media || null,
                     document: message.document || fallbackDocument,
+                    poll: message.poll || null,
+                    drawing: message.drawing || null,
+                    contact: message.contact || null,
+                    metadata: message.metadata || {},
                     replyTo: message.reply_to,
                     reactions: message.reactions || [],
                     time:
@@ -1404,6 +1483,20 @@ export function AppProvider({ children }) {
                         chat.id,
                         transformedMessage.id,
                         docId
+                      );
+                    }
+                  }
+
+                  // Backfill: hydrater le sondage si manquant
+                  if (transformedMessage.type === 'poll') {
+                    const pollId =
+                      transformedMessage.poll?.id ||
+                      transformedMessage.metadata?.poll_id;
+                    if (!transformedMessage.poll && pollId) {
+                      hydratePollMessage(
+                        chat.id,
+                        transformedMessage.id,
+                        pollId
                       );
                     }
                   }
@@ -1444,6 +1537,10 @@ export function AppProvider({ children }) {
                   type: message.type || 'text',
                   media: message.media || null,
                   document: message.document || fallbackDocument,
+                  poll: message.poll || null,
+                  drawing: message.drawing || null,
+                  contact: message.contact || null,
+                  metadata: message.metadata || {},
                   replyTo: message.reply_to,
                   reactions: message.reactions || [],
                   time:
@@ -1476,6 +1573,12 @@ export function AppProvider({ children }) {
                 if (message.type === 'document' && docId && !hasUrl) {
                   hydrateDocumentMessage(chat.id, message.id, docId);
                 }
+
+                // Backfill: hydrater le sondage si manquant
+                const pollId = message.poll?.id || message.metadata?.poll_id;
+                if (message.type === 'poll' && !message.poll && pollId) {
+                  hydratePollMessage(chat.id, message.id, pollId);
+                }
               } else if (type === 'removed') {
                 console.log(`🗑️ Message supprimé:`, message.id);
                 actions.deleteMessage(chat.id, message.id);
@@ -1491,6 +1594,7 @@ export function AppProvider({ children }) {
     [
       actions,
       hydrateDocumentMessage,
+      hydratePollMessage,
       listenToMessages,
       state.selectedChat,
       state.messages,

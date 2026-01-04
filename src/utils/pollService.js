@@ -1,15 +1,15 @@
 import { db } from '@/config/firebase';
-import { 
-  collection, 
-  doc, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  getDoc, 
-  getDocs, 
-  query, 
-  where, 
-  orderBy
+import {
+  collection,
+  doc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+  orderBy,
 } from 'firebase/firestore';
 
 class PollService {
@@ -26,14 +26,14 @@ class PollService {
         created_at: new Date(),
         updated_at: new Date(),
         total_votes: 0,
-        is_active: true
+        is_active: true,
       };
 
       const docRef = await addDoc(collection(db, this.pollsCollection), poll);
-      
+
       return {
         id: docRef.id,
-        ...poll
+        ...poll,
       };
     } catch (error) {
       console.error('Erreur lors de la création du sondage:', error);
@@ -45,14 +45,14 @@ class PollService {
   async getPollById(pollId) {
     try {
       const pollDoc = await getDoc(doc(db, this.pollsCollection, pollId));
-      
+
       if (!pollDoc.exists()) {
         throw new Error('Sondage non trouvé');
       }
 
       return {
         id: pollDoc.id,
-        ...pollDoc.data()
+        ...pollDoc.data(),
       };
     } catch (error) {
       console.error('Erreur lors de la récupération du sondage:', error);
@@ -73,15 +73,23 @@ class PollService {
       const querySnapshot = await getDocs(pollsQuery);
       const polls = [];
 
-      querySnapshot.forEach((doc) => {
+      querySnapshot.forEach(doc => {
         polls.push({
           id: doc.id,
-          ...doc.data()
+          ...doc.data(),
         });
       });
 
       return polls.slice(0, limit);
     } catch (error) {
+      const msg = String(error?.message || '');
+      // Si un index Firestore manque, ne pas casser l'app: retourner une liste vide.
+      if (msg.includes('requires an index')) {
+        console.warn(
+          'Index Firestore manquant pour sondages; retour liste vide.'
+        );
+        return [];
+      }
       console.error('Erreur lors de la récupération des sondages:', error);
       throw new Error('Impossible de récupérer les sondages');
     }
@@ -92,12 +100,12 @@ class PollService {
     try {
       // Vérifier si l'utilisateur a déjà voté
       const existingVote = await this.getUserVote(pollId, userId);
-      
+
       if (existingVote) {
         // Mettre à jour le vote existant
         await updateDoc(doc(db, this.votesCollection, existingVote.id), {
           option_id: optionId,
-          updated_at: new Date()
+          updated_at: new Date(),
         });
       } else {
         // Créer un nouveau vote
@@ -105,13 +113,13 @@ class PollService {
           poll_id: pollId,
           user_id: userId,
           option_id: optionId,
-          created_at: new Date()
+          created_at: new Date(),
         });
       }
 
       // Mettre à jour les statistiques du sondage
       await this.updatePollStats(pollId);
-      
+
       return true;
     } catch (error) {
       console.error('Erreur lors du vote:', error);
@@ -129,7 +137,7 @@ class PollService {
       );
 
       const querySnapshot = await getDocs(votesQuery);
-      
+
       if (querySnapshot.empty) {
         return null;
       }
@@ -137,7 +145,7 @@ class PollService {
       const voteDoc = querySnapshot.docs[0];
       return {
         id: voteDoc.id,
-        ...voteDoc.data()
+        ...voteDoc.data(),
       };
     } catch (error) {
       console.error('Erreur lors de la récupération du vote:', error);
@@ -157,7 +165,7 @@ class PollService {
       const voteCounts = {};
       let totalVotes = 0;
 
-      querySnapshot.forEach((doc) => {
+      querySnapshot.forEach(doc => {
         const vote = doc.data();
         voteCounts[vote.option_id] = (voteCounts[vote.option_id] || 0) + 1;
         totalVotes++;
@@ -167,7 +175,7 @@ class PollService {
       await updateDoc(doc(db, this.pollsCollection, pollId), {
         total_votes: totalVotes,
         option_votes: voteCounts,
-        updated_at: new Date()
+        updated_at: new Date(),
       });
     } catch (error) {
       console.error('Erreur lors de la mise à jour des statistiques:', error);
@@ -178,7 +186,7 @@ class PollService {
   async closePoll(pollId, userId) {
     try {
       const poll = await this.getPollById(pollId);
-      
+
       if (poll.created_by !== userId) {
         throw new Error('Seul le créateur peut fermer le sondage');
       }
@@ -186,7 +194,7 @@ class PollService {
       await updateDoc(doc(db, this.pollsCollection, pollId), {
         is_active: false,
         closed_at: new Date(),
-        updated_at: new Date()
+        updated_at: new Date(),
       });
 
       return true;
@@ -200,7 +208,7 @@ class PollService {
   async deletePoll(pollId, userId) {
     try {
       const poll = await this.getPollById(pollId);
-      
+
       if (poll.created_by !== userId) {
         throw new Error('Seul le créateur peut supprimer le sondage');
       }
@@ -237,16 +245,19 @@ class PollService {
       const querySnapshot = await getDocs(pollsQuery);
       const polls = [];
 
-      querySnapshot.forEach((doc) => {
+      querySnapshot.forEach(doc => {
         polls.push({
           id: doc.id,
-          ...doc.data()
+          ...doc.data(),
         });
       });
 
       return polls.slice(0, limit);
     } catch (error) {
-      console.error('Erreur lors de la récupération des sondages utilisateur:', error);
+      console.error(
+        'Erreur lors de la récupération des sondages utilisateur:',
+        error
+      );
       throw new Error('Impossible de récupérer les sondages');
     }
   }

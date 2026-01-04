@@ -1,15 +1,15 @@
 import { db } from '@/config/firebase';
-import { 
-  collection, 
-  doc, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  getDoc, 
-  getDocs, 
-  query, 
-  where, 
-  orderBy
+import {
+  collection,
+  doc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+  orderBy,
 } from 'firebase/firestore';
 
 class ContactSharingService {
@@ -27,14 +27,17 @@ class ContactSharingService {
         sender_id: senderId,
         shared_at: new Date(),
         is_active: true,
-        status: 'shared'
+        status: 'shared',
       };
 
-      const docRef = await addDoc(collection(db, this.sharedContactsCollection), sharedContact);
-      
+      const docRef = await addDoc(
+        collection(db, this.sharedContactsCollection),
+        sharedContact
+      );
+
       return {
         id: docRef.id,
-        ...sharedContact
+        ...sharedContact,
       };
     } catch (error) {
       console.error('Erreur lors du partage du contact:', error);
@@ -45,18 +48,23 @@ class ContactSharingService {
   // Récupérer un contact partagé par ID
   async getSharedContactById(sharedContactId) {
     try {
-      const contactDoc = await getDoc(doc(db, this.sharedContactsCollection, sharedContactId));
-      
+      const contactDoc = await getDoc(
+        doc(db, this.sharedContactsCollection, sharedContactId)
+      );
+
       if (!contactDoc.exists()) {
         throw new Error('Contact partagé non trouvé');
       }
 
       return {
         id: contactDoc.id,
-        ...contactDoc.data()
+        ...contactDoc.data(),
       };
     } catch (error) {
-      console.error('Erreur lors de la récupération du contact partagé:', error);
+      console.error(
+        'Erreur lors de la récupération du contact partagé:',
+        error
+      );
       throw error;
     }
   }
@@ -74,16 +82,27 @@ class ContactSharingService {
       const querySnapshot = await getDocs(contactsQuery);
       const contacts = [];
 
-      querySnapshot.forEach((doc) => {
+      querySnapshot.forEach(doc => {
         contacts.push({
           id: doc.id,
-          ...doc.data()
+          ...doc.data(),
         });
       });
 
       return contacts.slice(0, limit);
     } catch (error) {
-      console.error('Erreur lors de la récupération des contacts partagés:', error);
+      const msg = String(error?.message || '');
+      // Si un index Firestore manque, ne pas casser l'app: retourner une liste vide.
+      if (msg.includes('requires an index')) {
+        console.warn(
+          'Index Firestore manquant pour contacts partagés; retour liste vide.'
+        );
+        return [];
+      }
+      console.error(
+        'Erreur lors de la récupération des contacts partagés:',
+        error
+      );
       throw new Error('Impossible de récupérer les contacts partagés');
     }
   }
@@ -92,13 +111,13 @@ class ContactSharingService {
   async acceptSharedContact(sharedContactId, userId) {
     try {
       const sharedContact = await this.getSharedContactById(sharedContactId);
-      
+
       // Mettre à jour le statut
       await updateDoc(doc(db, this.sharedContactsCollection, sharedContactId), {
         status: 'accepted',
         accepted_by: userId,
         accepted_at: new Date(),
-        updated_at: new Date()
+        updated_at: new Date(),
       });
 
       // Créer une demande de contact
@@ -106,7 +125,7 @@ class ContactSharingService {
 
       return true;
     } catch (error) {
-      console.error('Erreur lors de l\'acceptation du contact:', error);
+      console.error("Erreur lors de l'acceptation du contact:", error);
       throw error;
     }
   }
@@ -118,7 +137,7 @@ class ContactSharingService {
         status: 'declined',
         declined_by: userId,
         declined_at: new Date(),
-        updated_at: new Date()
+        updated_at: new Date(),
       });
 
       return true;
@@ -139,7 +158,7 @@ class ContactSharingService {
           phone_number: sharedContact.phone_number,
           email: sharedContact.email,
           profile_picture_url: sharedContact.profile_picture_url,
-          status_message: sharedContact.status_message
+          status_message: sharedContact.status_message,
         },
         source: 'shared_contact',
         source_id: sharedContact.id,
@@ -147,17 +166,23 @@ class ContactSharingService {
         sender_id: sharedContact.sender_id,
         status: 'pending',
         created_at: new Date(),
-        updated_at: new Date()
+        updated_at: new Date(),
       };
 
-      const docRef = await addDoc(collection(db, this.contactRequestsCollection), contactRequest);
-      
+      const docRef = await addDoc(
+        collection(db, this.contactRequestsCollection),
+        contactRequest
+      );
+
       return {
         id: docRef.id,
-        ...contactRequest
+        ...contactRequest,
       };
     } catch (error) {
-      console.error('Erreur lors de la création de la demande de contact:', error);
+      console.error(
+        'Erreur lors de la création de la demande de contact:',
+        error
+      );
       throw new Error('Impossible de créer la demande de contact');
     }
   }
@@ -179,16 +204,19 @@ class ContactSharingService {
       const querySnapshot = await getDocs(requestsQuery);
       const requests = [];
 
-      querySnapshot.forEach((doc) => {
+      querySnapshot.forEach(doc => {
         requests.push({
           id: doc.id,
-          ...doc.data()
+          ...doc.data(),
         });
       });
 
       return requests.slice(0, limit);
     } catch (error) {
-      console.error('Erreur lors de la récupération des demandes de contact:', error);
+      console.error(
+        'Erreur lors de la récupération des demandes de contact:',
+        error
+      );
       throw new Error('Impossible de récupérer les demandes de contact');
     }
   }
@@ -197,7 +225,7 @@ class ContactSharingService {
   async approveContactRequest(requestId, userId) {
     try {
       const request = await this.getContactRequestById(requestId);
-      
+
       if (request.user_id !== userId) {
         throw new Error('Accès non autorisé');
       }
@@ -205,12 +233,12 @@ class ContactSharingService {
       await updateDoc(doc(db, this.contactRequestsCollection, requestId), {
         status: 'approved',
         approved_at: new Date(),
-        updated_at: new Date()
+        updated_at: new Date(),
       });
 
       return true;
     } catch (error) {
-      console.error('Erreur lors de l\'approbation de la demande:', error);
+      console.error("Erreur lors de l'approbation de la demande:", error);
       throw error;
     }
   }
@@ -219,7 +247,7 @@ class ContactSharingService {
   async rejectContactRequest(requestId, userId) {
     try {
       const request = await this.getContactRequestById(requestId);
-      
+
       if (request.user_id !== userId) {
         throw new Error('Accès non autorisé');
       }
@@ -227,7 +255,7 @@ class ContactSharingService {
       await updateDoc(doc(db, this.contactRequestsCollection, requestId), {
         status: 'rejected',
         rejected_at: new Date(),
-        updated_at: new Date()
+        updated_at: new Date(),
       });
 
       return true;
@@ -240,15 +268,17 @@ class ContactSharingService {
   // Récupérer une demande de contact par ID
   async getContactRequestById(requestId) {
     try {
-      const requestDoc = await getDoc(doc(db, this.contactRequestsCollection, requestId));
-      
+      const requestDoc = await getDoc(
+        doc(db, this.contactRequestsCollection, requestId)
+      );
+
       if (!requestDoc.exists()) {
         throw new Error('Demande de contact non trouvée');
       }
 
       return {
         id: requestDoc.id,
-        ...requestDoc.data()
+        ...requestDoc.data(),
       };
     } catch (error) {
       console.error('Erreur lors de la récupération de la demande:', error);
@@ -260,15 +290,15 @@ class ContactSharingService {
   async deleteSharedContact(sharedContactId, userId) {
     try {
       const sharedContact = await this.getSharedContactById(sharedContactId);
-      
+
       if (sharedContact.sender_id !== userId) {
-        throw new Error('Seul l\'expéditeur peut supprimer le contact partagé');
+        throw new Error("Seul l'expéditeur peut supprimer le contact partagé");
       }
 
       await updateDoc(doc(db, this.sharedContactsCollection, sharedContactId), {
         is_active: false,
         deleted_at: new Date(),
-        updated_at: new Date()
+        updated_at: new Date(),
       });
 
       return true;
@@ -290,13 +320,19 @@ class ContactSharingService {
       }
 
       if (conversationId) {
-        contactsQuery = query(contactsQuery, where('conversation_id', '==', conversationId));
-        requestsQuery = query(requestsQuery, where('conversation_id', '==', conversationId));
+        contactsQuery = query(
+          contactsQuery,
+          where('conversation_id', '==', conversationId)
+        );
+        requestsQuery = query(
+          requestsQuery,
+          where('conversation_id', '==', conversationId)
+        );
       }
 
       const [contactsSnapshot, requestsSnapshot] = await Promise.all([
         getDocs(contactsQuery),
-        getDocs(requestsQuery)
+        getDocs(requestsQuery),
       ]);
 
       const stats = {
@@ -306,13 +342,13 @@ class ContactSharingService {
         total_pending: 0,
         total_approved: 0,
         total_rejected: 0,
-        acceptance_rate: 0
+        acceptance_rate: 0,
       };
 
-      contactsSnapshot.forEach((doc) => {
+      contactsSnapshot.forEach(doc => {
         const contact = doc.data();
         stats.total_shared++;
-        
+
         if (contact.status === 'accepted') {
           stats.total_accepted++;
         } else if (contact.status === 'declined') {
@@ -320,9 +356,9 @@ class ContactSharingService {
         }
       });
 
-      requestsSnapshot.forEach((doc) => {
+      requestsSnapshot.forEach(doc => {
         const request = doc.data();
-        
+
         if (request.status === 'pending') {
           stats.total_pending++;
         } else if (request.status === 'approved') {
@@ -333,7 +369,8 @@ class ContactSharingService {
       });
 
       if (stats.total_shared > 0) {
-        stats.acceptance_rate = (stats.total_accepted / stats.total_shared) * 100;
+        stats.acceptance_rate =
+          (stats.total_accepted / stats.total_shared) * 100;
       }
 
       return stats;
@@ -352,26 +389,31 @@ class ContactSharingService {
       );
 
       if (conversationId) {
-        contactsQuery = query(contactsQuery, where('conversation_id', '==', conversationId));
+        contactsQuery = query(
+          contactsQuery,
+          where('conversation_id', '==', conversationId)
+        );
       }
 
       const querySnapshot = await getDocs(contactsQuery);
       const contacts = [];
 
-      querySnapshot.forEach((doc) => {
+      querySnapshot.forEach(doc => {
         const contact = doc.data();
-        
+
         // Recherche dans le nom, prénom, email et numéro de téléphone
         const searchFields = [
           contact.first_name,
           contact.last_name,
           contact.email,
-          contact.phone_number
+          contact.phone_number,
         ].filter(Boolean);
 
-        if (searchFields.some(field => 
-          field.toLowerCase().includes(query.toLowerCase())
-        )) {
+        if (
+          searchFields.some(field =>
+            field.toLowerCase().includes(query.toLowerCase())
+          )
+        ) {
           contacts.push({ id: doc.id, ...contact });
         }
       });

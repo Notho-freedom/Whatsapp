@@ -217,6 +217,9 @@ class FirebaseServerService {
         type = 'text',
         media = null,
         document = null,
+        poll = null,
+        drawing = null,
+        contact = null,
         replyTo = null,
         reactions = [],
         isStarred = false,
@@ -233,6 +236,9 @@ class FirebaseServerService {
         type,
         media, // Ajout du champ media pour les messages média
         document, // Ajout du champ document pour les documents
+        poll, // Ajout du champ poll pour les sondages
+        drawing, // Ajout du champ drawing pour les dessins
+        contact, // Ajout du champ contact pour les contacts partagés
         reply_to: replyTo,
         reactions,
         is_starred: isStarred,
@@ -277,6 +283,10 @@ class FirebaseServerService {
         type,
         media,
         document,
+        poll,
+        drawing,
+        contact,
+        metadata,
         time: new Date().toLocaleTimeString('fr-FR', {
           hour: '2-digit',
           minute: '2-digit',
@@ -314,6 +324,11 @@ class FirebaseServerService {
           text: data.text,
           type: data.type || 'text',
           media: data.media || null, // Ajout du champ media
+          document: data.document || null,
+          poll: data.poll || null,
+          drawing: data.drawing || null,
+          contact: data.contact || null,
+          metadata: data.metadata || {},
           time:
             data.time ||
             new Date().toLocaleTimeString('fr-FR', {

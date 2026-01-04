@@ -1,22 +1,22 @@
 import { db, storage } from '@/config/firebase';
-import { 
-  collection, 
-  doc, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  getDoc, 
-  getDocs, 
-  query, 
-  where, 
-  orderBy
+import {
+  collection,
+  doc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+  orderBy,
 } from 'firebase/firestore';
-import { 
-  ref, 
-  uploadBytes, 
-  getDownloadURL, 
+import {
+  ref,
+  uploadBytes,
+  getDownloadURL,
   deleteObject,
-  getMetadata 
+  getMetadata,
 } from 'firebase/storage';
 
 class DocumentService {
@@ -50,7 +50,7 @@ class DocumentService {
         'text/csv',
         'application/rtf',
         'application/vnd.ms-powerpoint',
-        'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
       ];
 
       if (!allowedTypes.includes(file.type)) {
@@ -62,14 +62,17 @@ class DocumentService {
       const randomId = Math.random().toString(36).substr(2, 9);
       const fileExtension = file.name.split('.').pop();
       const fileName = `doc_${timestamp}_${randomId}.${fileExtension}`;
-      
+
       // Créer la référence de stockage
-      const storageRef = ref(storage, `${this.storageFolder}/${conversationId}/${fileName}`);
-      
+      const storageRef = ref(
+        storage,
+        `${this.storageFolder}/${conversationId}/${fileName}`
+      );
+
       // Upload du fichier
       const uploadResult = await uploadBytes(storageRef, file);
       const downloadURL = await getDownloadURL(uploadResult.ref);
-      
+
       // Récupérer les métadonnées du fichier
       const fileMetadata = await getMetadata(uploadResult.ref);
 
@@ -92,23 +95,26 @@ class DocumentService {
             size: fileMetadata.size || file.size,
             contentType: fileMetadata.contentType || file.type,
             timeCreated: fileMetadata.timeCreated || new Date().toISOString(),
-            updated: fileMetadata.updated || new Date().toISOString()
-          }
+            updated: fileMetadata.updated || new Date().toISOString(),
+          },
         },
         created_at: new Date(),
         updated_at: new Date(),
         is_active: true,
-        status: 'uploaded'
+        status: 'uploaded',
       };
 
-      const docRef = await addDoc(collection(db, this.documentsCollection), documentData);
-      
+      const docRef = await addDoc(
+        collection(db, this.documentsCollection),
+        documentData
+      );
+
       return {
         id: docRef.id,
-        ...documentData
+        ...documentData,
       };
     } catch (error) {
-      console.error('Erreur lors de l\'upload du document:', error);
+      console.error("Erreur lors de l'upload du document:", error);
       throw error;
     }
   }
@@ -116,15 +122,17 @@ class DocumentService {
   // Récupérer un document par ID
   async getDocumentById(documentId) {
     try {
-      const documentDoc = await getDoc(doc(db, this.documentsCollection, documentId));
-      
+      const documentDoc = await getDoc(
+        doc(db, this.documentsCollection, documentId)
+      );
+
       if (!documentDoc.exists()) {
         throw new Error('Document non trouvé');
       }
 
       return {
         id: documentDoc.id,
-        ...documentDoc.data()
+        ...documentDoc.data(),
       };
     } catch (error) {
       console.error('Erreur lors de la récupération du document:', error);
@@ -143,11 +151,17 @@ class DocumentService {
 
       // Appliquer les filtres
       if (filters.fileType) {
-        documentsQuery = query(documentsQuery, where('file_type', '==', filters.fileType));
+        documentsQuery = query(
+          documentsQuery,
+          where('file_type', '==', filters.fileType)
+        );
       }
 
       if (filters.status) {
-        documentsQuery = query(documentsQuery, where('status', '==', filters.status));
+        documentsQuery = query(
+          documentsQuery,
+          where('status', '==', filters.status)
+        );
       }
 
       // Trier par date de création
@@ -156,10 +170,10 @@ class DocumentService {
       const querySnapshot = await getDocs(documentsQuery);
       const documents = [];
 
-      querySnapshot.forEach((doc) => {
+      querySnapshot.forEach(doc => {
         documents.push({
           id: doc.id,
-          ...doc.data()
+          ...doc.data(),
         });
       });
 
@@ -168,23 +182,37 @@ class DocumentService {
 
       if (filters.search) {
         const searchTerm = filters.search.toLowerCase();
-        filteredDocuments = filteredDocuments.filter(doc => 
-          doc.name.toLowerCase().includes(searchTerm) ||
-          (doc.metadata && doc.metadata.description && 
-           doc.metadata.description.toLowerCase().includes(searchTerm))
+        filteredDocuments = filteredDocuments.filter(
+          doc =>
+            doc.name.toLowerCase().includes(searchTerm) ||
+            (doc.metadata &&
+              doc.metadata.description &&
+              doc.metadata.description.toLowerCase().includes(searchTerm))
         );
       }
 
       if (filters.minSize) {
-        filteredDocuments = filteredDocuments.filter(doc => doc.file_size >= filters.minSize);
+        filteredDocuments = filteredDocuments.filter(
+          doc => doc.file_size >= filters.minSize
+        );
       }
 
       if (filters.maxSize) {
-        filteredDocuments = filteredDocuments.filter(doc => doc.file_size <= filters.maxSize);
+        filteredDocuments = filteredDocuments.filter(
+          doc => doc.file_size <= filters.maxSize
+        );
       }
 
       return filteredDocuments.slice(0, limit);
     } catch (error) {
+      const msg = String(error?.message || '');
+      // Si un index Firestore manque, ne pas casser l'app: retourner une liste vide.
+      if (msg.includes('requires an index')) {
+        console.warn(
+          'Index Firestore manquant pour documents; retour liste vide.'
+        );
+        return [];
+      }
       console.error('Erreur lors de la récupération des documents:', error);
       throw new Error('Impossible de récupérer les documents');
     }
@@ -194,15 +222,18 @@ class DocumentService {
   async updateDocument(documentId, updates, userId) {
     try {
       const document = await this.getDocumentById(documentId);
-      
+
       // Vérifier les permissions si nécessaire
-      if (updates.status && !['uploaded', 'processing', 'error'].includes(updates.status)) {
+      if (
+        updates.status &&
+        !['uploaded', 'processing', 'error'].includes(updates.status)
+      ) {
         throw new Error('Statut invalide');
       }
 
       await updateDoc(doc(db, this.documentsCollection, documentId), {
         ...updates,
-        updated_at: new Date()
+        updated_at: new Date(),
       });
 
       return true;
@@ -216,14 +247,17 @@ class DocumentService {
   async deleteDocument(documentId, userId) {
     try {
       const document = await this.getDocumentById(documentId);
-      
+
       // Supprimer le fichier du storage
       if (document.storage_path) {
         try {
           const fileRef = ref(storage, document.storage_path);
           await deleteObject(fileRef);
         } catch (storageError) {
-          console.warn('Impossible de supprimer le fichier du storage:', storageError);
+          console.warn(
+            'Impossible de supprimer le fichier du storage:',
+            storageError
+          );
         }
       }
 
@@ -249,16 +283,19 @@ class DocumentService {
       const querySnapshot = await getDocs(documentsQuery);
       const documents = [];
 
-      querySnapshot.forEach((doc) => {
+      querySnapshot.forEach(doc => {
         documents.push({
           id: doc.id,
-          ...doc.data()
+          ...doc.data(),
         });
       });
 
       return documents.slice(0, limit);
     } catch (error) {
-      console.error('Erreur lors de la récupération des documents utilisateur:', error);
+      console.error(
+        'Erreur lors de la récupération des documents utilisateur:',
+        error
+      );
       throw new Error('Impossible de récupérer les documents');
     }
   }
@@ -272,26 +309,31 @@ class DocumentService {
       );
 
       if (conversationId) {
-        documentsQuery = query(documentsQuery, where('conversation_id', '==', conversationId));
+        documentsQuery = query(
+          documentsQuery,
+          where('conversation_id', '==', conversationId)
+        );
       }
 
       const querySnapshot = await getDocs(documentsQuery);
       const documents = [];
 
-      querySnapshot.forEach((doc) => {
+      querySnapshot.forEach(doc => {
         const document = doc.data();
-        
+
         // Recherche dans le nom et les métadonnées
         const searchFields = [
           document.name,
           document.original_name,
           document.metadata?.description,
-          document.metadata?.tags?.join(' ')
+          document.metadata?.tags?.join(' '),
         ].filter(Boolean);
 
-        if (searchFields.some(field => 
-          field.toLowerCase().includes(query.toLowerCase())
-        )) {
+        if (
+          searchFields.some(field =>
+            field.toLowerCase().includes(query.toLowerCase())
+          )
+        ) {
           documents.push({ id: doc.id, ...document });
         }
       });
@@ -310,9 +352,12 @@ class DocumentService {
   async getDocumentStats(conversationId = null) {
     try {
       let documentsQuery = collection(db, this.documentsCollection);
-      
+
       if (conversationId) {
-        documentsQuery = query(documentsQuery, where('conversation_id', '==', conversationId));
+        documentsQuery = query(
+          documentsQuery,
+          where('conversation_id', '==', conversationId)
+        );
       }
 
       const querySnapshot = await getDocs(documentsQuery);
@@ -323,16 +368,16 @@ class DocumentService {
         file_types: {},
         status_counts: {},
         created_today: 0,
-        created_this_week: 0
+        created_this_week: 0,
       };
 
       const today = new Date();
       const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-      querySnapshot.forEach((doc) => {
+      querySnapshot.forEach(doc => {
         const document = doc.data();
         stats.total_documents++;
-        
+
         if (document.file_size) {
           stats.total_size += document.file_size;
         }
@@ -369,16 +414,19 @@ class DocumentService {
   async getStorageUsage(conversationId = null) {
     try {
       let documentsQuery = collection(db, this.documentsCollection);
-      
+
       if (conversationId) {
-        documentsQuery = query(documentsQuery, where('conversation_id', '==', conversationId));
+        documentsQuery = query(
+          documentsQuery,
+          where('conversation_id', '==', conversationId)
+        );
       }
 
       const querySnapshot = await getDocs(documentsQuery);
       let totalSize = 0;
       let fileCount = 0;
 
-      querySnapshot.forEach((doc) => {
+      querySnapshot.forEach(doc => {
         const document = doc.data();
         if (document.file_size) {
           totalSize += document.file_size;
@@ -389,11 +437,14 @@ class DocumentService {
       return {
         total_size: totalSize,
         file_count: fileCount,
-        average_size: fileCount > 0 ? totalSize / fileCount : 0
+        average_size: fileCount > 0 ? totalSize / fileCount : 0,
       };
     } catch (error) {
-      console.error('Erreur lors de la vérification de l\'espace de stockage:', error);
-      throw new Error('Impossible de vérifier l\'espace de stockage');
+      console.error(
+        "Erreur lors de la vérification de l'espace de stockage:",
+        error
+      );
+      throw new Error("Impossible de vérifier l'espace de stockage");
     }
   }
 
@@ -410,21 +461,24 @@ class DocumentService {
       );
 
       if (conversationId) {
-        documentsQuery = query(documentsQuery, where('conversation_id', '==', conversationId));
+        documentsQuery = query(
+          documentsQuery,
+          where('conversation_id', '==', conversationId)
+        );
       }
 
       const querySnapshot = await getDocs(documentsQuery);
       const deletePromises = [];
 
-      querySnapshot.forEach((doc) => {
+      querySnapshot.forEach(doc => {
         const document = doc.data();
-        
+
         // Marquer comme supprimé au lieu de supprimer complètement
         deletePromises.push(
           updateDoc(doc.ref, {
             is_active: false,
             deleted_at: new Date(),
-            updated_at: new Date()
+            updated_at: new Date(),
           })
         );
       });
@@ -433,7 +487,7 @@ class DocumentService {
 
       return {
         cleaned_count: deletePromises.length,
-        message: `${deletePromises.length} documents nettoyés`
+        message: `${deletePromises.length} documents nettoyés`,
       };
     } catch (error) {
       console.error('Erreur lors du nettoyage des documents:', error);
