@@ -115,24 +115,13 @@ export default function DocumentItem({
       >
         {fileUrl && !previewError ? (
           <div className="w-full h-full relative *:overflow-hidden">
-            {/* Afficher la prévisualisation pour les PDFs */}
-            {getFileExtension() === 'PDF' ? (
-              <div className="w-full h-full relative bg-white">
-                <img
-                  src={`${fileUrl}#page=1`}
-                  alt="PDF preview"
-                  className="w-full h-full object-cover"
-                  onError={() => setPreviewError(true)}
-                />
-              </div>
-            ) : (
-              <div
-                className="w-full h-full flex items-center justify-center"
-                style={{ backgroundColor: 'var(--wa-drawer-background)' }}
-              >
-                <FileIcon size={56} style={{ color: iconColor }} />
-              </div>
-            )}
+            {/* Afficher l'icône pour tous les types de fichiers */}
+            <div
+              className="w-full h-full flex items-center justify-center"
+              style={{ backgroundColor: 'var(--wa-drawer-background)' }}
+            >
+              <FileIcon size={56} style={{ color: iconColor }} />
+            </div>
           </div>
         ) : (
           <div
