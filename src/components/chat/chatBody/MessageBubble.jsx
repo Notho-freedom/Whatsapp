@@ -46,8 +46,12 @@ const MessageBubble = memo(
       if (isMe) {
         // Pour l'utilisateur actuel, utiliser l'utilisateur connecté
         return {
-          name: currentUser?.name || 'Me',
-          avatar: currentUser?.picture || null,
+          name: currentUser?.name || currentUser?.displayName || 'Me',
+          avatar:
+            currentUser?.avatar ||
+            currentUser?.photoURL ||
+            currentUser?.picture ||
+            null,
         };
       } else {
         // Pour les autres utilisateurs, récupérer depuis la liste des utilisateurs

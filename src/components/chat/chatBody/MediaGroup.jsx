@@ -379,46 +379,67 @@ function AudioMessage({
 
   // Déterminer l'avatar à utiliser
   const getAvatarSrc = () => {
+    // Utiliser l'avatar réel passé par userInfo, sinon fallback généré
+    if (userInfo?.avatar) {
+      return userInfo.avatar;
+    }
+    // Fallback si pas d'avatar réel
     if (isMe) {
-      return (
-        userInfo?.avatar ||
-        `https://ui-avatars.com/api/?name=Me&background=005c4b&color=fff&size=40`
-      );
+      return `https://ui-avatars.com/api/?name=Me&background=005c4b&color=fff&size=40`;
     } else {
-      return (
-        userInfo?.avatar ||
-        `https://ui-avatars.com/api/?name=${
-          userInfo?.name || 'Contact'
-        }&background=6a7175&color=fff&size=40`
-      );
+      return `https://ui-avatars.com/api/?name=${
+        userInfo?.name || 'Contact'
+      }&background=6a7175&color=fff&size=40`;
     }
   };
 
   return (
     <div
-      className={`flex flex-row ${
-        isMe ? 'justify-end' : 'justify-start'
-      } items-end gap-2`}
+      className={`flex items-end gap-2 -mb-2 w-[320px] justify-between ${
+        isMe ? 'flex-row' : 'flex-row-reverse'
+      }`}
     >
       <audio ref={audioRef} src={audio.url} preload="metadata" />
 
+      {/* Avatar avec micro */}
+      <div className="relative flex-shrink-0">
+        <div
+          className={`${
+            isMobile ? 'w-[32px] h-[32px]' : 'w-[36px] h-[36px]'
+          } rounded-full overflow-hidden`}
+        >
+          <img
+            src={getAvatarSrc()}
+            alt={userInfo?.name || (isMe ? 'Me' : 'Contact')}
+            className="w-full h-full object-cover"
+          />
+        </div>
+        <div
+          className={`absolute -bottom-1 -right-1 ${
+            isMobile ? 'w-[12px] h-[12px]' : 'w-[14px] h-[14px]'
+          } rounded-full bg-[#00a884] flex items-center justify-center border-2 border-white`}
+        >
+          <FaMicrophone size={isMobile ? 4 : 5} className="text-white" />
+        </div>
+      </div>
+
       {/* Bulle */}
       <div
-        className={`rounded-lg py-1 max-w-[320px] ${
+        className={`rounded-lg py-2 w-full ${
           isMobile ? 'max-w-[260px]' : ''
-        }`}
+        } relative pb-3`}
       >
         <div className="flex items-center gap-3">
           {/* Pastille lecture/pause */}
           <button
-            className="flex-shrink-0 w-[36px] h-[36px] rounded-full flex items-center justify-center hover:opacity-90 bg-transparent"
+            className="flex-shrink-0 w-[20px] h-[20px] rounded-full flex items-center justify-center hover:opacity-90 bg-transparent"
             onClick={togglePlay}
             aria-label={isPlaying ? 'Pause' : 'Lire'}
           >
             {isPlaying ? (
-              <FaPause size={14} className="text-[#00a884]" />
+              <FaPause size={20} className="text-gray-200" />
             ) : (
-              <FaPlay size={14} className="text-[#00a884]" />
+              <FaPlay size={20} className="text-gray-200" />
             )}
           </button>
 
@@ -436,7 +457,7 @@ function AudioMessage({
               return (
                 <div
                   key={i}
-                  className={`w-[2px] rounded-full transition-all duration-100 flex-shrink-0 ${
+                  className={`flex-1 min-w-[1px] rounded-full transition-all duration-100 ${
                     isHover
                       ? 'bg-white'
                       : isPlayed
@@ -483,31 +504,9 @@ function AudioMessage({
             </a>
           )}
         </div>
-        <span className="text-[10px] text-white/70 min-w-[55px] left-5 absolute bottom-0">
+        <span className="text-[10px] text-white/70 min-w-[55px] left-8 absolute -bottom-3">
           {timeLabel}
         </span>
-      </div>
-
-      {/* Avatar avec micro */}
-      <div className="relative flex-shrink-0 bottom-2 -right-1">
-        <div
-          className={`${
-            isMobile ? 'w-[32px] h-[32px]' : 'w-[36px] h-[36px]'
-          } rounded-full overflow-hidden`}
-        >
-          <img
-            src={getAvatarSrc()}
-            alt={userInfo?.name || (isMe ? 'Me' : 'Contact')}
-            className="w-full h-full object-cover"
-          />
-        </div>
-        <div
-          className={`absolute -bottom-1 -right-1 ${
-            isMobile ? 'w-[12px] h-[12px]' : 'w-[14px] h-[14px]'
-          } rounded-full bg-[#00a884] flex items-center justify-center border-2 border-white`}
-        >
-          <FaMicrophone size={isMobile ? 4 : 5} className="text-white" />
-        </div>
       </div>
     </div>
   );
