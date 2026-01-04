@@ -10,7 +10,7 @@ import {
 } from 'react-icons/fa';
 import { useState, useCallback } from 'react';
 
-export default function DocumentItem({ document, isMobile = false }) {
+export default function DocumentItem({ document, isMobile = false, isMe = false }) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [previewError, setPreviewError] = useState(false);
 
@@ -139,7 +139,7 @@ export default function DocumentItem({ document, isMobile = false }) {
       </div>
 
       {/* Informations du document */}
-      <div className="px-4 py-2 h-[50px] bg-neutral-900/20 rounded-b-md">
+      <div className="px-4 py-2 h-[50px] bg-neutral-900/20 rounded-b-lg">
         <div className="flex flex-row items-start justify-between gap-2">
             {/* Overlay avec icône du type de fichier */}
             <div
@@ -173,13 +173,16 @@ export default function DocumentItem({ document, isMobile = false }) {
           </div>
         </div>
       </div>
-        {/* Boutons d'action */}
-        <div className="flex gap-1 mt-1 border-t pt-1 border-neutral-500/50 text-green-500">
+
+      {/* Boutons d'action - visible uniquement pour le destinataire */}
+      {!isMe && (
+        <div className="flex gap-1 px-4 py-2 border-t" style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}>
           {fileUrl ? (
             <>
               <button
                 onClick={handleOpen}
                 className="flex-1 bg-transparent text-[13px] font-medium transition-colors"
+                style={{ color: 'var(--wa-highlight)' }}
               >
                 Ouvrir
               </button>
@@ -187,6 +190,7 @@ export default function DocumentItem({ document, isMobile = false }) {
                 onClick={handleDownload}
                 disabled={isDownloading}
                 className="flex-1 bg-transparent text-[13px] font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ color: 'var(--wa-highlight)' }}
               >
                 {isDownloading ? 'Téléchargement...' : 'Enregistrer sous...'}
               </button>
@@ -200,6 +204,7 @@ export default function DocumentItem({ document, isMobile = false }) {
             </div>
           )}
         </div>
+      )}
     </div>
   );
 }
