@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
 import { PenTool, X, RotateCcw, Download, Palette } from 'lucide-react';
@@ -10,7 +10,7 @@ const DrawingBoard = ({ isOpen, onClose, conversationId, userId }) => {
   const [brushSize, setBrushSize] = useState(2);
   const [tool, setTool] = useState('pen'); // 'pen', 'eraser'
   const [isSaving, setIsSaving] = useState(false);
-  
+
   const canvasRef = useRef(null);
   const contextRef = useRef(null);
   const { createDrawing } = useAttachments(conversationId, userId);
@@ -19,34 +19,34 @@ const DrawingBoard = ({ isOpen, onClose, conversationId, userId }) => {
     if (isOpen && canvasRef.current) {
       const canvas = canvasRef.current;
       const context = canvas.getContext('2d');
-      
+
       // Définir la taille du canvas
       canvas.width = 600;
       canvas.height = 400;
-      
+
       // Configuration du contexte
       context.lineCap = 'round';
       context.strokeStyle = color;
       context.lineWidth = brushSize;
-      
+
       contextRef.current = context;
-      
+
       // Effacer le canvas
       context.fillStyle = 'white';
       context.fillRect(0, 0, canvas.width, canvas.height);
     }
   }, [isOpen]);
 
-  const startDrawing = (event) => {
+  const startDrawing = event => {
     setIsDrawing(true);
     const { offsetX, offsetY } = event.nativeEvent;
     contextRef.current.beginPath();
     contextRef.current.moveTo(offsetX, offsetY);
   };
 
-  const draw = (event) => {
+  const draw = event => {
     if (!isDrawing) return;
-    
+
     const { offsetX, offsetY } = event.nativeEvent;
     contextRef.current.lineTo(offsetX, offsetY);
     contextRef.current.stroke();
@@ -63,21 +63,21 @@ const DrawingBoard = ({ isOpen, onClose, conversationId, userId }) => {
     context.fillRect(0, 0, canvas.width, canvas.height);
   };
 
-  const changeColor = (newColor) => {
+  const changeColor = newColor => {
     setColor(newColor);
     if (contextRef.current) {
       contextRef.current.strokeStyle = newColor;
     }
   };
 
-  const changeBrushSize = (size) => {
+  const changeBrushSize = size => {
     setBrushSize(size);
     if (contextRef.current) {
       contextRef.current.lineWidth = size;
     }
   };
 
-  const changeTool = (newTool) => {
+  const changeTool = newTool => {
     setTool(newTool);
     if (contextRef.current) {
       if (newTool === 'eraser') {
@@ -94,28 +94,37 @@ const DrawingBoard = ({ isOpen, onClose, conversationId, userId }) => {
     setIsSaving(true);
     try {
       const canvas = canvasRef.current;
-      canvas.toBlob(async (blob) => {
-        const drawingData = {
-          title: 'Dessin partagé',
-          description: 'Dessin créé dans le chat',
-          tags: ['dessin', 'chat'],
-          imageBlob: blob
-        };
+      canvas.toBlob(async blob => {
+        try {
+          if (!blob) {
+            throw new Error("Impossible de créer l'image du dessin");
+          }
 
-        const result = await createDrawing(drawingData);
-        console.log('Dessin sauvegardé:', result);
-        onClose();
+          const drawingData = {
+            title: 'Dessin partagé',
+            description: 'Dessin créé dans le chat',
+            tags: ['dessin', 'chat'],
+            imageBlob: blob,
+          };
+
+          const result = await createDrawing(drawingData);
+          console.log('Dessin sauvegardé:', result);
+          onClose();
+        } catch (error) {
+          console.error('Erreur sauvegarde dessin:', error);
+        } finally {
+          setIsSaving(false);
+        }
       }, 'image/png');
     } catch (error) {
-      console.error('Erreur sauvegarde dessin:', error);
-    } finally {
+      console.error('Erreur lors de la création du blob du dessin:', error);
       setIsSaving(false);
     }
   };
 
   const downloadDrawing = () => {
     if (!canvasRef.current) return;
-    
+
     const canvas = canvasRef.current;
     const link = document.createElement('a');
     link.download = 'dessin.png';
@@ -133,7 +142,10 @@ const DrawingBoard = ({ isOpen, onClose, conversationId, userId }) => {
             <PenTool size={20} className="mr-2 text-purple-500" />
             Tableau de dessin
           </h3>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700"
+          >
             <X size={20} />
           </button>
         </div>
@@ -145,7 +157,9 @@ const DrawingBoard = ({ isOpen, onClose, conversationId, userId }) => {
             <button
               onClick={() => changeTool('pen')}
               className={`p-2 rounded ${
-                tool === 'pen' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700'
+                tool === 'pen'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-white text-gray-700'
               }`}
             >
               <PenTool size={16} />
@@ -153,7 +167,9 @@ const DrawingBoard = ({ isOpen, onClose, conversationId, userId }) => {
             <button
               onClick={() => changeTool('eraser')}
               className={`p-2 rounded ${
-                tool === 'eraser' ? 'bg-blue-500 text-white' : 'bg-white text-gray-700'
+                tool === 'eraser'
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-white text-gray-700'
               }`}
             >
               🧽
@@ -166,7 +182,7 @@ const DrawingBoard = ({ isOpen, onClose, conversationId, userId }) => {
             <input
               type="color"
               value={color}
-              onChange={(e) => changeColor(e.target.value)}
+              onChange={e => changeColor(e.target.value)}
               className="w-8 h-8 border border-gray-300 rounded cursor-pointer"
             />
           </div>
@@ -179,7 +195,7 @@ const DrawingBoard = ({ isOpen, onClose, conversationId, userId }) => {
               min="1"
               max="20"
               value={brushSize}
-              onChange={(e) => changeBrushSize(parseInt(e.target.value))}
+              onChange={e => changeBrushSize(parseInt(e.target.value))}
               className="w-20"
             />
             <span className="text-sm text-gray-600 w-8">{brushSize}</span>

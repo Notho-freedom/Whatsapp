@@ -168,6 +168,36 @@ const MessageBubble = memo(
       }
     }, []);
 
+    const drawingUrl =
+      message?.drawing?.image_url ||
+      message?.drawing?.imageUrl ||
+      message?.drawing?.url ||
+      null;
+
+    // Traiter les dessins comme des images (même système que message.media)
+    const computedMedia = (() => {
+      const base = Array.isArray(message?.media) ? message.media : [];
+      if (!drawingUrl) return base;
+      // Éviter les doublons si handleDrawingCreation a déjà injecté media
+      const alreadyThere = base.some(m => {
+        const url = m?.url || m?.file_url || m?.downloadURL || m?.fileUrl;
+        return url === drawingUrl;
+      });
+      if (alreadyThere) return base;
+      return [
+        ...base,
+        {
+          type: 'image',
+          url: drawingUrl,
+          original_name: message?.drawing?.title || 'Dessin',
+          source: 'drawing',
+        },
+      ];
+    })();
+
+    const hasMedia = computedMedia.length > 0;
+    const isDrawingMessage = message?.type === 'drawing' || !!drawingUrl;
+
     const handleStarMessage = useCallback(
       async messageData => {
         try {
@@ -403,7 +433,7 @@ const MessageBubble = memo(
                   timestamp: message.time,
                   sender: message.sender,
                   isStarred: message.isStarred,
-                  media: message.media,
+                  media: computedMedia,
                   link: message.link,
                 });
               } else {
@@ -458,9 +488,9 @@ const MessageBubble = memo(
             )}
 
             {/* Media */}
-            {message.media && message.media.length > 0 && (
+            {hasMedia && (
               <MediaGroup
-                media={message.media}
+                media={computedMedia}
                 isMe={isMe}
                 isMobile={isMobile}
                 messageId={message.id}
@@ -485,16 +515,17 @@ const MessageBubble = memo(
             {message.link && <PreviewLink link={message.link} />}
 
             {/* Text message */}
-            {message.text && (
-              <div className="wa-message-text">
-                <span>{message.text}</span>
-                {/* Spacer for metadata */}
-                <span
-                  className="inline-block"
-                  style={{ width: message.edited ? '85px' : '74px' }}
-                ></span>
-              </div>
-            )}
+            {message.text &&
+              (!isDrawingMessage || message.text !== '🎨 Dessin créé') && (
+                <div className="wa-message-text">
+                  <span>{message.text}</span>
+                  {/* Spacer for metadata */}
+                  <span
+                    className="inline-block"
+                    style={{ width: message.edited ? '85px' : '74px' }}
+                  ></span>
+                </div>
+              )}
 
             {/* Message metadata (time + status) */}
             <div className="wa-message-meta">
@@ -555,7 +586,7 @@ const MessageBubble = memo(
                     timestamp: message.time,
                     sender: message.sender,
                     isStarred: message.isStarred,
-                    media: message.media,
+                    media: computedMedia,
                     link: message.link,
                   });
                 } else {

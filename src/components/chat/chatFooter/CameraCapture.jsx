@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
 import { Camera, Video, Image, X, RotateCcw } from 'lucide-react';
@@ -10,19 +10,22 @@ const CameraCapture = ({ isOpen, onClose, conversationId, userId }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [mode, setMode] = useState('photo'); // 'photo' ou 'video'
   const [error, setError] = useState(null);
-  
+
   const videoRef = useRef(null);
   const streamRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const recordedChunksRef = useRef([]);
-  
-  const { capturePhoto: savePhoto, recordVideo } = useAttachments(conversationId, userId);
+
+  const { capturePhoto: savePhoto, recordVideo } = useAttachments(
+    conversationId,
+    userId
+  );
 
   useEffect(() => {
     if (isOpen && !isCameraActive) {
       startCamera();
     }
-    
+
     return () => {
       stopCamera();
     };
@@ -32,9 +35,9 @@ const CameraCapture = ({ isOpen, onClose, conversationId, userId }) => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'user' },
-        audio: mode === 'video'
+        audio: mode === 'video',
       });
-      
+
       streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -42,7 +45,7 @@ const CameraCapture = ({ isOpen, onClose, conversationId, userId }) => {
       setIsCameraActive(true);
       setError(null);
     } catch (err) {
-      setError('Impossible d\'accéder à la caméra');
+      setError("Impossible d'accéder à la caméra");
       console.error('Erreur caméra:', err);
     }
   };
@@ -61,13 +64,15 @@ const CameraCapture = ({ isOpen, onClose, conversationId, userId }) => {
     const canvas = document.createElement('canvas');
     canvas.width = videoRef.current.videoWidth;
     canvas.height = videoRef.current.videoHeight;
-    
+
     const ctx = canvas.getContext('2d');
     ctx.drawImage(videoRef.current, 0, 0);
-    
-    canvas.toBlob(async (blob) => {
-      setCapturedImage(URL.createObjectURL(blob));
-      setIsCameraActive(false);
+
+    canvas.toBlob(blob => {
+      if (blob) {
+        setCapturedImage(URL.createObjectURL(blob));
+        setIsCameraActive(false);
+      }
     }, 'image/jpeg');
   };
 
@@ -78,7 +83,7 @@ const CameraCapture = ({ isOpen, onClose, conversationId, userId }) => {
     const mediaRecorder = new MediaRecorder(streamRef.current);
     mediaRecorderRef.current = mediaRecorder;
 
-    mediaRecorder.ondataavailable = (event) => {
+    mediaRecorder.ondataavailable = event => {
       if (event.data.size > 0) {
         recordedChunksRef.current.push(event.data);
       }
@@ -114,7 +119,7 @@ const CameraCapture = ({ isOpen, onClose, conversationId, userId }) => {
         const blob = await response.blob();
         await recordVideo(blob, { source: 'camera' });
       }
-      
+
       onClose();
       setCapturedImage(null);
     } catch (error) {
@@ -143,7 +148,10 @@ const CameraCapture = ({ isOpen, onClose, conversationId, userId }) => {
           <h3 className="text-lg font-semibold">
             {mode === 'photo' ? 'Capture Photo' : 'Enregistrement Vidéo'}
           </h3>
-          <button onClick={handleClose} className="text-gray-500 hover:text-gray-700">
+          <button
+            onClick={handleClose}
+            className="text-gray-500 hover:text-gray-700"
+          >
             <X size={20} />
           </button>
         </div>
@@ -159,8 +167,8 @@ const CameraCapture = ({ isOpen, onClose, conversationId, userId }) => {
           <button
             onClick={() => setMode('photo')}
             className={`px-4 py-2 rounded ${
-              mode === 'photo' 
-                ? 'bg-blue-500 text-white' 
+              mode === 'photo'
+                ? 'bg-blue-500 text-white'
                 : 'bg-gray-200 text-gray-700'
             }`}
           >
@@ -170,8 +178,8 @@ const CameraCapture = ({ isOpen, onClose, conversationId, userId }) => {
           <button
             onClick={() => setMode('video')}
             className={`px-4 py-2 rounded ${
-              mode === 'video' 
-                ? 'bg-blue-500 text-white' 
+              mode === 'video'
+                ? 'bg-blue-500 text-white'
                 : 'bg-gray-200 text-gray-700'
             }`}
           >

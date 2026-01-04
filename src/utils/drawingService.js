@@ -1,21 +1,21 @@
 import { db, storage } from '@/config/firebase';
-import { 
-  collection, 
-  doc, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  getDoc, 
-  getDocs, 
-  query, 
-  where, 
-  orderBy
+import {
+  collection,
+  doc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+  orderBy,
 } from 'firebase/firestore';
-import { 
-  ref, 
-  uploadBytes, 
-  getDownloadURL, 
-  deleteObject 
+import {
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject,
 } from 'firebase/storage';
 
 class DrawingService {
@@ -31,14 +31,17 @@ class DrawingService {
         ...drawingData,
         created_at: new Date(),
         updated_at: new Date(),
-        is_active: true
+        is_active: true,
       };
 
-      const docRef = await addDoc(collection(db, this.drawingsCollection), drawing);
-      
+      const docRef = await addDoc(
+        collection(db, this.drawingsCollection),
+        drawing
+      );
+
       return {
         id: docRef.id,
-        ...drawing
+        ...drawing,
       };
     } catch (error) {
       console.error('Erreur lors de la création du dessin:', error);
@@ -49,29 +52,42 @@ class DrawingService {
   // Sauvegarder un dessin avec image
   async saveDrawingWithImage(drawingData, imageBlob, conversationId) {
     try {
+      // Firestore n'accepte pas les objets Blob dans les documents.
+      // On retire donc explicitement tout champ imageBlob/Blob du payload.
+      const { imageBlob: _ignoredImageBlob, ...safeDrawingData } =
+        drawingData || {};
+
       // Upload de l'image
-      const fileName = `drawing_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.png`;
-      const storageRef = ref(storage, `${this.storageFolder}/${conversationId}/${fileName}`);
-      
+      const fileName = `drawing_${Date.now()}_${Math.random()
+        .toString(36)
+        .substr(2, 9)}.png`;
+      const storageRef = ref(
+        storage,
+        `${this.storageFolder}/${conversationId}/${fileName}`
+      );
+
       const uploadResult = await uploadBytes(storageRef, imageBlob);
       const downloadURL = await getDownloadURL(uploadResult.ref);
 
       // Créer le dessin avec l'URL de l'image
       const drawing = {
-        ...drawingData,
+        ...safeDrawingData,
         image_url: downloadURL,
         storage_path: uploadResult.ref.fullPath,
         conversation_id: conversationId,
         created_at: new Date(),
         updated_at: new Date(),
-        is_active: true
+        is_active: true,
       };
 
-      const docRef = await addDoc(collection(db, this.drawingsCollection), drawing);
-      
+      const docRef = await addDoc(
+        collection(db, this.drawingsCollection),
+        drawing
+      );
+
       return {
         id: docRef.id,
-        ...drawing
+        ...drawing,
       };
     } catch (error) {
       console.error('Erreur lors de la sauvegarde du dessin:', error);
@@ -82,15 +98,17 @@ class DrawingService {
   // Récupérer un dessin par ID
   async getDrawingById(drawingId) {
     try {
-      const drawingDoc = await getDoc(doc(db, this.drawingsCollection, drawingId));
-      
+      const drawingDoc = await getDoc(
+        doc(db, this.drawingsCollection, drawingId)
+      );
+
       if (!drawingDoc.exists()) {
         throw new Error('Dessin non trouvé');
       }
 
       return {
         id: drawingDoc.id,
-        ...drawingDoc.data()
+        ...drawingDoc.data(),
       };
     } catch (error) {
       console.error('Erreur lors de la récupération du dessin:', error);
@@ -111,10 +129,10 @@ class DrawingService {
       const querySnapshot = await getDocs(drawingsQuery);
       const drawings = [];
 
-      querySnapshot.forEach((doc) => {
+      querySnapshot.forEach(doc => {
         drawings.push({
           id: doc.id,
-          ...doc.data()
+          ...doc.data(),
         });
       });
 
@@ -129,14 +147,14 @@ class DrawingService {
   async updateDrawing(drawingId, updates, userId) {
     try {
       const drawing = await this.getDrawingById(drawingId);
-      
+
       if (drawing.created_by !== userId) {
         throw new Error('Seul le créateur peut modifier le dessin');
       }
 
       await updateDoc(doc(db, this.drawingsCollection, drawingId), {
         ...updates,
-        updated_at: new Date()
+        updated_at: new Date(),
       });
 
       return true;
@@ -150,7 +168,7 @@ class DrawingService {
   async deleteDrawing(drawingId, userId) {
     try {
       const drawing = await this.getDrawingById(drawingId);
-      
+
       if (drawing.created_by !== userId) {
         throw new Error('Seul le créateur peut supprimer le dessin');
       }
@@ -161,7 +179,10 @@ class DrawingService {
           const imageRef = ref(storage, drawing.storage_path);
           await deleteObject(imageRef);
         } catch (storageError) {
-          console.warn('Impossible de supprimer l\'image du storage:', storageError);
+          console.warn(
+            "Impossible de supprimer l'image du storage:",
+            storageError
+          );
         }
       }
 
@@ -187,16 +208,19 @@ class DrawingService {
       const querySnapshot = await getDocs(drawingsQuery);
       const drawings = [];
 
-      querySnapshot.forEach((doc) => {
+      querySnapshot.forEach(doc => {
         drawings.push({
           id: doc.id,
-          ...doc.data()
+          ...doc.data(),
         });
       });
 
       return drawings.slice(0, limit);
     } catch (error) {
-      console.error('Erreur lors de la récupération des dessins utilisateur:', error);
+      console.error(
+        'Erreur lors de la récupération des dessins utilisateur:',
+        error
+      );
       throw new Error('Impossible de récupérer les dessins');
     }
   }
@@ -219,15 +243,19 @@ class DrawingService {
       const querySnapshot = await getDocs(drawingsQuery);
       const drawings = [];
 
-      querySnapshot.forEach((doc) => {
+      querySnapshot.forEach(doc => {
         const drawing = doc.data();
-        
+
         // Recherche simple dans les tags et la description
-        if (drawing.tags && drawing.tags.some(tag => 
-          tag.toLowerCase().includes(query.toLowerCase())
-        )) {
+        if (
+          drawing.tags &&
+          drawing.tags.some(tag =>
+            tag.toLowerCase().includes(query.toLowerCase())
+          )
+        ) {
           drawings.push({ id: doc.id, ...drawing });
-        } else if (drawing.description && 
+        } else if (
+          drawing.description &&
           drawing.description.toLowerCase().includes(query.toLowerCase())
         ) {
           drawings.push({ id: doc.id, ...drawing });
@@ -248,7 +276,7 @@ class DrawingService {
   async addTagsToDrawing(drawingId, tags, userId) {
     try {
       const drawing = await this.getDrawingById(drawingId);
-      
+
       if (drawing.created_by !== userId) {
         throw new Error('Seul le créateur peut modifier le dessin');
       }
@@ -258,12 +286,12 @@ class DrawingService {
 
       await updateDoc(doc(db, this.drawingsCollection, drawingId), {
         tags: newTags,
-        updated_at: new Date()
+        updated_at: new Date(),
       });
 
       return true;
     } catch (error) {
-      console.error('Erreur lors de l\'ajout des tags:', error);
+      console.error("Erreur lors de l'ajout des tags:", error);
       throw error;
     }
   }
@@ -272,9 +300,12 @@ class DrawingService {
   async getDrawingStats(conversationId = null) {
     try {
       let drawingsQuery = collection(db, this.drawingsCollection);
-      
+
       if (conversationId) {
-        drawingsQuery = query(drawingsQuery, where('conversation_id', '==', conversationId));
+        drawingsQuery = query(
+          drawingsQuery,
+          where('conversation_id', '==', conversationId)
+        );
       }
 
       const querySnapshot = await getDocs(drawingsQuery);
@@ -284,16 +315,16 @@ class DrawingService {
         average_size: 0,
         tags_frequency: {},
         created_today: 0,
-        created_this_week: 0
+        created_this_week: 0,
       };
 
       const today = new Date();
       const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-      querySnapshot.forEach((doc) => {
+      querySnapshot.forEach(doc => {
         const drawing = doc.data();
         stats.total_drawings++;
-        
+
         if (drawing.file_size) {
           stats.total_size += drawing.file_size;
         }

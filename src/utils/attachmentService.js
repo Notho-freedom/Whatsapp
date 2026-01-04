@@ -329,6 +329,15 @@ class AttachmentService {
       const messageData = {
         type: 'drawing',
         drawing: drawing,
+        // Traiter les dessins comme des images pour le rendu (MediaGroup)
+        media: [
+          {
+            type: 'image',
+            url: drawing.image_url,
+            original_name: drawing.title || 'Dessin',
+            source: 'drawing',
+          },
+        ],
         text: `🎨 Dessin créé`,
         sender: userId,
         conversation_id: conversationId,
@@ -357,52 +366,83 @@ class AttachmentService {
 
   // Récupérer tous les types d'attachements d'une conversation
   async getConversationAttachments(conversationId, filters = {}) {
-    try {
-      const results = {};
+    const results = {};
+    const errors = {};
 
-      // Récupérer les médias
-      if (!filters.type || filters.type === 'media') {
+    // Récupérer les médias
+    if (!filters.type || filters.type === 'media') {
+      try {
         results.media = await cameraService.getMediaByConversation(
           conversationId,
           filters
         );
+      } catch (error) {
+        console.error('Erreur lors de la récupération des médias:', error);
+        results.media = [];
+        errors.media = error?.message || String(error);
       }
+    }
 
-      // Récupérer les documents
-      if (!filters.type || filters.type === 'document') {
+    // Récupérer les documents
+    if (!filters.type || filters.type === 'document') {
+      try {
         results.documents = await documentService.getDocumentsByConversation(
           conversationId,
           filters
         );
+      } catch (error) {
+        // Ne pas bloquer les autres attachements si un index Firestore manque.
+        console.error('Erreur lors de la récupération des documents:', error);
+        results.documents = [];
+        errors.documents = error?.message || String(error);
       }
+    }
 
-      // Récupérer les sondages
-      if (!filters.type || filters.type === 'poll') {
+    // Récupérer les sondages
+    if (!filters.type || filters.type === 'poll') {
+      try {
         results.polls = await pollService.getPollsByConversation(
           conversationId
         );
+      } catch (error) {
+        console.error('Erreur lors de la récupération des sondages:', error);
+        results.polls = [];
+        errors.polls = error?.message || String(error);
       }
+    }
 
-      // Récupérer les dessins
-      if (!filters.type || filters.type === 'drawing') {
+    // Récupérer les dessins
+    if (!filters.type || filters.type === 'drawing') {
+      try {
         results.drawings = await drawingService.getDrawingsByConversation(
           conversationId
         );
+      } catch (error) {
+        console.error('Erreur lors de la récupération des dessins:', error);
+        results.drawings = [];
+        errors.drawings = error?.message || String(error);
       }
+    }
 
-      // Récupérer les contacts partagés
-      if (!filters.type || filters.type === 'contact') {
+    // Récupérer les contacts partagés
+    if (!filters.type || filters.type === 'contact') {
+      try {
         results.contacts =
           await contactSharingService.getSharedContactsByConversation(
             conversationId
           );
+      } catch (error) {
+        console.error('Erreur lors de la récupération des contacts:', error);
+        results.contacts = [];
+        errors.contacts = error?.message || String(error);
       }
-
-      return results;
-    } catch (error) {
-      console.error('Erreur lors de la récupération des attachements:', error);
-      throw error;
     }
+
+    if (Object.keys(errors).length) {
+      results.errors = errors;
+    }
+
+    return results;
   }
 
   // Rechercher dans tous les types d'attachements
