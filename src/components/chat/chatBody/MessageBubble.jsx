@@ -398,17 +398,6 @@ const MessageBubble = memo(
 
     const isAudioMessage = message?.type === 'audio';
 
-    // Debug audio messages
-    if (isAudioMessage) {
-      console.log('🎵 MessageBubble audio:', {
-        id: message.id,
-        type: message.type,
-        audio: message.audio,
-        hasAudio: !!message.audio,
-        messageKeys: Object.keys(message),
-      });
-    }
-
     return (
       <div
         className={`flex ${

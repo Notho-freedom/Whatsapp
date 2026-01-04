@@ -1488,14 +1488,6 @@ export function AppProvider({ children }) {
                         }
                       : null;
 
-                  if (message.type === 'audio') {
-                    console.log('📊 Audio message loaded:', {
-                      id: message.id,
-                      audio: message.audio,
-                      messageKeys: Object.keys(message),
-                    });
-                  }
-
                   const transformedMessage = {
                     id: message.id,
                     text: message.text,
