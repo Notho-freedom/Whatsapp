@@ -105,7 +105,10 @@ export default function DocumentItem({ document, isMobile = false }) {
   return (
     <div className="w-[320px] overflow-hidden rounded-lg">
       {/* Prévisualisation du document */}
-      <div className="relative h-[180px] flex items-center justify-center overflow-hidden" style={{ backgroundColor: 'var(--wa-panel-header)' }}>
+      <div
+        className="relative h-[80px] flex items-center justify-center overflow-hidden"
+        style={{ backgroundColor: 'var(--wa-panel-header)' }}
+      >
         {fileUrl && !previewError ? (
           <div className="w-full h-full relative">
             {/* Afficher la prévisualisation pour les PDFs */}
@@ -117,37 +120,46 @@ export default function DocumentItem({ document, isMobile = false }) {
                 title="Document preview"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: 'var(--wa-drawer-background)' }}>
+              <div
+                className="w-full h-full flex items-center justify-center"
+                style={{ backgroundColor: 'var(--wa-drawer-background)' }}
+              >
                 <FileIcon size={56} style={{ color: iconColor }} />
               </div>
             )}
-            {/* Overlay avec icône du type de fichier */}
-            <div
-              className="absolute top-3 left-3 rounded-md p-2 shadow-lg"
-              style={{ backgroundColor: bgColor }}
-            >
-              <FileIcon size={20} className="text-white" />
-            </div>
           </div>
         ) : (
-          <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: 'var(--wa-drawer-background)' }}>
+          <div
+            className="w-full h-full flex items-center justify-center"
+            style={{ backgroundColor: 'var(--wa-drawer-background)' }}
+          >
             <FileIcon size={56} style={{ color: iconColor }} />
           </div>
         )}
       </div>
 
       {/* Informations du document */}
-      <div className="p-3 min-h-[100px]">
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <div className="flex-1 min-w-0">
+      <div className="px-4 py-2 h-[50px] bg-neutral-900/20 rounded-b-md">
+        <div className="flex flex-row items-start justify-between gap-2">
+            {/* Overlay avec icône du type de fichier */}
+            <div
+              className="flex flex-shrink-0 rounded-md p-2 shadow-lg"
+              style={{ backgroundColor: bgColor }}
+            >
+              <FileIcon size={20} className="text-white" />
+            </div>
+          <div className="flex-1 flex flex-col min-w-0">
             <h4
-              className="text-[15px] font-medium truncate"
+              className="text-[13px] font-medium truncate"
               style={{ color: 'var(--wa-primary-strong)' }}
               title={fileName}
             >
               {fileName}
             </h4>
-            <div className="flex items-center gap-1.5 text-[13px] mt-0.5" style={{ color: 'var(--wa-secondary)' }}>
+            <div
+              className="flex items-center gap-1.5 text-[11px] mt-0.25"
+              style={{ color: 'var(--wa-secondary)' }}
+            >
               {pageCount && (
                 <span>
                   {pageCount} page{pageCount > 1 ? 's' : ''}
@@ -160,38 +172,34 @@ export default function DocumentItem({ document, isMobile = false }) {
             </div>
           </div>
         </div>
-
+      </div>
         {/* Boutons d'action */}
-        <div className="flex gap-2 mt-3">
+        <div className="flex gap-1 mt-1 border-t pt-1 border-neutral-500/50 text-green-500">
           {fileUrl ? (
             <>
               <button
                 onClick={handleOpen}
-                className="flex-1 py-2 px-3 bg-transparent border rounded-md text-[14px] font-medium transition-colors"
-                style={{ borderColor: 'var(--wa-highlight)', color: 'var(--wa-highlight)' }}
-                onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(0, 168, 132, 0.1)'}
-                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                className="flex-1 bg-transparent text-[13px] font-medium transition-colors"
               >
                 Ouvrir
               </button>
               <button
                 onClick={handleDownload}
                 disabled={isDownloading}
-                className="flex-1 py-2 px-3 bg-transparent border rounded-md text-[14px] font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{ borderColor: 'var(--wa-highlight)', color: 'var(--wa-highlight)' }}
-                onMouseEnter={e => !isDownloading && (e.currentTarget.style.backgroundColor = 'rgba(0, 168, 132, 0.1)')}
-                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                className="flex-1 bg-transparent text-[13px] font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isDownloading ? 'Téléchargement...' : 'Enregistrer sous...'}
               </button>
             </>
           ) : (
-            <div className="w-full text-center py-2 text-[13px]" style={{ color: 'var(--wa-secondary)' }}>
+            <div
+              className="w-full text-center py-2 text-[13px]"
+              style={{ color: 'var(--wa-secondary)' }}
+            >
               Document indisponible
             </div>
           )}
         </div>
-      </div>
     </div>
   );
 }

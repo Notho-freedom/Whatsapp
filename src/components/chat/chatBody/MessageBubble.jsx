@@ -474,7 +474,9 @@ const MessageBubble = memo(
 
             {/* Document */}
             {message.document && (
-              <DocumentItem document={message.document} isMobile={isMobile} isMe={isMe} />
+              <DocumentItem document={message.document} isMobile={isMobile} />
+            )}
+
             {/* Link preview */}
             {message.link && <PreviewLink link={message.link} />}
 
