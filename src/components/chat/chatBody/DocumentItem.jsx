@@ -1,10 +1,11 @@
 'use client';
 
-import { FaDownload } from 'react-icons/fa';
+import { FaDownload, FaFilePdf, FaFileWord, FaFileExcel, FaFilePowerpoint, FaFileAlt } from 'react-icons/fa';
 import { useState, useCallback } from 'react';
 
 export default function DocumentItem({ document, isMobile = false }) {
   const [isDownloading, setIsDownloading] = useState(false);
+  const [previewError, setPreviewError] = useState(false);
 
   const hasDocument = !!document;
   const docData = document || {};
@@ -19,44 +20,49 @@ export default function DocumentItem({ document, isMobile = false }) {
     docData.fileUrl;
   const fileType =
     docData.file_type || docData.type || 'application/octet-stream';
+  const pageCount = docData.page_count || docData.pages || null;
 
   // Formater la taille du fichier
   const formatFileSize = bytes => {
-    if (!bytes) return '0 B';
+    if (!bytes) return '0 Ko';
     const k = 1024;
-    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const sizes = ['o', 'Ko', 'Mo', 'Go'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
   };
 
-  // Obtenir l'icône basée sur le type de fichier
-  const getFileIcon = () => {
+  // Obtenir l'extension du fichier
+  const getFileExtension = () => {
+    const ext = fileName.split('.').pop()?.toLowerCase() || '';
+    return ext.toUpperCase();
+  };
+
+  // Obtenir l'icône et la couleur basée sur le type de fichier
+  const getFileIconAndColor = () => {
     const ext = fileName.split('.').pop()?.toLowerCase() || '';
     switch (ext) {
       case 'pdf':
-        return '📄';
+        return { icon: FaFilePdf, color: '#DC2626', bg: '#DC2626' };
       case 'doc':
       case 'docx':
-        return '📝';
+        return { icon: FaFileWord, color: '#2563EB', bg: '#2563EB' };
       case 'xls':
       case 'xlsx':
-        return '📊';
+        return { icon: FaFileExcel, color: '#16A34A', bg: '#16A34A' };
       case 'ppt':
       case 'pptx':
-        return '🎁';
-      case 'zip':
-      case 'rar':
-        return '📦';
-      case 'txt':
-        return '📃';
+        return { icon: FaFilePowerpoint, color: '#EA580C', bg: '#EA580C' };
       default:
-        return '📎';
+        return { icon: FaFileAlt, color: '#6B7280', bg: '#6B7280' };
     }
   };
+
+  const { icon: FileIcon, color: iconColor, bg: bgColor } = getFileIconAndColor();
 
   const handleDownload = useCallback(
     async e => {
       e.preventDefault();
+      e.stopPropagation();
       if (!fileUrl || isDownloading) return;
 
       try {
@@ -76,66 +82,94 @@ export default function DocumentItem({ document, isMobile = false }) {
     [fileUrl, fileName, isDownloading]
   );
 
+  const handleOpen = useCallback(
+    e => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!fileUrl) return;
+      window.open(fileUrl, '_blank', 'noopener,noreferrer');
+    },
+    [fileUrl]
+  );
+
   if (!hasDocument) return null;
 
   return (
-    <div className="w-full max-w-sm">
-      {fileUrl ? (
-        <a
-          href={fileUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-3 p-3 bg-neutral-800/50 rounded-lg border border-neutral-700 hover:bg-neutral-700/50 transition-colors cursor-pointer"
-        >
-          {/* Icône du fichier */}
-          <div className="flex-shrink-0 text-2xl">{getFileIcon()}</div>
-
-          {/* Informations du fichier */}
-          <div className="flex-1 min-w-0">
-            <div
-              className="text-sm font-medium text-white truncate"
-              title={fileName}
+    <div className={`w-full ${isMobile ? 'max-w-[280px]' : 'max-w-[340px]'} overflow-hidden rounded-lg`}>
+      {/* Prévisualisation du document */}
+      <div className="relative bg-white aspect-[4/3] flex items-center justify-center overflow-hidden">
+        {fileUrl && !previewError ? (
+          <div className="w-full h-full relative">
+            {/* Afficher la prévisualisation pour les PDFs */}
+            {getFileExtension() === 'PDF' ? (
+              <iframe
+                src={`${fileUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`}
+                className="w-full h-full border-0 pointer-events-none"
+                onError={() => setPreviewError(true)}
+                title="Document preview"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                <FileIcon size={isMobile ? 48 : 64} style={{ color: iconColor }} />
+              </div>
+            )}
+            {/* Overlay avec icône du type de fichier */}
+            <div 
+              className="absolute top-3 left-3 rounded-md p-2 shadow-lg"
+              style={{ backgroundColor: bgColor }}
             >
-              {fileName}
-            </div>
-            <div className="text-xs text-gray-400">
-              {formatFileSize(fileSize)}
+              <FileIcon size={isMobile ? 20 : 24} className="text-white" />
             </div>
           </div>
-
-          {/* Bouton de téléchargement */}
-          <button
-            onClick={handleDownload}
-            disabled={isDownloading}
-            className="flex-shrink-0 p-2 text-gray-400 hover:text-white hover:bg-neutral-700/50 rounded-full transition-colors disabled:opacity-50"
-            title="Télécharger"
-          >
-            <FaDownload size={isMobile ? 14 : 16} />
-          </button>
-        </a>
-      ) : (
-        <div className="flex items-center gap-3 p-3 bg-neutral-800/50 rounded-lg border border-neutral-700">
-          {/* Icône du fichier */}
-          <div className="flex-shrink-0 text-2xl">{getFileIcon()}</div>
-
-          {/* Informations du fichier */}
-          <div className="flex-1 min-w-0">
-            <div
-              className="text-sm font-medium text-white truncate"
-              title={fileName}
-            >
-              {fileName}
-            </div>
-            <div className="text-xs text-gray-400">
-              {formatFileSize(fileSize)}
-            </div>
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gray-100">
+            <FileIcon size={isMobile ? 48 : 64} style={{ color: iconColor }} />
           </div>
+        )}
+      </div>
 
-          <div className="text-[11px] text-gray-500 whitespace-nowrap">
-            indisponible
+      {/* Informations du document */}
+      <div className="bg-[#202C33] p-3">
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <div className="flex-1 min-w-0">
+            <h4 className="text-[15px] font-medium text-white truncate" title={fileName}>
+              {fileName}
+            </h4>
+            <div className="flex items-center gap-1.5 text-[13px] text-[#8696A0] mt-0.5">
+              {pageCount && <span>{pageCount} page{pageCount > 1 ? 's' : ''}</span>}
+              {pageCount && <span>•</span>}
+              <span>{getFileExtension()}</span>
+              <span>•</span>
+              <span>{formatFileSize(fileSize)}</span>
+            </div>
           </div>
         </div>
-      )}
+
+        {/* Boutons d'action */}
+        {fileUrl && (
+          <div className="flex gap-2 mt-3">
+            <button
+              onClick={handleOpen}
+              className="flex-1 py-2 px-3 bg-transparent border border-[#00A884] text-[#00A884] rounded-md text-[14px] font-medium hover:bg-[#00A884]/10 transition-colors"
+            >
+              Ouvrir
+            </button>
+            <button
+              onClick={handleDownload}
+              disabled={isDownloading}
+              className="flex-1 py-2 px-3 bg-transparent border border-[#00A884] text-[#00A884] rounded-md text-[14px] font-medium hover:bg-[#00A884]/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isDownloading ? 'Téléchargement...' : 'Enregistrer sous...'}
+            </button>
+          </div>
+        )}
+
+        {!fileUrl && (
+          <div className="mt-2 text-center py-2 text-[13px] text-[#8696A0]">
+            Document indisponible
+          </div>
+        )}
+      </div>
     </div>
   );
 }
