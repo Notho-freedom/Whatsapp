@@ -17,6 +17,15 @@
   overflow: hidden;
 }
 
+/* Document preview iframe - hide scrollbars */
+.document-preview {
+  overflow: hidden !important;
+}
+
+.document-preview::-webkit-scrollbar {
+  display: none;
+}
+
 /* Animation pour les bulles de message */
 @keyframes messageSlideIn {
   from {

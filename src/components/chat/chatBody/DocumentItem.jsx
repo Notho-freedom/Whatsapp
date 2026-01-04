@@ -119,8 +119,8 @@ export default function DocumentItem({
             {getFileExtension() === 'PDF' ? (
               <iframe
                 src={`${fileUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`}
-                className="w-full h-full border-0 pointer-events-none"
-                style={{ overflow: 'hidden' }}
+                className="w-full h-full border-0 pointer-events-none document-preview"
+                style={{ overflow: 'hidden', maxHeight: '100%' }}
                 title="Document preview"
               />
             ) : (
