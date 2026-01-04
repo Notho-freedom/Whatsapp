@@ -17,7 +17,7 @@ import {
   MapPinMinus,
   SmileIcon,
 } from 'lucide-react';
-import { BsCheck2All } from 'react-icons/bs';
+import { BsCheck2, BsCheck2All } from 'react-icons/bs';
 import { useAppContext } from '@/context';
 import { StatusCircle } from '@/components/ui';
 import Avatar from '@/components/ui/Avatar';
@@ -46,6 +46,8 @@ export default function ChatList({
     addUser,
     currentUser,
     markMessagesRead,
+    presence,
+    listenToUserPresence,
   } = useAppContext();
   const {
     contacts: googleContacts,
@@ -57,6 +59,54 @@ export default function ChatList({
   const [firebaseLoading, setFirebaseLoading] = useState(false);
   // Hook temps réel pour la présence et les notifications
   const scrollRef = useRef(null);
+  const presenceUnsubsRef = useRef(new Map());
+
+  // Écouter la présence des participants visibles (pour 1/2 checks)
+  useEffect(() => {
+    if (!listenToUserPresence) return;
+
+    const conversationUserIds = (filteredUsers || [])
+      .filter(u => u?.isConversation && u?.otherParticipantId)
+      .map(u => u.otherParticipantId);
+
+    const uniqueIds = Array.from(new Set(conversationUserIds));
+
+    // Add missing listeners
+    uniqueIds.forEach(userId => {
+      if (!userId) return;
+      if (presenceUnsubsRef.current.has(userId)) return;
+      const unsubscribe = listenToUserPresence(userId);
+      if (typeof unsubscribe === 'function') {
+        presenceUnsubsRef.current.set(userId, unsubscribe);
+      }
+    });
+
+    // Remove stale listeners
+    Array.from(presenceUnsubsRef.current.keys()).forEach(userId => {
+      if (!uniqueIds.includes(userId)) {
+        const unsubscribe = presenceUnsubsRef.current.get(userId);
+        try {
+          if (typeof unsubscribe === 'function') unsubscribe();
+        } finally {
+          presenceUnsubsRef.current.delete(userId);
+        }
+      }
+    });
+
+    return () => {
+      // cleanup happens in unmount effect below
+    };
+  }, [filteredUsers, listenToUserPresence]);
+
+  useEffect(() => {
+    const unsubs = presenceUnsubsRef.current;
+    return () => {
+      unsubs.forEach(unsubscribe => {
+        if (typeof unsubscribe === 'function') unsubscribe();
+      });
+      unsubs.clear();
+    };
+  }, []);
 
   // Préchargement automatique des avatars
   useAutoAvatarPreloader(filteredUsers, 'chats');
@@ -275,16 +325,30 @@ export default function ChatList({
       otherReadAtMs !== null &&
       otherReadAtMs >= lastMessageAtMs;
 
+    // Presence fallback: consider "online" only if timestamp is fresh.
+    // Prevents stale-online when a client closes/crashes without sending offline.
+    const presenceEntry = presence?.[chat.otherParticipantId];
+    const otherStatus = presenceEntry?.status;
+    const otherPresenceTs =
+      typeof presenceEntry?.timestamp === 'number'
+        ? presenceEntry.timestamp
+        : 0;
+    const PRESENCE_TTL_MS = 30_000;
+    const isPresenceFresh = otherPresenceTs
+      ? Date.now() - otherPresenceTs < PRESENCE_TTL_MS
+      : false;
+    const isOnline = otherStatus === 'online' && isPresenceFresh;
+
     return (
       <>
-        {isSentByMe && (
-          <BsCheck2All
-            className={`mr-1 ${
-              isReadByOther ? 'text-[#53bdeb]' : 'text-gray-400'
-            }`}
-            size={16}
-          />
-        )}
+        {isSentByMe &&
+          (isReadByOther ? (
+            <BsCheck2All className="mr-1 text-[#53bdeb]" size={16} />
+          ) : isOnline ? (
+            <BsCheck2All className="mr-1 text-gray-400" size={16} />
+          ) : (
+            <BsCheck2 className="mr-1 text-gray-400" size={16} />
+          ))}
         <MessageIcon type={chat.lastMessage.type} />
         <span className="truncate">
           {(chat.lastMessage.type === 'voice' ||
@@ -538,52 +602,6 @@ export default function ChatList({
 
                     {/* Icônes + badge alignés à droite */}
                     <div className="flex items-center gap-1 ml-2 shrink-0">
-                      {/* Boutons d'appel */}
-                      <button
-                        onClick={e => {
-                          e.stopPropagation();
-                          window.dispatchEvent(
-                            new CustomEvent('start-call', {
-                              detail: {
-                                type: 'voice',
-                                participant: chat,
-                                fromChatList: true,
-                                timestamp: new Date(),
-                              },
-                            })
-                          );
-                        }}
-                        className="p-1 hover:bg-neutral-600 rounded transition-colors"
-                        aria-label={`Appeler ${chat.name}`}
-                      >
-                        <Phone
-                          size={12}
-                          className="text-gray-400 hover:text-[#1DAA61]"
-                        />
-                      </button>
-                      <button
-                        onClick={e => {
-                          e.stopPropagation();
-                          window.dispatchEvent(
-                            new CustomEvent('start-call', {
-                              detail: {
-                                type: 'video',
-                                participant: chat,
-                                fromChatList: true,
-                                timestamp: new Date(),
-                              },
-                            })
-                          );
-                        }}
-                        className="p-1 hover:bg-neutral-600 rounded transition-colors"
-                        aria-label={`Appel vidéo ${chat.name}`}
-                      >
-                        <Video
-                          size={12}
-                          className="text-gray-400 hover:text-[#1DAA61]"
-                        />
-                      </button>
-
                       {chat.isPinned && (
                         <Pin size={12} className="text-gray-400" />
                       )}

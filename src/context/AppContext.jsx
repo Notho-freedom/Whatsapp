@@ -178,7 +178,6 @@ function appReducer(state, action) {
             : user
         ),
       };
-
     case ACTIONS.SET_SEARCH_QUERY:
       return { ...state, searchQuery: action.payload };
 
@@ -364,8 +363,13 @@ export function AppProvider({ children }) {
   const latestMessagesRef = useRef({});
 
   // Hook temps réel pour les messages et conversations
-  const { listenToMessages, listenToConversation, listenToConversations } =
-    useRealtime(currentUserId);
+  const {
+    listenToMessages,
+    listenToConversation,
+    listenToConversations,
+    presence,
+    listenToUserPresence,
+  } = useRealtime(currentUserId);
 
   // Récupérer l'utilisateur courant au montage et quand authUser change
   useEffect(() => {
@@ -1916,6 +1920,8 @@ export function AppProvider({ children }) {
               status: 'en ligne',
               lastMessage: conv.last_message,
               lastMessageTime: conv.last_message_time,
+              lastMessageAt: conv.last_message_time || null,
+              lastReadAt: conv.last_read_at || {},
               unreadCount:
                 (conv.unread_counts && currentUserId
                   ? conv.unread_counts[currentUserId]
@@ -1942,6 +1948,8 @@ export function AppProvider({ children }) {
             status: conv.status || 'en ligne',
             lastMessage: conv.last_message,
             lastMessageTime: conv.last_message_time,
+            lastMessageAt: conv.last_message_time || null,
+            lastReadAt: conv.last_read_at || {},
             unreadCount:
               (conv.unread_counts && currentUserId
                 ? conv.unread_counts[currentUserId]
@@ -2231,6 +2239,7 @@ export function AppProvider({ children }) {
       ...state,
       currentUser, // Ajouter l'utilisateur connecté au contexte
       currentUserId, // Ajouter l'ID pour accès rapide
+      presence,
 
       // Actions
       setLoading: actions.setLoading,
@@ -2281,11 +2290,16 @@ export function AppProvider({ children }) {
       // Données calculées
       filteredUsers,
       contacts,
+
+      // Realtime helpers
+      listenToUserPresence,
     }),
     [
       state,
       currentUser,
       currentUserId,
+      presence,
+      listenToUserPresence,
       actions,
       sendMessage,
       selectChat,
