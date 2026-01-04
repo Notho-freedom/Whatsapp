@@ -742,6 +742,17 @@ export function AppProvider({ children }) {
             const normalizedSender =
               msg.sender === currentUserId ? 'me' : 'other';
 
+            const fallbackDocument =
+              msg.type === 'document' && !msg.document && msg.metadata?.document_id
+                ? {
+                    id: msg.metadata.document_id,
+                    name: msg.metadata.file_name || 'Document',
+                    file_size: msg.metadata.file_size,
+                    file_type: msg.metadata.file_type,
+                    file_url: msg.metadata.file_url,
+                  }
+                : null;
+
             return {
               id: msg.id,
               sender: normalizedSender,
@@ -752,6 +763,7 @@ export function AppProvider({ children }) {
                   : undefined),
               text: msg.text,
               media: msg.media,
+              document: msg.document || fallbackDocument,
               time:
                 msg.time ||
                 new Date().toLocaleTimeString('fr-FR', {
@@ -759,7 +771,7 @@ export function AppProvider({ children }) {
                   minute: '2-digit',
                 }),
               date: msg.date || new Date().toLocaleDateString('fr-FR'),
-              read: msg.is_read || false,
+              read: msg.is_read || msg.read || false,
               reactions: msg.reactions || [],
               replyTo: msg.reply_to,
               type: msg.type || 'text',
@@ -1182,6 +1194,17 @@ export function AppProvider({ children }) {
             const normalizedSender =
               msg.sender === currentUserId ? 'me' : 'other';
 
+            const fallbackDocument =
+              msg.type === 'document' && !msg.document && msg.metadata?.document_id
+                ? {
+                    id: msg.metadata.document_id,
+                    name: msg.metadata.file_name || 'Document',
+                    file_size: msg.metadata.file_size,
+                    file_type: msg.metadata.file_type,
+                    file_url: msg.metadata.file_url,
+                  }
+                : null;
+
             return {
               id: msg.id,
               text: msg.text,
@@ -1193,6 +1216,7 @@ export function AppProvider({ children }) {
                   : undefined),
               type: msg.type || 'text',
               media: msg.media || null,
+              document: msg.document || fallbackDocument,
               replyTo: msg.reply_to,
               reactions: msg.reactions || [],
               time:
@@ -1204,7 +1228,7 @@ export function AppProvider({ children }) {
               date:
                 msg.date ||
                 new Date(msg.created_at).toLocaleDateString('fr-FR'),
-              read: msg.read || false,
+              read: msg.is_read || msg.read || false,
               timestamp: new Date(msg.created_at),
             };
           });
@@ -1250,6 +1274,19 @@ export function AppProvider({ children }) {
                   const normalizedSender =
                     message.sender === currentUserId ? 'me' : 'other';
 
+                  const fallbackDocument =
+                    message.type === 'document' &&
+                    !message.document &&
+                    message.metadata?.document_id
+                      ? {
+                          id: message.metadata.document_id,
+                          name: message.metadata.file_name || 'Document',
+                          file_size: message.metadata.file_size,
+                          file_type: message.metadata.file_type,
+                          file_url: message.metadata.file_url,
+                        }
+                      : null;
+
                   const transformedMessage = {
                     id: message.id,
                     text: message.text,
@@ -1261,6 +1298,7 @@ export function AppProvider({ children }) {
                         : undefined),
                     type: message.type || 'text',
                     media: message.media || null,
+                    document: message.document || fallbackDocument,
                     replyTo: message.reply_to,
                     reactions: message.reactions || [],
                     time:
@@ -1276,7 +1314,7 @@ export function AppProvider({ children }) {
                       new Date(
                         message.created_at || Date.now()
                       ).toLocaleDateString('fr-FR'),
-                    read: message.read || false,
+                    read: message.is_read || message.read || false,
                     timestamp: new Date(message.created_at || Date.now()),
                   };
 
@@ -1290,7 +1328,50 @@ export function AppProvider({ children }) {
                 }
               } else if (type === 'modified') {
                 console.log(`✏️ Message modifié:`, message.id);
-                actions.updateMessage(chat.id, message.id, message);
+                const normalizedSender =
+                  message.sender === currentUserId ? 'me' : 'other';
+                const fallbackDocument =
+                  message.type === 'document' &&
+                  !message.document &&
+                  message.metadata?.document_id
+                    ? {
+                        id: message.metadata.document_id,
+                        name: message.metadata.file_name || 'Document',
+                        file_size: message.metadata.file_size,
+                        file_type: message.metadata.file_type,
+                        file_url: message.metadata.file_url,
+                      }
+                    : null;
+                actions.updateMessage(chat.id, message.id, {
+                  id: message.id,
+                  text: message.text,
+                  sender: normalizedSender,
+                  senderName:
+                    message.sender_name ||
+                    (normalizedSender === 'me'
+                      ? currentUser?.name || currentUser?.displayName || 'Me'
+                      : undefined),
+                  type: message.type || 'text',
+                  media: message.media || null,
+                  document: message.document || fallbackDocument,
+                  replyTo: message.reply_to,
+                  reactions: message.reactions || [],
+                  time:
+                    message.time ||
+                    new Date(
+                      message.created_at || Date.now()
+                    ).toLocaleTimeString('fr-FR', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    }),
+                  date:
+                    message.date ||
+                    new Date(
+                      message.created_at || Date.now()
+                    ).toLocaleDateString('fr-FR'),
+                  read: message.is_read || message.read || false,
+                  timestamp: new Date(message.created_at || Date.now()),
+                });
               } else if (type === 'removed') {
                 console.log(`🗑️ Message supprimé:`, message.id);
                 actions.deleteMessage(chat.id, message.id);

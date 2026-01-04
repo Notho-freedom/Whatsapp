@@ -1,38 +1,24 @@
 'use client';
 
-import { FaFile, FaDownload } from 'react-icons/fa';
+import { FaDownload } from 'react-icons/fa';
 import { useState, useCallback } from 'react';
 
 export default function DocumentItem({ document, isMobile = false }) {
   const [isDownloading, setIsDownloading] = useState(false);
 
-  if (!document) return null;
+  const hasDocument = !!document;
+  const docData = document || {};
 
   // Extraire les informations du document
-  const fileName = document.original_name || document.name || 'Document';
-  const fileSize = document.file_size || document.size || 0;
+  const fileName = docData.original_name || docData.name || 'Document';
+  const fileSize = docData.file_size || docData.size || 0;
   const fileUrl =
-    document.url ||
-    document.file_url ||
-    document.downloadURL ||
-    document.fileUrl;
+    docData.url ||
+    docData.file_url ||
+    docData.downloadURL ||
+    docData.fileUrl;
   const fileType =
-    document.file_type || document.type || 'application/octet-stream';
-
-  // Debug: Afficher les informations du document
-  console.log('📄 DocumentItem - Données du document:', {
-    fileName,
-    fileSize,
-    fileUrl,
-    fileType,
-    fullDocument: document
-  });
-
-  // Si pas d'URL, ne rien afficher
-  if (!fileUrl) {
-    console.warn('⚠️ DocumentItem - Pas d\'URL pour le document:', document);
-    return null;
-  }
+    docData.file_type || docData.type || 'application/octet-stream';
 
   // Formater la taille du fichier
   const formatFileSize = bytes => {
@@ -90,32 +76,34 @@ export default function DocumentItem({ document, isMobile = false }) {
     [fileUrl, fileName, isDownloading]
   );
 
+  if (!hasDocument) return null;
+
   return (
     <div className="w-full max-w-sm">
-      <a
-        href={fileUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="flex items-center gap-3 p-3 bg-neutral-800/50 rounded-lg border border-neutral-700 hover:bg-neutral-700/50 transition-colors cursor-pointer"
-      >
-        {/* Icône du fichier */}
-        <div className="flex-shrink-0 text-2xl">{getFileIcon()}</div>
+      {fileUrl ? (
+        <a
+          href={fileUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 p-3 bg-neutral-800/50 rounded-lg border border-neutral-700 hover:bg-neutral-700/50 transition-colors cursor-pointer"
+        >
+          {/* Icône du fichier */}
+          <div className="flex-shrink-0 text-2xl">{getFileIcon()}</div>
 
-        {/* Informations du fichier */}
-        <div className="flex-1 min-w-0">
-          <div
-            className="text-sm font-medium text-white truncate"
-            title={fileName}
-          >
-            {fileName}
+          {/* Informations du fichier */}
+          <div className="flex-1 min-w-0">
+            <div
+              className="text-sm font-medium text-white truncate"
+              title={fileName}
+            >
+              {fileName}
+            </div>
+            <div className="text-xs text-gray-400">
+              {formatFileSize(fileSize)}
+            </div>
           </div>
-          <div className="text-xs text-gray-400">
-            {formatFileSize(fileSize)}
-          </div>
-        </div>
 
-        {/* Bouton de téléchargement */}
-        {fileUrl && (
+          {/* Bouton de téléchargement */}
           <button
             onClick={handleDownload}
             disabled={isDownloading}
@@ -124,8 +112,30 @@ export default function DocumentItem({ document, isMobile = false }) {
           >
             <FaDownload size={isMobile ? 14 : 16} />
           </button>
-        )}
-      </a>
+        </a>
+      ) : (
+        <div className="flex items-center gap-3 p-3 bg-neutral-800/50 rounded-lg border border-neutral-700">
+          {/* Icône du fichier */}
+          <div className="flex-shrink-0 text-2xl">{getFileIcon()}</div>
+
+          {/* Informations du fichier */}
+          <div className="flex-1 min-w-0">
+            <div
+              className="text-sm font-medium text-white truncate"
+              title={fileName}
+            >
+              {fileName}
+            </div>
+            <div className="text-xs text-gray-400">
+              {formatFileSize(fileSize)}
+            </div>
+          </div>
+
+          <div className="text-[11px] text-gray-500 whitespace-nowrap">
+            indisponible
+          </div>
+        </div>
+      )}
     </div>
   );
 }
