@@ -115,13 +115,22 @@ export default function DocumentItem({
       >
         {fileUrl && !previewError ? (
           <div className="w-full h-full relative *:overflow-hidden">
-            {/* Afficher l'icône pour tous les types de fichiers */}
-            <div
-              className="w-full h-full flex items-center justify-center"
-              style={{ backgroundColor: 'var(--wa-drawer-background)' }}
-            >
-              <FileIcon size={56} style={{ color: iconColor }} />
-            </div>
+            {/* Afficher la prévisualisation pour les PDFs */}
+            {getFileExtension() === 'PDF' ? (
+              <iframe
+                src={`${fileUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`}
+                className="w-full h-full border-0 pointer-events-none document-preview"
+                style={{ overflow: 'hidden', maxHeight: '100%' }}
+                title="Document preview"
+              />
+            ) : (
+              <div
+                className="w-full h-full flex items-center justify-center"
+                style={{ backgroundColor: 'var(--wa-drawer-background)' }}
+              >
+                <FileIcon size={56} style={{ color: iconColor }} />
+              </div>
+            )}
           </div>
         ) : (
           <div

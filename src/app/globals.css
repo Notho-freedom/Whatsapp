@@ -172,7 +172,7 @@
 }
 
 .emoji-mart-container .emoji-mart-emoji-selected {
-  background-color: #1DAA61 !important;
+  background-color: #1daa61 !important;
 }
 
 /* Styles pour les scrollbars personnalisées */
@@ -261,7 +261,11 @@
 
 /* Styles pour les médias avec overlay */
 .media-overlay {
-  background: linear-gradient(135deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.8) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(0, 0, 0, 0.6) 0%,
+    rgba(0, 0, 0, 0.8) 100%
+  );
   backdrop-filter: blur(4px);
 }
 
@@ -273,7 +277,7 @@
 
 /* Styles pour les réponses */
 .reply-container {
-  border-left: 4px solid #25D366;
+  border-left: 4px solid #25d366;
   background: rgba(0, 0, 0, 0.2);
   border-radius: 4px;
   padding: 0.5rem;
@@ -307,7 +311,7 @@
 .sender-name {
   font-size: 12px;
   font-weight: 600;
-  color: #25D366;
+  color: #25d366;
   margin-bottom: 2px;
 }
 
@@ -316,11 +320,11 @@
   .message-bubble {
     font-size: 0.875rem;
   }
-  
+
   .timestamp {
     font-size: 8px;
   }
-  
+
   .avatar {
     width: 1.5rem;
     height: 1.5rem;
@@ -332,7 +336,7 @@
   .message-bubble {
     font-size: 0.9rem;
   }
-  
+
   .timestamp {
     font-size: 9px;
   }
@@ -343,7 +347,7 @@
   .message-bubble {
     font-size: 0.875rem;
   }
-  
+
   .timestamp {
     font-size: 10px;
   }
@@ -353,7 +357,7 @@
   --foreground-rgb: 255, 255, 255;
   --background-start-rgb: 18, 18, 18;
   --background-end-rgb: 18, 18, 18;
-  
+
   /* Couleurs WhatsApp Desktop exactes d'après les captures */
   --wa-background-default: #0a0e11;
   --wa-background-deeper: #0b0e11;
@@ -386,7 +390,8 @@
 }
 
 /* Empêcher les défilements globaux */
-html, body {
+html,
+body {
   margin: 0;
   padding: 0;
   height: 100vh;
@@ -402,7 +407,7 @@ body {
       rgb(var(--background-end-rgb))
     )
     rgb(var(--background-start-rgb));
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 /* S'assurer que l'application prend toute la hauteur */
@@ -437,7 +442,7 @@ body {
   scrollbar-color: rgba(255, 255, 255, 0.16) transparent;
 }
 
-.chat-list{
+.chat-list {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overflow-y: auto;
@@ -446,7 +451,6 @@ body {
   will-change: transform;
   transform: translateZ(0);
 }
-
 
 /* Pour tous les navigateurs */
 @supports (scroll-behavior: smooth) {
@@ -464,7 +468,7 @@ body {
     font-size: 14.2px;
     min-width: 60px;
   }
-  
+
   /* Mobile adjustments */
   @media (max-width: 768px) {
     .wa-message-bubble {
@@ -473,25 +477,25 @@ body {
       @apply px-[8px] pt-[5px] pb-[7px];
     }
   }
-  
+
   @media (max-width: 480px) {
     .wa-message-bubble {
       max-width: 90%;
       font-size: 13.5px;
     }
   }
-  
+
   .wa-message-bubble-self {
     background-color: var(--wa-chat-bubble-self);
     border-top-right-radius: 0;
     margin-left: auto;
   }
-  
+
   .wa-message-bubble-others {
     background-color: #313131;
     border-top-left-radius: 0;
   }
-  
+
   .wa-message-text {
     color: var(--wa-primary-strong);
     white-space: pre-wrap;
@@ -499,7 +503,7 @@ body {
     padding: 0;
     word-break: break-word;
   }
-  
+
   .wa-message-meta {
     @apply inline-flex items-center gap-[3px] -mb-[5px] float-right pl-[4px] relative;
     font-size: 11px;
@@ -508,24 +512,24 @@ body {
     bottom: -2px;
     right: 0;
   }
-  
+
   @media (max-width: 768px) {
     .wa-message-meta {
       font-size: 10px;
     }
   }
-  
+
   .wa-message-time {
     @apply inline-block;
     line-height: 15px;
   }
-  
+
   .wa-message-status {
     @apply inline-flex items-center;
     width: 16px;
     height: 11px;
   }
-  
+
   .wa-system-message {
     @apply text-center py-[5px] px-[12px] mx-auto rounded-[7.5px];
     background-color: var(--wa-system-message-bg);
@@ -534,24 +538,24 @@ body {
     max-width: 85%;
     box-shadow: 0 1px 0.5px rgba(0, 0, 0, 0.13);
   }
-  
+
   @media (max-width: 768px) {
     .wa-system-message {
       font-size: 12px;
       @apply py-[4px] px-[10px];
     }
   }
-  
+
   .wa-date-divider {
     @apply flex items-center justify-center my-[16px];
   }
-  
+
   @media (max-width: 768px) {
     .wa-date-divider {
       @apply my-[12px];
     }
   }
-  
+
   .wa-date-divider-text {
     @apply px-[12px] py-[5px] rounded-[7.5px];
     background-color: var(--wa-system-message-bg);
@@ -559,83 +563,83 @@ body {
     font-size: 12.5px;
     box-shadow: 0 1px 0.5px rgba(0, 0, 0, 0.13);
   }
-  
+
   @media (max-width: 768px) {
     .wa-date-divider-text {
       font-size: 12px;
       @apply px-[10px] py-[4px];
     }
   }
-  
+
   .wa-message-container {
     @apply relative;
   }
-  
+
   @media (max-width: 768px) {
     .wa-message-container {
       @apply mb-[1px];
     }
   }
-  
+
   .wa-message-tail {
     @apply absolute top-0 w-[8px] h-[13px];
   }
-  
+
   @media (max-width: 768px) {
     .wa-message-tail {
       @apply w-[6px] h-[10px];
     }
   }
-  
+
   .wa-message-tail-self {
     @apply -right-[8px];
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 13' width='8' height='13'%3E%3Cpath opacity='.13' d='M5.188 1H0v11.193l6.467-8.625C7.526 2.156 6.958 1 5.188 1z'/%3E%3Cpath fill='%23005c4b' d='M5.188 0H0v11.193l6.467-8.625C7.526 1.156 6.958 0 5.188 0z'/%3E%3C/svg%3E");
   }
-  
+
   @media (max-width: 768px) {
     .wa-message-tail-self {
       @apply -right-[6px];
     }
   }
-  
+
   .wa-message-tail-others {
     @apply -left-[8px] scale-x-[-1];
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 13' width='8' height='13'%3E%3Cpath opacity='.13' d='M5.188 1H0v11.193l6.467-8.625C7.526 2.156 6.958 1 5.188 1z'/%3E%3Cpath fill='%23353535' d='M5.188 0H0v11.193l6.467-8.625C7.526 1.156 6.958 0 5.188 0z'/%3E%3C/svg%3E");
   }
-  
+
   @media (max-width: 768px) {
     .wa-message-tail-others {
       @apply -left-[6px];
     }
   }
-  
+
   .wa-chat-background {
     background-color: var(--wa-conversation-panel-background);
-    background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgBAMAAAAQtmoLAAAAFVBMVEUAAAAQFBgQFBgQFBgQFBgQFBgQFBhOpVyuAAAABnRSTlMApZj0UACFtsL0AAABP0lEQVRo3u3XMUoDQRiGYTfBYq1gNYKFhZVgIdjmBCJewMrKwtOEQE4gwpzAG4iVlYjvsO7g7s4/szP/ZBfyPQe877DDt7PZAQAAAAAAAAAgO+Uxr4zP6rWMNt5lNTkpF2M2qhdGa09rYzW+oR7XaONBRhuPMtq4F35faOPGaHhSa+Oooqa0Mb5L6rSxXkppY5TR2tilatXGuKyosTE+S+q0sZnSxjijjW36zNgM13pza3SVaWPcVNTYNKyky0bD3rj2Xvubt4Y+1PUWaG3cb2ljPCTirbFbtYaNR0kbtxna2KwFNq4lbaw3tLGZCmysO23c51yMu9DGYidmZDPQ2NgJNPafvzUeOm2Mq5z/MG+B1sZ5oLHxEahtfHba2G1pY/zpTGNjL5QyBgAAAAAAAADAP/kBepVOwCEfXfQAAAAASUVORK5CYII=");
+    background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgBAMAAAAQtmoLAAAAFVBMVEUAAAAQFBgQFBgQFBgQFBgQFBgQFBhOpVyuAAAABnRSTlMApZj0UACFtsL0AAABP0lEQVRo3u3XMUoDQRiGYTfBYq1gNYKFhZVgIdjmBCJewMrKwtOEQE4gwpzAG4iVlYjvsO7g7s4/szP/ZBfyPQe877DDt7PZAQAAAAAAAAAgO+Uxr4zP6rWMNt5lNTkpF2M2qhdGa09rYzW+oR7XaONBRhuPMtq4F35faOPGaHhSa+Oooqa0Mb5L6rSxXkppY5TR2tilatXGuKyosTE+S+q0sZnSxjijjW36zNgM13pza3SVaWPcVNTYNKyky0bD3rj2Xvubt4Y+1PUWaG3cb2ljPCTirbFbtYaNR0kbtxna2KwFNq4lbaw3tLGZCmysO23c51yMu9DGYidmZDPQ2NgJNPafvzUeOm2Mq5z/MG+B1sZ5oLHxEahtfHba2G1pY/zpTGNjL5QyBgAAAAAAAADAP/kBepVOwCEfXfQAAAAASUVORK5CYII=');
     background-attachment: fixed;
     background-repeat: repeat;
     opacity: 0.06;
   }
-  
+
   .wa-reply-bar {
     @apply relative pl-[12px];
   }
-  
+
   .wa-reply-bar::before {
     content: '';
     @apply absolute left-0 top-0 bottom-0 w-[3px] rounded-sm;
     background-color: var(--wa-highlight);
   }
-  
+
   .wa-message-bubble img,
   .wa-message-bubble video {
     @apply select-none;
   }
-  
+
   .wa-message-select-check {
     @apply absolute -left-[30px] top-1/2 -translate-y-1/2 w-[18px] h-[18px] rounded-full border-2 border-[#8696a0] bg-transparent;
   }
-  
+
   /* Animations */
   @keyframes message-in {
     from {
@@ -647,22 +651,22 @@ body {
       transform: scale(1) translateY(0);
     }
   }
-  
+
   .wa-message-container {
     animation: message-in 0.3s ease-out;
   }
-  
+
   /* Selection styles */
   .wa-message-text ::selection {
     background-color: var(--wa-highlight);
     color: white;
   }
-  
+
   /* Link styles in messages */
   .wa-message-text a {
     @apply text-[#53bdeb] underline cursor-pointer;
   }
-  
+
   .wa-message-text a:hover {
     @apply text-[#7cc8ed];
   }
@@ -680,11 +684,12 @@ body {
 
 /* Smooth transitions */
 * {
-  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease,
+    border-color 0.2s ease;
 }
 
 /* Disable text selection on UI elements */
-*{
+* {
   -webkit-user-select: none;
   -moz-user-select: none;
   -ms-user-select: none;
@@ -692,7 +697,7 @@ body {
 }
 
 .search-input {
-  background-color: #3D3D3D;
+  background-color: #3d3d3d;
   border-bottom: 1px solid rgba(255 255 255 / 0.15);
   backdrop-filter: saturate(180%) blur(20px);
   border-radius: 0.375rem;
@@ -741,9 +746,10 @@ body {
   }
 }
 
+iframe {
+  scrollbar-width: none; /* Firefox */
+}
 
-
-
-
-
-
+iframe::-webkit-scrollbar {
+  display: none; /* Chrome */
+}
