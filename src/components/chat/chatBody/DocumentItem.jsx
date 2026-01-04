@@ -117,12 +117,14 @@ export default function DocumentItem({
           <div className="w-full h-full relative *:overflow-hidden">
             {/* Afficher la prévisualisation pour les PDFs */}
             {getFileExtension() === 'PDF' ? (
-              <iframe
-                src={`${fileUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`}
-                className="w-full h-full border-0 pointer-events-none document-preview"
-                style={{ overflow: 'hidden', maxHeight: '100%' }}
-                title="Document preview"
-              />
+              <div className="w-full h-full relative bg-white">
+                <img
+                  src={`${fileUrl}#page=1`}
+                  alt="PDF preview"
+                  className="w-full h-full object-cover"
+                  onError={() => setPreviewError(true)}
+                />
+              </div>
             ) : (
               <div
                 className="w-full h-full flex items-center justify-center"
