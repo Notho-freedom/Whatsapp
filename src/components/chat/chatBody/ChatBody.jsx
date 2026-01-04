@@ -4,7 +4,7 @@ import { FaLock, FaWhatsapp } from 'react-icons/fa';
 import MessageBubble from './MessageBubble';
 import SystemMessage from './SystemMessage';
 import TypingIndicator from './TypingIndicator';
-import { useEffect, useRef, useState, useCallback, memo } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo, memo } from 'react';
 import { useAppContext } from '@/context';
 import { useRealtime } from '@/hooks';
 
@@ -59,19 +59,33 @@ const ChatBody = memo(function ChatBody({ selectedChat, currentUser }) {
   }, [messages, scrollToBottom]);
 
   // Marquer les messages comme lus quand on sélectionne un chat
-  useEffect(() => {
-    if (selectedChat && messages[selectedChat.id]) {
-      markMessagesRead(selectedChat.id);
+  const selectedChatId = selectedChat?.id;
+  const selectedChatMessages = useMemo(() => {
+    if (!selectedChatId) return [];
+    return messages?.[selectedChatId] || [];
+  }, [messages, selectedChatId]);
+  const selectedChatLastMessageId =
+    selectedChatMessages.length > 0
+      ? selectedChatMessages[selectedChatMessages.length - 1]?.id
+      : null;
 
-      // Marquer les messages comme lus en temps réel
-      const chatMessages = messages[selectedChat.id] || [];
-      chatMessages.forEach(message => {
-        if (message.sender !== 'me' && !message.read) {
-          markMessageAsRead(selectedChat.id, message.id);
-        }
-      });
-    }
-  }, [selectedChat?.id, markMessagesRead, markMessageAsRead]);
+  useEffect(() => {
+    const chatId = selectedChatId;
+    if (!chatId) return;
+
+    const chatMessages = selectedChatMessages;
+    if (chatMessages.length === 0) return;
+
+    // Marquer la conversation comme lue (unread_counts + last_read_at)
+    markMessagesRead(chatId);
+
+    // Marquer les messages individuels comme lus dans Firestore (déclenche 'modified' côté expéditeur)
+    chatMessages.forEach(message => {
+      if (message.sender !== 'me' && !message.read) {
+        markMessageAsRead(chatId, message.id);
+      }
+    });
+  }, [selectedChatId, selectedChatMessages, selectedChatLastMessageId, markMessagesRead, markMessageAsRead]);
 
   // Écouter les receipts de lecture et indicateurs de frappe
   useEffect(() => {

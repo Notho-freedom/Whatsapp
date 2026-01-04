@@ -308,11 +308,28 @@ export default function ChatList({
       !!chat.lastMessage?.sender && chat.lastMessage.sender === currentUser?.id;
 
     const getLastMessageAtMs = value => {
-      if (!value) return null;
-      if (value instanceof Date) return value.getTime();
+      if (!value) return 0;
       if (typeof value === 'number') return value;
-      const parsed = new Date(value);
-      return Number.isNaN(parsed.getTime()) ? null : parsed.getTime();
+      if (typeof value === 'string') {
+        const parsed = Date.parse(value);
+        return Number.isNaN(parsed) ? 0 : parsed;
+      }
+      if (value instanceof Date) return value.getTime();
+
+      // Firestore Timestamp support
+      if (typeof value?.toDate === 'function') {
+        try {
+          return value.toDate().getTime();
+        } catch {
+          return 0;
+        }
+      }
+      // Timestamp-like object { seconds, nanoseconds }
+      if (typeof value?.seconds === 'number') {
+        return value.seconds * 1000;
+      }
+
+      return 0;
     };
 
     const lastMessageAtMs = getLastMessageAtMs(chat.lastMessageAt);
