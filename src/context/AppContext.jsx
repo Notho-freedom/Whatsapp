@@ -1918,7 +1918,9 @@ export function AppProvider({ children }) {
               unreadCount:
                 (conv.unread_counts && currentUserId
                   ? conv.unread_counts[currentUserId]
-                  : undefined) ?? conv.unread_count ?? 0,
+                  : undefined) ??
+                conv.unread_count ??
+                0,
               isPinned: conv.is_pinned || false,
               isContact: false,
               isConversation: true,
@@ -1942,7 +1944,9 @@ export function AppProvider({ children }) {
             unreadCount:
               (conv.unread_counts && currentUserId
                 ? conv.unread_counts[currentUserId]
-                : undefined) ?? conv.unread_count ?? 0,
+                : undefined) ??
+              conv.unread_count ??
+              0,
             isPinned: conv.is_pinned || false,
             isContact: false,
             isConversation: true,

@@ -158,7 +158,9 @@ export function transformConversationForDisplay(conversation, currentUserId) {
     unreadCount:
       (conversation.unread_counts && currentUserId
         ? conversation.unread_counts[currentUserId]
-        : undefined) ?? conversation.unread_count ?? 0,
+        : undefined) ??
+      conversation.unread_count ??
+      0,
     isPinned: conversation.is_pinned || false,
     isMuted: conversation.is_muted || false,
     isContact: false,

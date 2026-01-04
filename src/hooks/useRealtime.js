@@ -84,7 +84,10 @@ export const useRealtime = userId => {
             read_by: userId,
           });
         } catch (error) {
-          console.warn('⚠️ Impossible de mettre à jour le message comme lu:', error);
+          console.warn(
+            '⚠️ Impossible de mettre à jour le message comme lu:',
+            error
+          );
         }
       }
     },
