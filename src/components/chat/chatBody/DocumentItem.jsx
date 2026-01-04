@@ -10,7 +10,7 @@ import {
 } from 'react-icons/fa';
 import { useState, useCallback } from 'react';
 
-export default function DocumentItem({ document, isMobile = false, isMe = false }) {
+export default function DocumentItem({ document, isMobile = false }) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [previewError, setPreviewError] = useState(false);
 
@@ -103,13 +103,9 @@ export default function DocumentItem({ document, isMobile = false, isMe = false 
   if (!hasDocument) return null;
 
   return (
-    <div
-      className={`w-full ${
-        isMobile ? 'max-w-[280px]' : 'max-w-[340px]'
-      } overflow-hidden rounded-lg`}
-    >
+    <div className="w-full max-w-[320px] overflow-hidden rounded-lg">
       {/* Prévisualisation du document */}
-      <div className="relative bg-white aspect-[4/3] flex items-center justify-center overflow-hidden">
+      <div className="relative bg-white h-[180px] flex items-center justify-center overflow-hidden">
         {fileUrl && !previewError ? (
           <div className="w-full h-full relative">
             {/* Afficher la prévisualisation pour les PDFs */}
@@ -122,10 +118,7 @@ export default function DocumentItem({ document, isMobile = false, isMe = false 
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gray-100">
-                <FileIcon
-                  size={isMobile ? 48 : 64}
-                  style={{ color: iconColor }}
-                />
+                <FileIcon size={56} style={{ color: iconColor }} />
               </div>
             )}
             {/* Overlay avec icône du type de fichier */}
@@ -133,18 +126,18 @@ export default function DocumentItem({ document, isMobile = false, isMe = false 
               className="absolute top-3 left-3 rounded-md p-2 shadow-lg"
               style={{ backgroundColor: bgColor }}
             >
-              <FileIcon size={isMobile ? 20 : 24} className="text-white" />
+              <FileIcon size={20} className="text-white" />
             </div>
           </div>
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gray-100">
-            <FileIcon size={isMobile ? 48 : 64} style={{ color: iconColor }} />
+            <FileIcon size={56} style={{ color: iconColor }} />
           </div>
         )}
       </div>
 
       {/* Informations du document */}
-      <div className={`${isMe ? 'bg-[#005C4B]' : 'bg-[#202C33]'} p-3`}>
+      <div className=" p-3">
         <div className="flex items-start justify-between gap-2 mb-2">
           <div className="flex-1 min-w-0">
             <h4
