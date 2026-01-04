@@ -103,9 +103,9 @@ export default function DocumentItem({ document, isMobile = false }) {
   if (!hasDocument) return null;
 
   return (
-    <div className="w-full max-w-[320px] overflow-hidden rounded-lg">
+    <div className="w-[320px] overflow-hidden rounded-lg">
       {/* Prévisualisation du document */}
-      <div className="relative bg-white h-[180px] flex items-center justify-center overflow-hidden">
+      <div className="relative h-[180px] flex items-center justify-center overflow-hidden" style={{ backgroundColor: 'var(--wa-panel-header)' }}>
         {fileUrl && !previewError ? (
           <div className="w-full h-full relative">
             {/* Afficher la prévisualisation pour les PDFs */}
@@ -117,7 +117,7 @@ export default function DocumentItem({ document, isMobile = false }) {
                 title="Document preview"
               />
             ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gray-100">
+              <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: 'var(--wa-drawer-background)' }}>
                 <FileIcon size={56} style={{ color: iconColor }} />
               </div>
             )}
@@ -130,7 +130,7 @@ export default function DocumentItem({ document, isMobile = false }) {
             </div>
           </div>
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gray-100">
+          <div className="w-full h-full flex items-center justify-center" style={{ backgroundColor: 'var(--wa-drawer-background)' }}>
             <FileIcon size={56} style={{ color: iconColor }} />
           </div>
         )}
@@ -141,12 +141,13 @@ export default function DocumentItem({ document, isMobile = false }) {
         <div className="flex items-start justify-between gap-2 mb-2">
           <div className="flex-1 min-w-0">
             <h4
-              className="text-[15px] font-medium text-white truncate"
+              className="text-[15px] font-medium truncate"
+              style={{ color: 'var(--wa-primary-strong)' }}
               title={fileName}
             >
               {fileName}
             </h4>
-            <div className="flex items-center gap-1.5 text-[13px] text-[#8696A0] mt-0.5">
+            <div className="flex items-center gap-1.5 text-[13px] mt-0.5" style={{ color: 'var(--wa-secondary)' }}>
               {pageCount && (
                 <span>
                   {pageCount} page{pageCount > 1 ? 's' : ''}
@@ -166,20 +167,26 @@ export default function DocumentItem({ document, isMobile = false }) {
             <>
               <button
                 onClick={handleOpen}
-                className="flex-1 py-2 px-3 bg-transparent border border-[#00A884] text-[#00A884] rounded-md text-[14px] font-medium hover:bg-[#00A884]/10 transition-colors"
+                className="flex-1 py-2 px-3 bg-transparent border rounded-md text-[14px] font-medium transition-colors"
+                style={{ borderColor: 'var(--wa-highlight)', color: 'var(--wa-highlight)' }}
+                onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(0, 168, 132, 0.1)'}
+                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
               >
                 Ouvrir
               </button>
               <button
                 onClick={handleDownload}
                 disabled={isDownloading}
-                className="flex-1 py-2 px-3 bg-transparent border border-[#00A884] text-[#00A884] rounded-md text-[14px] font-medium hover:bg-[#00A884]/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 py-2 px-3 bg-transparent border rounded-md text-[14px] font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                style={{ borderColor: 'var(--wa-highlight)', color: 'var(--wa-highlight)' }}
+                onMouseEnter={e => !isDownloading && (e.currentTarget.style.backgroundColor = 'rgba(0, 168, 132, 0.1)')}
+                onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
               >
                 {isDownloading ? 'Téléchargement...' : 'Enregistrer sous...'}
               </button>
             </>
           ) : (
-            <div className="w-full text-center py-2 text-[13px] text-[#8696A0]">
+            <div className="w-full text-center py-2 text-[13px]" style={{ color: 'var(--wa-secondary)' }}>
               Document indisponible
             </div>
           )}
