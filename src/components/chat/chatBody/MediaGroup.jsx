@@ -237,28 +237,13 @@ function AudioMessage({
   const containerRef = useRef(null);
 
   const [isPlaying, setIsPlaying] = useState(false);
-  const [progress, setProgress] = useState(0); // 0..1
-  const [duration, setDuration] = useState(0); // seconds
+  const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(0);
   const [rate, setRate] = useState(1);
   const [hoverX, setHoverX] = useState(null);
 
-  // Format size in bytes to readable format
-  const formatFileSize = useCallback(bytes => {
-    if (!bytes) return '';
-    if (bytes < 1024) return `${bytes}B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
-  }, []);
-
-  // Get filename without extension
-  const getFileName = useCallback(() => {
-    if (!audio.name) return 'Audio file';
-    const parts = audio.name.split('.');
-    return parts.length > 1 ? parts.slice(0, -1).join('.') : audio.name;
-  }, [audio.name]);
-
+  // Utiliser la forme d'onde fournie ou générer une courbe stable
   const waveformBars = useMemo(() => {
-    // Utiliser la forme d'onde fournie ou générer une courbe stable
     if (
       audio.waveform &&
       Array.isArray(audio.waveform) &&
@@ -266,7 +251,6 @@ function AudioMessage({
     )
       return audio.waveform;
     const len = isMobile ? 25 : 35;
-    // Génération pseudo-aléatoire déterministe selon l'URL
     const seed = (audio.url || '')
       .split('')
       .reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 1e9, 7);
@@ -274,15 +258,11 @@ function AudioMessage({
     const arr = [];
     for (let i = 0; i < len; i++) {
       x = (x * 1664525 + 1013904223) % 4294967296;
-      const v = 0.3 + (x / 4294967296) * 0.7; // 0.3..1
+      const v = 0.3 + (x / 4294967296) * 0.7;
       arr.push(v);
     }
     return arr;
   }, [audio.waveform, audio.url, isMobile]);
-
-  // Couleurs WhatsApp-like
-  const bubbleColor = isMe ? 'bg-[#005c4b]' : 'bg-[#202c33]';
-  const accent = '#00a884';
 
   const fmt = useCallback(sec => {
     if (!isFinite(sec)) return '0:00';
@@ -292,7 +272,6 @@ function AudioMessage({
     return `${m}:${String(r).padStart(2, '0')}`;
   }, []);
 
-  // Charger durée + sync rate
   useEffect(() => {
     const el = audioRef.current;
     if (!el) return;
@@ -320,7 +299,6 @@ function AudioMessage({
     };
   }, [duration, rate, messageId, onAudioStateChange, updateAudioState]);
 
-  // Synchroniser avec l'état global (si une autre piste démarre)
   useEffect(() => {
     const g = getAudioState(messageId) || {};
     if (g.isPlaying !== undefined && g.isPlaying !== isPlaying)
@@ -391,18 +369,15 @@ function AudioMessage({
       duration || (audio.duration && parseTimeString(audio.duration)) || 0;
     const cur = el ? el.currentTime : progress * d;
     return `${fmt(cur)} / ${fmt(d)}`;
-  }, [duration, progress, fmt]);
+  }, [duration, progress, fmt, audio.duration]);
 
-  // Déterminer l'avatar à utiliser
   const getAvatarSrc = () => {
     if (isMe) {
-      // Pour l'utilisateur actuel, utiliser un avatar par défaut ou l'avatar de l'utilisateur connecté
       return (
         userInfo?.avatar ||
         `https://ui-avatars.com/api/?name=Me&background=005c4b&color=fff&size=40`
       );
     } else {
-      // Pour les autres utilisateurs, utiliser leur vrai avatar
       return (
         userInfo?.avatar ||
         `https://ui-avatars.com/api/?name=${
@@ -420,125 +395,97 @@ function AudioMessage({
     >
       <audio ref={audioRef} src={audio.url} preload="metadata" />
 
-      {/* Conteneur principal avec infos utilisateur et bulle */}
-      <div className="flex flex-col gap-1">
-        {/* Nom de l'utilisateur */}
-        {!isMe && userInfo?.name && (
-          <p className="text-[12px] text-[#8696a0] px-2 leading-tight">
-            {userInfo.name}
-          </p>
-        )}
+      <div
+        className={`rounded-lg py-2 max-w-[320px] ${
+          isMobile ? 'max-w-[260px]' : ''
+        } `}
+      >
+        <div className="flex items-center gap-3">
+          <button
+            className="flex-shrink-0 w-[36px] h-[36px] rounded-full flex items-center justify-center hover:opacity-90 bg-transparent"
+            onClick={togglePlay}
+            aria-label={isPlaying ? 'Pause' : 'Lire'}
+          >
+            {isPlaying ? (
+              <FaPause size={14} className="text-[#00a884]" />
+            ) : (
+              <FaPlay size={14} className="text-[#00a884]" />
+            )}
+          </button>
 
-        {/* Bulle audio */}
-        <div
-          className={`rounded-lg py-2 px-3 ${
-            isMobile ? 'max-w-[260px]' : 'max-w-[320px]'
-          } `}
-        >
-          {/* Nom du fichier audio */}
-          {audio.name && (
-            <p className="text-[13px] font-medium text-white mb-1 truncate">
-              {getFileName()}
-            </p>
-          )}
+          <div
+            ref={containerRef}
+            className="flex w-full items-center gap-[1px] h-5 flex-1 relative cursor-pointer select-none"
+            onClick={onWaveClick}
+            onMouseMove={onWaveMove}
+            onMouseLeave={onWaveLeave}
+          >
+            {waveformBars.map((h, i) => {
+              const isPlayed = i < playedBars;
+              const isHover = hoverBars != null && i <= hoverBars;
+              return (
+                <div
+                  key={i}
+                  className={`w-[2px] rounded-full transition-all duration-100 flex-shrink-0 ${
+                    isHover
+                      ? 'bg-white'
+                      : isPlayed
+                      ? 'bg-[#00a884]'
+                      : 'bg-white/40'
+                  }`}
+                  style={{
+                    height: `${h * 16}px`,
+                    opacity: isHover ? 1 : isPlayed ? 0.9 : 0.5,
+                  }}
+                />
+              );
+            })}
 
-          {/* Contrôles audio */}
-          <div className="flex items-center gap-3">
-            {/* Pastille lecture/pause */}
-            <button
-              className="flex-shrink-0 w-[36px] h-[36px] rounded-full flex items-center justify-center hover:opacity-90 bg-transparent"
-              onClick={togglePlay}
-              aria-label={isPlaying ? 'Pause' : 'Lire'}
-            >
-              {isPlaying ? (
-                <FaPause size={14} className="text-[#00a884]" />
-              ) : (
-                <FaPlay size={14} className="text-[#00a884]" />
-              )}
-            </button>
-
-            {/* Waveform cliquable */}
             <div
-              ref={containerRef}
-              className="flex w-full items-center gap-[1px] h-5 flex-1 relative cursor-pointer select-none"
-              onClick={onWaveClick}
-              onMouseMove={onWaveMove}
-              onMouseLeave={onWaveLeave}
-            >
-              {waveformBars.map((h, i) => {
-                const isPlayed = i < playedBars;
-                const isHover = hoverBars != null && i <= hoverBars;
-                return (
-                  <div
-                    key={i}
-                    className={`w-[2px] rounded-full transition-all duration-100 flex-shrink-0 ${
-                      isHover
-                        ? 'bg-white'
-                        : isPlayed
-                        ? 'bg-[#00a884]'
-                        : 'bg-white/40'
-                    }`}
-                    style={{
-                      height: `${h * 16}px`,
-                      opacity: isHover ? 1 : isPlayed ? 0.9 : 0.5,
-                    }}
-                  />
-                );
-              })}
-
-              {/* Indicateur rond */}
-              <div
-                className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full shadow"
-                style={{
-                  left: `${progress * 100}%`,
-                  transform: 'translate(-50%, -50%)',
-                  backgroundColor: accent,
-                }}
-              />
-            </div>
-
-            {/* Vitesse */}
-            <button
-              onClick={cycleRate}
-              className="text-white/80 text-xs px-2 py-1 rounded hover:bg-white/10"
-              aria-label={`Vitesse ${rate}x`}
-            >
-              {rate}x
-            </button>
-
-            {/* Download */}
-            {audio.url && (
-              <a
-                href={audio.url}
-                download
-                className="text-white/80 p-2 rounded hover:bg-white/10"
-                aria-label="Télécharger l'audio"
-              >
-                <FaDownload size={12} />
-              </a>
-            )}
+              className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full shadow"
+              style={{
+                left: `${progress * 100}%`,
+                transform: 'translate(-50%, -50%)',
+                backgroundColor: '#00a884',
+              }}
+            />
           </div>
 
-          {/* Durée et taille du fichier */}
-          <div className="flex items-center justify-between mt-1 gap-2">
-            <span className="text-[10px] text-white/70">
-              {timeLabel}
-            </span>
-            {audio.size && (
-              <span className="text-[10px] text-white/60">
-                {formatFileSize(audio.size)}
-              </span>
-            )}
-          </div>
+          <button
+            onClick={cycleRate}
+            className="text-white/80 text-xs px-2 py-1 rounded hover:bg-white/10"
+            aria-label={`Vitesse ${rate}x`}
+          >
+            {rate}x
+          </button>
+
+          {audio.url && (
+            <a
+              href={audio.url}
+              download
+              className="text-white/80 p-2 rounded hover:bg-white/10"
+              aria-label="Télécharger l'audio"
+            >
+              <FaDownload size={12} />
+            </a>
+          )}
+        </div>
+        <div className="flex items-center justify-between px-1 mt-1 gap-2">
+          <span className="text-[10px] text-white/70">{timeLabel}</span>
+          {audio.size && (
+            <span className="text-[10px] text-white/60">{audio.size}</span>
+          )}
+          {audio.quality && (
+            <span className="text-[10px] text-white/60">{audio.quality}</span>
+          )}
         </div>
       </div>
 
-      {/* Avatar avec micro */}
       <div className="relative flex-shrink-0 bottom-2 -right-1 ">
         <div
           className={`${
             isMobile ? 'w-[32px] h-[32px]' : 'w-[36px] h-[36px]'
-          } rounded-full overflow-hidden border-2 border-white/20`}
+          } rounded-full overflow-hidden`}
         >
           <img
             src={getAvatarSrc()}

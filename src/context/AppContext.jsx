@@ -867,6 +867,7 @@ export function AppProvider({ children }) {
               poll: msg.poll || null,
               drawing: msg.drawing || null,
               contact: msg.contact || null,
+              audio: msg.audio || null,
               metadata: msg.metadata || {},
               time:
                 msg.time ||
@@ -1232,10 +1233,11 @@ export function AppProvider({ children }) {
           message.type = 'audio';
           message.audio = {
             url: audioData.url,
-            name: audioData.name,
-            size: audioData.size,
-            type: audioData.type,
             duration: audioData.duration,
+            size: audioData.size,
+            timestamp: audioData.timestamp,
+            waveform: audioData.waveform,
+            quality: audioData.quality,
           };
 
           firebaseData = {
@@ -1246,10 +1248,11 @@ export function AppProvider({ children }) {
             type: 'audio',
             audio: {
               url: audioData.url,
-              name: audioData.name,
-              size: audioData.size,
-              type: audioData.type,
               duration: audioData.duration,
+              size: audioData.size,
+              timestamp: audioData.timestamp,
+              waveform: audioData.waveform,
+              quality: audioData.quality,
             },
             conversation_id: conversationId,
             replyTo: replyTo,
@@ -1394,6 +1397,7 @@ export function AppProvider({ children }) {
               poll: msg.poll || null,
               drawing: msg.drawing || null,
               contact: msg.contact || null,
+              audio: msg.audio || null,
               metadata: msg.metadata || {},
               replyTo: msg.reply_to,
               reactions: msg.reactions || [],
@@ -1484,6 +1488,14 @@ export function AppProvider({ children }) {
                         }
                       : null;
 
+                  if (message.type === 'audio') {
+                    console.log('📊 Audio message loaded:', {
+                      id: message.id,
+                      audio: message.audio,
+                      messageKeys: Object.keys(message),
+                    });
+                  }
+
                   const transformedMessage = {
                     id: message.id,
                     text: message.text,
@@ -1499,6 +1511,7 @@ export function AppProvider({ children }) {
                     poll: message.poll || null,
                     drawing: message.drawing || null,
                     contact: message.contact || null,
+                    audio: message.audio || null,
                     metadata: message.metadata || {},
                     replyTo: message.reply_to,
                     reactions: message.reactions || [],
@@ -1588,6 +1601,7 @@ export function AppProvider({ children }) {
                   poll: message.poll || null,
                   drawing: message.drawing || null,
                   contact: message.contact || null,
+                  audio: message.audio || null,
                   metadata: message.metadata || {},
                   replyTo: message.reply_to,
                   reactions: message.reactions || [],

@@ -1,30 +1,39 @@
 'use client';
 
 import React, { useRef } from 'react';
-import { Music, Upload } from 'lucide-react';
+import { Music } from 'lucide-react';
 
 const AudioPicker = ({ onAudioSelect, isOpen, onClose }) => {
   const fileInputRef = useRef(null);
 
-  // Extraire la durée du fichier audio
-  const getAudioDuration = (file) => {
-    return new Promise((resolve) => {
+  const getAudioDuration = file => {
+    return new Promise(resolve => {
       const audio = new Audio();
       const objectUrl = URL.createObjectURL(file);
-      
+
       audio.addEventListener('loadedmetadata', () => {
-        const duration = Math.round(audio.duration);
+        const seconds = Math.round(audio.duration);
+        const minutes = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        const duration = `${minutes}:${String(secs).padStart(2, '0')}`;
         URL.revokeObjectURL(objectUrl);
         resolve(duration);
       });
-      
+
       audio.addEventListener('error', () => {
         URL.revokeObjectURL(objectUrl);
-        resolve(null);
+        resolve('0:00');
       });
-      
+
       audio.src = objectUrl;
     });
+  };
+
+  const formatFileSize = bytes => {
+    if (!bytes) return '';
+    if (bytes < 1024) return `${bytes}B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)}KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
   };
 
   const handleFileSelect = async e => {
@@ -32,25 +41,41 @@ const AudioPicker = ({ onAudioSelect, isOpen, onClose }) => {
     if (!files) return;
 
     for (const file of Array.from(files)) {
-      // Vérifier que c'est un fichier audio
       if (file.type.startsWith('audio/')) {
         const reader = new FileReader();
         reader.onload = async event => {
-          // Extraire la durée du fichier
           const duration = await getAudioDuration(file);
-          
+          const size = formatFileSize(file.size);
+          const timestamp = new Date().toLocaleTimeString('fr-FR', {
+            hour: '2-digit',
+            minute: '2-digit',
+          });
+
+          // Générer une forme d'onde simulée
+          const waveform = Array.from(
+            { length: 35 },
+            () => Math.random() * 0.7 + 0.3
+          );
+
           onAudioSelect({
-            name: file.name,
-            size: file.size,
-            type: file.type,
             url: event.target.result,
-            file: file,
-            duration: duration, // durée en secondes
+            duration: duration,
+            size: size,
+            timestamp: timestamp,
+            waveform: waveform,
+            quality: '128 kbps',
           });
         };
         reader.readAsDataURL(file);
       }
     }
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleClick = () => {
     fileInputRef.current?.click();
   };
 
@@ -67,7 +92,6 @@ const AudioPicker = ({ onAudioSelect, isOpen, onClose }) => {
         style={{ display: 'none' }}
       />
 
-      {/* Bouton pour ouvrir le sélecteur de fichiers */}
       <div
         onClick={handleClick}
         style={{
