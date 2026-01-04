@@ -71,7 +71,21 @@ export const useRealtime = userId => {
   const markMessageAsRead = useCallback(
     async (conversationId, messageId) => {
       if (userId && conversationId && messageId) {
+        // 1) Realtime DB receipt (optional, used for presence-style features)
         await realtimeService.setReadReceipt(conversationId, messageId, userId);
+
+        // 2) Firestore message update (drives the WhatsApp-style blue double-check)
+        try {
+          const firebaseService = require('@/utils/firebaseService').default;
+          await firebaseService.updateMessage(conversationId, messageId, {
+            is_read: true,
+            isRead: true,
+            read_at: new Date().toISOString(),
+            read_by: userId,
+          });
+        } catch (error) {
+          console.warn('⚠️ Impossible de mettre à jour le message comme lu:', error);
+        }
       }
     },
     [userId]

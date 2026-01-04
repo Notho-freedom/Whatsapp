@@ -27,6 +27,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  increment,
   query,
   where,
 } from 'firebase/firestore';
@@ -951,7 +952,8 @@ export function AppProvider({ children }) {
             if (currentUserId) {
               // Mettre à jour le compteur de la conversation directement
               await firebaseService.updateConversation(chatId, {
-                unread_count: 0,
+                unread_count: 0, // backward-compat
+                [`unread_counts.${currentUserId}`]: 0,
               });
 
               console.log(`✅ Conversation ${chatId} marquée comme lue`);
@@ -1294,6 +1296,7 @@ export function AppProvider({ children }) {
             reactions: [],
             isStarred: false,
             isRead: false,
+            is_read: false,
             metadata: {},
           };
         } else {
@@ -1317,6 +1320,7 @@ export function AppProvider({ children }) {
             reactions: [],
             isStarred: false,
             isRead: false,
+            is_read: false,
             metadata: {},
           };
         }
@@ -1363,6 +1367,18 @@ export function AppProvider({ children }) {
           sender_name: currentUser.name || currentUser.displayName,
           created_at: new Date().toISOString(),
         });
+
+        // Unread badge: increment only for the recipient (per-user map)
+        try {
+          if (recipientUserId) {
+            await firebaseService.updateConversation(conversationId, {
+              [`unread_counts.${recipientUserId}`]: increment(1),
+              [`unread_counts.${currentUser.id}`]: 0,
+            });
+          }
+        } catch (error) {
+          console.warn('⚠️ Impossible de mettre à jour unread_counts:', error);
+        }
       } catch (error) {
         console.error("❌ Erreur générale lors de l'envoi du message:", error);
       }
@@ -1600,30 +1616,6 @@ export function AppProvider({ children }) {
                     text: transformedMessage.text,
                     type: transformedMessage.type,
                   });
-
-                  // Incrémenter unreadCount si c'est un message reçu (sender === 'other')
-                  if (
-                    normalizedSender === 'other' &&
-                    !transformedMessage.read
-                  ) {
-                    const latestUsers = latestUsersRef.current;
-                    const currentChat = latestUsers.find(u => u.id === chat.id);
-                    const currentUnreadCount = currentChat?.unreadCount || 0;
-                    const newUnreadCount = currentUnreadCount + 1;
-
-                    // Mettre à jour l'unreadCount dans la liste des users
-                    actions.setUsers(
-                      latestUsers.map(user =>
-                        user.id === chat.id
-                          ? { ...user, unreadCount: newUnreadCount }
-                          : user
-                      )
-                    );
-
-                    console.log(
-                      `🔔 unreadCount incrémenté pour ${chat.id}: ${newUnreadCount} (was ${currentUnreadCount})`
-                    );
-                  }
                 }
               } else if (type === 'modified') {
                 console.log(`✏️ Message modifié:`, message.id);
@@ -1923,7 +1915,10 @@ export function AppProvider({ children }) {
               status: 'en ligne',
               lastMessage: conv.last_message,
               lastMessageTime: conv.last_message_time,
-              unreadCount: conv.unread_count || 0,
+              unreadCount:
+                (conv.unread_counts && currentUserId
+                  ? conv.unread_counts[currentUserId]
+                  : undefined) ?? conv.unread_count ?? 0,
               isPinned: conv.is_pinned || false,
               isContact: false,
               isConversation: true,
@@ -1944,7 +1939,10 @@ export function AppProvider({ children }) {
             status: conv.status || 'en ligne',
             lastMessage: conv.last_message,
             lastMessageTime: conv.last_message_time,
-            unreadCount: conv.unread_count || 0,
+            unreadCount:
+              (conv.unread_counts && currentUserId
+                ? conv.unread_counts[currentUserId]
+                : undefined) ?? conv.unread_count ?? 0,
             isPinned: conv.is_pinned || false,
             isContact: false,
             isConversation: true,

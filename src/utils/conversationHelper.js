@@ -76,6 +76,13 @@ export function createConversationData(userId1, userId2, user1Info, user2Info) {
     id: conversationId,
     type: 'individual',
     participants: [userId1, userId2],
+    // Unread counts are per-user (prevents one user clearing the other's badge)
+    unread_counts: {
+      [userId1]: 0,
+      [userId2]: 0,
+    },
+    // Backward-compat field (some older code paths may still read it)
+    unread_count: 0,
     participants_info: {
       [userId1]: {
         name: user1Info.name || 'Utilisateur',
@@ -148,7 +155,10 @@ export function transformConversationForDisplay(conversation, currentUserId) {
     otherParticipantId,
     lastMessage: conversation.last_message,
     lastMessageTime: lastMessageTimeFormatted,
-    unreadCount: conversation.unread_count || 0,
+    unreadCount:
+      (conversation.unread_counts && currentUserId
+        ? conversation.unread_counts[currentUserId]
+        : undefined) ?? conversation.unread_count ?? 0,
     isPinned: conversation.is_pinned || false,
     isMuted: conversation.is_muted || false,
     isContact: false,
