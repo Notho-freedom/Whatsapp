@@ -127,6 +127,17 @@ const ChatBody = memo(function ChatBody({ selectedChat, currentUser }) {
   // Grouper les messages par date
   const groupedMessages = groupMessagesByDate(chatMessages);
 
+  // Fonction pour déterminer le type d'attachment d'un message
+  const getAttachmentType = msg => {
+    if (msg.type === 'system') return 'system';
+    if (msg.contact) return 'contact';
+    if (msg.poll || msg.metadata?.poll_id) return 'poll';
+    if (msg.document) return 'document';
+    if (msg.drawing || msg.type === 'drawing') return 'drawing';
+    if (msg.media && msg.media.length > 0) return 'media';
+    return 'text';
+  };
+
   return (
     <section
       className="flex-1 flex flex-col relative overflow-hidden"
@@ -191,6 +202,88 @@ const ChatBody = memo(function ChatBody({ selectedChat, currentUser }) {
 
                   if (msg.type === 'system') {
                     return <SystemMessage key={msg.id} message={msg} />;
+                  }
+
+                  // Détecter les groupes d'attachments consécutifs du même type
+                  const currentType = getAttachmentType(msg);
+                  const prevType =
+                    idx > 0 ? getAttachmentType(group.messages[idx - 1]) : null;
+                  const nextType =
+                    idx < group.messages.length - 1
+                      ? getAttachmentType(group.messages[idx + 1])
+                      : null;
+
+                  // Vérifier si c'est le même expéditeur
+                  const sameSenderAsPrev =
+                    idx > 0 && group.messages[idx - 1]?.sender === msg.sender;
+                  const sameSenderAsNext =
+                    idx < group.messages.length - 1 &&
+                    group.messages[idx + 1]?.sender === msg.sender;
+
+                  // Grouper uniquement les attachments non-text du même type et même expéditeur
+                  const shouldGroup =
+                    currentType !== 'text' && currentType !== 'system';
+                  const isStartOfGroup =
+                    shouldGroup &&
+                    (!sameSenderAsPrev || prevType !== currentType);
+                  const isInGroup =
+                    shouldGroup && sameSenderAsPrev && prevType === currentType;
+                  const continuesInNextMsg =
+                    shouldGroup && sameSenderAsNext && nextType === currentType;
+
+                  // Si c'est le début d'un groupe, collecter tous les messages du groupe
+                  if (isStartOfGroup && continuesInNextMsg) {
+                    const groupedItems = [msg];
+                    let j = idx + 1;
+
+                    while (
+                      j < group.messages.length &&
+                      group.messages[j]?.sender === msg.sender &&
+                      getAttachmentType(group.messages[j]) === currentType
+                    ) {
+                      groupedItems.push(group.messages[j]);
+                      j++;
+                    }
+
+                    // Créer un message groupé
+                    const groupedMessage = {
+                      ...msg,
+                      id: `grouped-${msg.id}`,
+                      [`${currentType}s`]: groupedItems
+                        .map(m => {
+                          if (currentType === 'contact') return m.contact;
+                          if (currentType === 'poll') return m.poll;
+                          if (currentType === 'document') return m.document;
+                          if (currentType === 'media') return m.media;
+                          if (currentType === 'drawing') return m.drawing;
+                          return m;
+                        })
+                        .flat()
+                        .filter(Boolean),
+                    };
+
+                    // Supprimer les champs individuels
+                    delete groupedMessage[currentType];
+
+                    const uniqueKey = `${groupedMessage.id}-${idx}`;
+                    return (
+                      <MessageBubble
+                        key={uniqueKey}
+                        message={groupedMessage}
+                        isFirstInGroup={isFirstInGroup}
+                        isLastInGroup={
+                          j === group.messages.length ||
+                          group.messages[j]?.sender !== msg.sender
+                        }
+                        isMobile={isMobile}
+                        currentUser={currentUser}
+                      />
+                    );
+                  }
+
+                  // Si c'est dans un groupe (mais pas le début), skip
+                  if (isInGroup) {
+                    return null;
                   }
 
                   // Assure une clé unique même si un même id arrive deux fois (optimiste + temps réel)

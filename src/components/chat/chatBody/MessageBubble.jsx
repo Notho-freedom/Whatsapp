@@ -4,6 +4,7 @@ import { FaAngleDown, FaStar, FaSmile } from 'react-icons/fa';
 import MediaGroup from './MediaGroup';
 import DocumentItem from './DocumentItem';
 import PollItem from './PollItem';
+import ContactGroup from './ContactGroup';
 import PreviewLink from './PreviewLink';
 import ReactionBar from './ReactionBar';
 import MessageContextMenu from './MessageContextMenu';
@@ -524,6 +525,19 @@ const MessageBubble = memo(
               />
             )}
 
+            {/* Contact */}
+            {(message.contact || message.contacts) && (
+              <ContactGroup
+                contacts={
+                  message.contacts ||
+                  (Array.isArray(message.contact)
+                    ? message.contact
+                    : [message.contact])
+                }
+                isMobile={isMobile}
+              />
+            )}
+
             {/* Link preview */}
             {message.link && <PreviewLink link={message.link} />}
 
@@ -531,7 +545,8 @@ const MessageBubble = memo(
             {message.text &&
               (!isDrawingMessage || message.text !== '🎨 Dessin créé') &&
               (!message.poll ||
-                !String(message.text).startsWith('📊 Sondage:')) && (
+                !String(message.text).startsWith('📊 Sondage:')) &&
+              !message.contact || (message.text).includes('Contact partagé:') && (
                 <div className="wa-message-text">
                   <span>{message.text}</span>
                   {/* Spacer for metadata */}
