@@ -114,14 +114,13 @@ export default function DocumentItem({
         style={{ backgroundColor: 'var(--wa-panel-header)' }}
       >
         {fileUrl && !previewError ? (
-          <div className="w-full h-full relative">
+          <div className="w-full h-full relative *:overflow-hidden">
             {/* Afficher la prévisualisation pour les PDFs */}
             {getFileExtension() === 'PDF' ? (
               <iframe
                 src={`${fileUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH`}
                 className="w-full h-full border-0 pointer-events-none"
                 style={{ overflow: 'hidden' }}
-                onError={() => setPreviewError(true)}
                 title="Document preview"
               />
             ) : (
