@@ -6,13 +6,13 @@ export { useEventManager, useAudioEventManager } from './useEventManager';
 export { useGoogleAuth } from './useGoogleAuth';
 export { useGoogleContacts } from './useGoogleContacts';
 export { useLocalCache } from './useLocalCache';
-export { 
-  useNativeContextMenu, 
-  useMessageContextMenu, 
-  useChatContextMenu, 
-  useMediaContextMenu, 
+export {
+  useNativeContextMenu,
+  useMessageContextMenu,
+  useChatContextMenu,
+  useMediaContextMenu,
   useUserContextMenu,
-  useGlobalShortcuts 
+  useGlobalShortcuts,
 } from './useNativeContextMenu';
 export { useNotification } from './useNotification';
 export { useRealtime } from './useRealtime';
@@ -20,4 +20,7 @@ export { useTempConversations } from './useTempConversations';
 export { useTokenRefresh } from './useTokenRefresh';
 export { useUser } from './useUser';
 export { useAttachments } from './useAttachments';
-export { useAvatarPreloader, useAutoAvatarPreloader } from './useAvatarPreloader';
+export {
+  useAvatarPreloader,
+  useAutoAvatarPreloader,
+} from './useAvatarPreloader';

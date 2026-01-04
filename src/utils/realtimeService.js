@@ -1,16 +1,27 @@
-import { initializeApp } from "firebase/app";
-import { getDatabase, ref, set, get, onValue, off, push, update, remove } from "firebase/database";
+import { initializeApp } from 'firebase/app';
+import {
+  getDatabase,
+  ref,
+  set,
+  get,
+  onValue,
+  off,
+  push,
+  update,
+  remove,
+} from 'firebase/database';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDot5qXzscWMlJbT46Iq-ZNQRTLhicFCmU",
-  authDomain: "elite-5b171.firebaseapp.com",
-  projectId: "elite-5b171",
-  storageBucket: "elite-5b171.firebasestorage.app",
-  messagingSenderId: "263142174492",
-  appId: "1:263142174492:web:8d8abbe4bf5e831211d4d9",
-  measurementId: "G-PDDCJR1CZ8",
+  apiKey: 'AIzaSyDot5qXzscWMlJbT46Iq-ZNQRTLhicFCmU',
+  authDomain: 'elite-5b171.firebaseapp.com',
+  projectId: 'elite-5b171',
+  storageBucket: 'elite-5b171.firebasestorage.app',
+  messagingSenderId: '263142174492',
+  appId: '1:263142174492:web:8d8abbe4bf5e831211d4d9',
+  measurementId: 'G-PDDCJR1CZ8',
   // Ajouter l'URL de Realtime Database
-  databaseURL: "https://elite-5b171-default-rtdb.europe-west1.firebasedatabase.app"
+  databaseURL:
+    'https://elite-5b171-default-rtdb.europe-west1.firebasedatabase.app',
 };
 
 const app = initializeApp(firebaseConfig);
@@ -30,9 +41,11 @@ class RealtimeService {
       await set(presenceRef, {
         status,
         lastSeen: new Date().toISOString(),
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
-      console.log(`✅ Présence mise à jour pour l'utilisateur ${userId}: ${status}`);
+      console.log(
+        `✅ Présence mise à jour pour l'utilisateur ${userId}: ${status}`
+      );
     } catch (error) {
       console.error('❌ Erreur lors de la mise à jour de la présence:', error);
     }
@@ -51,7 +64,7 @@ class RealtimeService {
 
   onUserPresenceChange(userId, callback) {
     const presenceRef = ref(this.db, `presence/${userId}`);
-    const listener = onValue(presenceRef, (snapshot) => {
+    const listener = onValue(presenceRef, snapshot => {
       const data = snapshot.exists() ? snapshot.val() : null;
       callback(data);
     });
@@ -68,23 +81,30 @@ class RealtimeService {
       if (isTyping) {
         await set(typingRef, {
           timestamp: Date.now(),
-          userId
+          userId,
         });
       } else {
         await remove(typingRef);
       }
-      console.log(`✅ Statut de frappe mis à jour: ${userId} ${isTyping ? 'écrit' : 'arrêté d\'écrire'}`);
+      console.log(
+        `✅ Statut de frappe mis à jour: ${userId} ${
+          isTyping ? 'écrit' : "arrêté d'écrire"
+        }`
+      );
     } catch (error) {
-      console.error('❌ Erreur lors de la mise à jour du statut de frappe:', error);
+      console.error(
+        '❌ Erreur lors de la mise à jour du statut de frappe:',
+        error
+      );
     }
   }
 
   onTypingStatusChange(conversationId, callback) {
     const typingRef = ref(this.db, `typing/${conversationId}`);
-    const listener = onValue(typingRef, (snapshot) => {
+    const listener = onValue(typingRef, snapshot => {
       const typingUsers = [];
       if (snapshot.exists()) {
-        snapshot.forEach((childSnapshot) => {
+        snapshot.forEach(childSnapshot => {
           const data = childSnapshot.val();
           // Nettoyer les anciens statuts (plus de 10 secondes)
           if (Date.now() - data.timestamp < 10000) {
@@ -103,20 +123,23 @@ class RealtimeService {
 
   async setReadReceipt(conversationId, messageId, userId) {
     try {
-      const receiptRef = ref(this.db, `readReceipts/${conversationId}/${messageId}/${userId}`);
+      const receiptRef = ref(
+        this.db,
+        `readReceipts/${conversationId}/${messageId}/${userId}`
+      );
       await set(receiptRef, {
         readAt: new Date().toISOString(),
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
       console.log(`✅ Receipt de lecture ajouté pour le message ${messageId}`);
     } catch (error) {
-      console.error('❌ Erreur lors de l\'ajout du receipt de lecture:', error);
+      console.error("❌ Erreur lors de l'ajout du receipt de lecture:", error);
     }
   }
 
   onReadReceiptsChange(conversationId, callback) {
     const receiptsRef = ref(this.db, `readReceipts/${conversationId}`);
-    const listener = onValue(receiptsRef, (snapshot) => {
+    const listener = onValue(receiptsRef, snapshot => {
       const receipts = snapshot.exists() ? snapshot.val() : {};
       callback(receipts);
     });
@@ -133,17 +156,20 @@ class RealtimeService {
       await set(statusRef, {
         status,
         timestamp: Date.now(),
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       });
       console.log(`✅ Statut du message ${messageId} mis à jour: ${status}`);
     } catch (error) {
-      console.error('❌ Erreur lors de la mise à jour du statut du message:', error);
+      console.error(
+        '❌ Erreur lors de la mise à jour du statut du message:',
+        error
+      );
     }
   }
 
   onMessageStatusChange(messageId, callback) {
     const statusRef = ref(this.db, `messageStatus/${messageId}`);
-    const listener = onValue(statusRef, (snapshot) => {
+    const listener = onValue(statusRef, snapshot => {
       const data = snapshot.exists() ? snapshot.val() : null;
       callback(data);
     });
@@ -162,23 +188,23 @@ class RealtimeService {
         ...notification,
         timestamp: Date.now(),
         createdAt: new Date().toISOString(),
-        read: false
+        read: false,
       });
       console.log(`✅ Notification envoyée à ${userId}`);
     } catch (error) {
-      console.error('❌ Erreur lors de l\'envoi de la notification:', error);
+      console.error("❌ Erreur lors de l'envoi de la notification:", error);
     }
   }
 
   onNotificationsChange(userId, callback) {
     const notificationsRef = ref(this.db, `notifications/${userId}`);
-    const listener = onValue(notificationsRef, (snapshot) => {
+    const listener = onValue(notificationsRef, snapshot => {
       const notifications = [];
       if (snapshot.exists()) {
-        snapshot.forEach((childSnapshot) => {
+        snapshot.forEach(childSnapshot => {
           notifications.push({
             id: childSnapshot.key,
-            ...childSnapshot.val()
+            ...childSnapshot.val(),
           });
         });
       }
@@ -196,17 +222,20 @@ class RealtimeService {
       const viewRef = ref(this.db, `statusViews/${statusId}/${userId}`);
       await set(viewRef, {
         viewedAt: new Date().toISOString(),
-        timestamp: Date.now()
+        timestamp: Date.now(),
       });
       console.log(`✅ Vue de statut enregistrée pour ${userId}`);
     } catch (error) {
-      console.error('❌ Erreur lors de l\'enregistrement de la vue de statut:', error);
+      console.error(
+        "❌ Erreur lors de l'enregistrement de la vue de statut:",
+        error
+      );
     }
   }
 
   onStatusViewsChange(statusId, callback) {
     const viewsRef = ref(this.db, `statusViews/${statusId}`);
-    const listener = onValue(viewsRef, (snapshot) => {
+    const listener = onValue(viewsRef, snapshot => {
       const views = snapshot.exists() ? snapshot.val() : {};
       callback(views);
     });
@@ -239,18 +268,20 @@ class RealtimeService {
   async cleanupOldData() {
     try {
       const now = Date.now();
-      const tenMinutesAgo = now - (10 * 60 * 1000);
+      const tenMinutesAgo = now - 10 * 60 * 1000;
 
       // Nettoyer les anciens statuts de frappe
       const typingRef = ref(this.db, 'typing');
       const typingSnapshot = await get(typingRef);
       if (typingSnapshot.exists()) {
         const updates = {};
-        typingSnapshot.forEach((conversationSnapshot) => {
-          conversationSnapshot.forEach((userSnapshot) => {
+        typingSnapshot.forEach(conversationSnapshot => {
+          conversationSnapshot.forEach(userSnapshot => {
             const data = userSnapshot.val();
             if (data.timestamp < tenMinutesAgo) {
-              updates[`typing/${conversationSnapshot.key}/${userSnapshot.key}`] = null;
+              updates[
+                `typing/${conversationSnapshot.key}/${userSnapshot.key}`
+              ] = null;
             }
           });
         });

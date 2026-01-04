@@ -730,6 +730,59 @@ export function AppProvider({ children }) {
     return selected;
   }, []);
 
+
+  // Toujours garder une référence des messages à jour pour éviter les doublons en temps réel
+  useEffect(() => {
+    latestMessagesRef.current = state.messages;
+  }, [state.messages]);
+
+  // Cache local pour hydrater les messages "document" existants (backfill côté client)
+  const documentCacheRef = useRef(new Map()); // documentId -> document data
+  const documentFetchRef = useRef(new Map()); // documentId -> Promise
+
+  const hydrateDocumentMessage = useCallback(
+    async (chatId, messageId, documentId) => {
+      if (!chatId || !messageId || !documentId) return;
+
+      const cached = documentCacheRef.current.get(documentId);
+      if (cached) {
+        actions.updateMessage(chatId, messageId, { document: cached });
+        return;
+      }
+
+      if (documentFetchRef.current.has(documentId)) return;
+
+      const p = (async () => {
+        try {
+          const snap = await getDoc(doc(db, DOCUMENTS_COLLECTION, documentId));
+          if (!snap.exists()) return null;
+
+          const data = snap.data();
+          const normalized = {
+            id: snap.id,
+            ...data,
+            created_at: data.created_at?.toDate?.() || data.created_at,
+            updated_at: data.updated_at?.toDate?.() || data.updated_at,
+          };
+
+          documentCacheRef.current.set(documentId, normalized);
+          actions.updateMessage(chatId, messageId, { document: normalized });
+          return normalized;
+        } catch (e) {
+          console.warn('⚠️ Hydratation document impossible:', e);
+          return null;
+        } finally {
+          documentFetchRef.current.delete(documentId);
+        }
+      })();
+
+      documentFetchRef.current.set(documentId, p);
+      await p;
+    },
+    [actions]
+  );
+
+  
   // Méthodes métier optimisées avec cache
   const loadMessages = useCallback(
     async chatId => {
@@ -745,7 +798,9 @@ export function AppProvider({ children }) {
               msg.sender === currentUserId ? 'me' : 'other';
 
             const fallbackDocument =
-              msg.type === 'document' && !msg.document && msg.metadata?.document_id
+              msg.type === 'document' &&
+              !msg.document &&
+              msg.metadata?.document_id
                 ? {
                     id: msg.metadata.document_id,
                     name: msg.metadata.file_name || 'Document',
@@ -813,58 +868,7 @@ export function AppProvider({ children }) {
     },
     [actions, currentUserId, currentUser, hydrateDocumentMessage]
   );
-
-  // Toujours garder une référence des messages à jour pour éviter les doublons en temps réel
-  useEffect(() => {
-    latestMessagesRef.current = state.messages;
-  }, [state.messages]);
-
-  // Cache local pour hydrater les messages "document" existants (backfill côté client)
-  const documentCacheRef = useRef(new Map()); // documentId -> document data
-  const documentFetchRef = useRef(new Map()); // documentId -> Promise
-
-  const hydrateDocumentMessage = useCallback(
-    async (chatId, messageId, documentId) => {
-      if (!chatId || !messageId || !documentId) return;
-
-      const cached = documentCacheRef.current.get(documentId);
-      if (cached) {
-        actions.updateMessage(chatId, messageId, { document: cached });
-        return;
-      }
-
-      if (documentFetchRef.current.has(documentId)) return;
-
-      const p = (async () => {
-        try {
-          const snap = await getDoc(doc(db, DOCUMENTS_COLLECTION, documentId));
-          if (!snap.exists()) return null;
-
-          const data = snap.data();
-          const normalized = {
-            id: snap.id,
-            ...data,
-            created_at: data.created_at?.toDate?.() || data.created_at,
-            updated_at: data.updated_at?.toDate?.() || data.updated_at,
-          };
-
-          documentCacheRef.current.set(documentId, normalized);
-          actions.updateMessage(chatId, messageId, { document: normalized });
-          return normalized;
-        } catch (e) {
-          console.warn('⚠️ Hydratation document impossible:', e);
-          return null;
-        } finally {
-          documentFetchRef.current.delete(documentId);
-        }
-      })();
-
-      documentFetchRef.current.set(documentId, p);
-      await p;
-    },
-    [actions]
-  );
-
+  
   const sendMessage = useCallback(
     async (recipientUserIdOrChatId, messageData, replyTo = null) => {
       try {
@@ -1253,7 +1257,9 @@ export function AppProvider({ children }) {
               msg.sender === currentUserId ? 'me' : 'other';
 
             const fallbackDocument =
-              msg.type === 'document' && !msg.document && msg.metadata?.document_id
+              msg.type === 'document' &&
+              !msg.document &&
+              msg.metadata?.document_id
                 ? {
                     id: msg.metadata.document_id,
                     name: msg.metadata.file_name || 'Document',
@@ -1394,7 +1400,11 @@ export function AppProvider({ children }) {
                       transformedMessage.document?.url
                     );
                     if (docId && !hasUrl) {
-                      hydrateDocumentMessage(chat.id, transformedMessage.id, docId);
+                      hydrateDocumentMessage(
+                        chat.id,
+                        transformedMessage.id,
+                        docId
+                      );
                     }
                   }
 
@@ -1455,7 +1465,8 @@ export function AppProvider({ children }) {
 
                 // Backfill: hydrater le document si l'URL est manquante
                 const docId =
-                  (message.document && (message.document.id || message.document.document_id)) ||
+                  (message.document &&
+                    (message.document.id || message.document.document_id)) ||
                   message.metadata?.document_id;
                 const hasUrl = !!(
                   message.document?.file_url ||
