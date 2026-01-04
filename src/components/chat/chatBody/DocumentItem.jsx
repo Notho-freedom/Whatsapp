@@ -10,7 +10,11 @@ import {
 } from 'react-icons/fa';
 import { useState, useCallback } from 'react';
 
-export default function DocumentItem({ document, isMobile = false, isMe = false }) {
+export default function DocumentItem({
+  document,
+  isMobile = false,
+  isMe = false,
+}) {
   const [isDownloading, setIsDownloading] = useState(false);
   const [previewError, setPreviewError] = useState(false);
 
@@ -141,13 +145,13 @@ export default function DocumentItem({ document, isMobile = false, isMe = false 
       {/* Informations du document */}
       <div className="px-4 py-2 h-[50px] bg-neutral-900/20 rounded-b-lg">
         <div className="flex flex-row items-start justify-between gap-2">
-            {/* Overlay avec icône du type de fichier */}
-            <div
-              className="flex flex-shrink-0 rounded-md p-2 shadow-lg"
-              style={{ backgroundColor: bgColor }}
-            >
-              <FileIcon size={20} className="text-white" />
-            </div>
+          {/* Overlay avec icône du type de fichier */}
+          <div
+            className="flex flex-shrink-0 rounded-md p-2 shadow-lg"
+            style={{ backgroundColor: bgColor }}
+          >
+            <FileIcon size={20} className="text-white" />
+          </div>
           <div className="flex-1 flex flex-col min-w-0">
             <h4
               className="text-[13px] font-medium truncate"
@@ -176,7 +180,10 @@ export default function DocumentItem({ document, isMobile = false, isMe = false 
 
       {/* Boutons d'action - visible uniquement pour le destinataire */}
       {!isMe && (
-        <div className="flex gap-1 px-4 py-2 border-t" style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}>
+        <div
+          className="flex gap-1 px-4 py-2 border-t"
+          style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}
+        >
           {fileUrl ? (
             <>
               <button
