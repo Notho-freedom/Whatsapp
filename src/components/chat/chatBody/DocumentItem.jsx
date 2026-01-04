@@ -137,7 +137,7 @@ export default function DocumentItem({ document, isMobile = false }) {
       </div>
 
       {/* Informations du document */}
-      <div className=" p-3">
+      <div className="p-3 min-h-[100px]">
         <div className="flex items-start justify-between gap-2 mb-2">
           <div className="flex-1 min-w-0">
             <h4
@@ -161,29 +161,29 @@ export default function DocumentItem({ document, isMobile = false }) {
         </div>
 
         {/* Boutons d'action */}
-        {fileUrl && (
-          <div className="flex gap-2 mt-3">
-            <button
-              onClick={handleOpen}
-              className="flex-1 py-2 px-3 bg-transparent border border-[#00A884] text-[#00A884] rounded-md text-[14px] font-medium hover:bg-[#00A884]/10 transition-colors"
-            >
-              Ouvrir
-            </button>
-            <button
-              onClick={handleDownload}
-              disabled={isDownloading}
-              className="flex-1 py-2 px-3 bg-transparent border border-[#00A884] text-[#00A884] rounded-md text-[14px] font-medium hover:bg-[#00A884]/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isDownloading ? 'Téléchargement...' : 'Enregistrer sous...'}
-            </button>
-          </div>
-        )}
-
-        {!fileUrl && (
-          <div className="mt-2 text-center py-2 text-[13px] text-[#8696A0]">
-            Document indisponible
-          </div>
-        )}
+        <div className="flex gap-2 mt-3">
+          {fileUrl ? (
+            <>
+              <button
+                onClick={handleOpen}
+                className="flex-1 py-2 px-3 bg-transparent border border-[#00A884] text-[#00A884] rounded-md text-[14px] font-medium hover:bg-[#00A884]/10 transition-colors"
+              >
+                Ouvrir
+              </button>
+              <button
+                onClick={handleDownload}
+                disabled={isDownloading}
+                className="flex-1 py-2 px-3 bg-transparent border border-[#00A884] text-[#00A884] rounded-md text-[14px] font-medium hover:bg-[#00A884]/10 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isDownloading ? 'Téléchargement...' : 'Enregistrer sous...'}
+              </button>
+            </>
+          ) : (
+            <div className="w-full text-center py-2 text-[13px] text-[#8696A0]">
+              Document indisponible
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
