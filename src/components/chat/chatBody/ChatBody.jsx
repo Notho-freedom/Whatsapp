@@ -12,17 +12,13 @@ const ChatBody = memo(function ChatBody({ selectedChat, currentUser }) {
   const scrollRef = useRef(null);
   const [isMobile, setIsMobile] = useState(false);
   const [autoScroll, setAutoScroll] = useState(true);
-  const { messages, markMessagesRead } = useAppContext();
+  const { messages, markMessagesRead, typingUsers } = useAppContext();
   const lastMarkedChatIdRef = useRef(null); // Tracker pour éviter les re-marks
 
   // Hook temps réel pour les receipts de lecture et indicateurs de frappe
   const currentUserId = currentUser?.id || 'default-user';
-  const {
-    markMessageAsRead,
-    listenToReadReceipts,
-    listenToTypingStatus,
-    typingUsers,
-  } = useRealtime(currentUserId);
+  const { markMessageAsRead, listenToReadReceipts, listenToTypingStatus } =
+    useRealtime(currentUserId);
 
   // Optimisation avec useCallback
   const checkMobile = useCallback(() => {

@@ -370,7 +370,9 @@ export function AppProvider({ children }) {
     listenToConversation,
     listenToConversations,
     presence,
+    typingUsers,
     listenToUserPresence,
+    listenToTypingStatus,
   } = useRealtime(currentUserId);
 
   // Récupérer l'utilisateur courant au montage et quand authUser change
@@ -2267,6 +2269,7 @@ export function AppProvider({ children }) {
       currentUser, // Ajouter l'utilisateur connecté au contexte
       currentUserId, // Ajouter l'ID pour accès rapide
       presence,
+      typingUsers,
 
       // Actions
       setLoading: actions.setLoading,
@@ -2320,13 +2323,16 @@ export function AppProvider({ children }) {
 
       // Realtime helpers
       listenToUserPresence,
+      listenToTypingStatus,
     }),
     [
       state,
       currentUser,
       currentUserId,
       presence,
+      typingUsers,
       listenToUserPresence,
+      listenToTypingStatus,
       actions,
       sendMessage,
       selectChat,

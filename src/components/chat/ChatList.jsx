@@ -47,7 +47,9 @@ export default function ChatList({
     currentUser,
     markMessagesRead,
     presence,
+    typingUsers,
     listenToUserPresence,
+    listenToTypingStatus,
   } = useAppContext();
   const {
     contacts: googleContacts,
@@ -60,6 +62,7 @@ export default function ChatList({
   // Hook temps réel pour la présence et les notifications
   const scrollRef = useRef(null);
   const presenceUnsubsRef = useRef(new Map());
+  const typingUnsubsRef = useRef(new Map());
 
   // Écouter la présence des participants visibles (pour 1/2 checks)
   useEffect(() => {
@@ -100,6 +103,53 @@ export default function ChatList({
 
   useEffect(() => {
     const unsubs = presenceUnsubsRef.current;
+    return () => {
+      unsubs.forEach(unsubscribe => {
+        if (typeof unsubscribe === 'function') unsubscribe();
+      });
+      unsubs.clear();
+    };
+  }, []);
+
+  // Écouter les indicateurs de frappe pour les conversations visibles
+  useEffect(() => {
+    if (!listenToTypingStatus) return;
+
+    const conversationIds = (filteredUsers || [])
+      .filter(u => u?.isConversation && u?.id)
+      .map(u => u.id);
+
+    const uniqueIds = Array.from(new Set(conversationIds));
+
+    // Add missing listeners
+    uniqueIds.forEach(conversationId => {
+      if (!conversationId) return;
+      if (typingUnsubsRef.current.has(conversationId)) return;
+      const unsubscribe = listenToTypingStatus(conversationId);
+      if (typeof unsubscribe === 'function') {
+        typingUnsubsRef.current.set(conversationId, unsubscribe);
+      }
+    });
+
+    // Remove stale listeners
+    Array.from(typingUnsubsRef.current.keys()).forEach(conversationId => {
+      if (!uniqueIds.includes(conversationId)) {
+        const unsubscribe = typingUnsubsRef.current.get(conversationId);
+        try {
+          if (typeof unsubscribe === 'function') unsubscribe();
+        } finally {
+          typingUnsubsRef.current.delete(conversationId);
+        }
+      }
+    });
+
+    return () => {
+      // cleanup happens in unmount effect below
+    };
+  }, [filteredUsers, listenToTypingStatus]);
+
+  useEffect(() => {
+    const unsubs = typingUnsubsRef.current;
     return () => {
       unsubs.forEach(unsubscribe => {
         if (typeof unsubscribe === 'function') unsubscribe();
@@ -252,16 +302,25 @@ export default function ChatList({
   };
 
   // Priorité : pinned > non pinned, puis par temps
-  const sortedUsers = [...filteredUsers].sort((a, b) => {
-    // D'abord par statut épinglé
-    if (a.isPinned && !b.isPinned) return -1;
-    if (!a.isPinned && b.isPinned) return 1;
+  const sortedUsers = [...filteredUsers]
+    .sort((a, b) => {
+      // D'abord par statut épinglé
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
 
-    // Ensuite par temps (plus récent en premier)
-    const timeA = new Date(a.lastMessageTime || 0);
-    const timeB = new Date(b.lastMessageTime || 0);
-    return timeB - timeA;
-  });
+      // Ensuite par temps (plus récent en premier)
+      const timeA = new Date(a.lastMessageTime || 0);
+      const timeB = new Date(b.lastMessageTime || 0);
+      return timeB - timeA;
+    })
+    .map(chat => ({
+      ...chat,
+      isTyping: !!(
+        typingUsers &&
+        typingUsers[chat.id] &&
+        typingUsers[chat.id].length > 0
+      ),
+    }));
 
   const MessageIcon = ({ type }) => {
     const iconProps = { size: 14, className: 'text-gray-400 mr-1' };
