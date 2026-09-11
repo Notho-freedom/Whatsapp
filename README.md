@@ -1,5 +1,10 @@
 # WhatsApp Clone Desktop
 
+[![Next.js](https://img.shields.io/badge/Next.js-15-000000?logo=next.js&logoColor=white)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=111111)](https://react.dev/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 Un clone de WhatsApp Desktop créé avec Next.js, Tailwind CSS et React. Cette application reproduit fidèlement l'interface utilisateur de WhatsApp Web avec une expérience utilisateur moderne et responsive.
 
 ## 🚀 Fonctionnalités
